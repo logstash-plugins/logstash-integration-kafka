@@ -1,4 +1,3 @@
-
 # encoding: utf-8
 require "logstash/devutils/rake"
 require "jars/installer"
@@ -17,4 +16,3 @@ task :clean do
     FileUtils.rm_rf(p)
   end
 end
-

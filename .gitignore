@@ -8,3 +8,6 @@ lib/net/
 lib/org/
 vendor/
 build/
+.idea/
+vendor
+*.jar

@@ -2,7 +2,7 @@ require 'logstash/namespace'
 require 'logstash/inputs/base'
 require 'stud/interval'
 require 'java'
-require 'logstash-input-kafka_jars.rb'
+require 'logstash-integration-kafka_jars.rb'
 
 # This input will read events from a Kafka topic. It uses the 0.10 version of
 # the consumer API provided by Kafka to read messages from the broker.
