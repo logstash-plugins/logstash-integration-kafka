@@ -11,5 +11,7 @@ set -e
 
 export KAFKA_VERSION=2.3.0
 ./kafka_test_setup.sh
+
+export LOGSTASH_SOURCE=1
 bundle install
 bundle exec rake vendor
