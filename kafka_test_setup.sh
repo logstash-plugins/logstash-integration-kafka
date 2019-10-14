@@ -25,17 +25,17 @@ build/kafka/bin/kafka-server-start.sh -daemon build/kafka/config/server.properti
 sleep 10
 
 echo "Setting up test topics with test data"
-build/kafka/bin/kafka-topics.sh --create --partitions 3 --replication-factor 1 --topic logstash_topic_plain --zookeeper localhost:2181
-build/kafka/bin/kafka-topics.sh --create --partitions 3 --replication-factor 1 --topic logstash_topic_snappy --zookeeper localhost:2181
-build/kafka/bin/kafka-topics.sh --create --partitions 3 --replication-factor 1 --topic logstash_topic_lz4 --zookeeper localhost:2181
-build/kafka/bin/kafka-topics.sh --create --partitions 1 --replication-factor 1 --topic topic1 --zookeeper localhost:2181
-build/kafka/bin/kafka-topics.sh --create --partitions 2 --replication-factor 1 --topic topic2 --zookeeper localhost:2181
-build/kafka/bin/kafka-topics.sh --create --partitions 1 --replication-factor 1 --topic gzip_topic --zookeeper localhost:2181
-build/kafka/bin/kafka-topics.sh --create --partitions 1 --replication-factor 1 --topic snappy_topic --zookeeper localhost:2181
-build/kafka/bin/kafka-topics.sh --create --partitions 1 --replication-factor 1 --topic lz4_topic --zookeeper localhost:2181
-build/kafka/bin/kafka-topics.sh --create --partitions 3 --replication-factor 1 --topic topic3 --zookeeper localhost:2181
+build/kafka/bin/kafka-topics.sh --create --partitions 3 --replication-factor 1 --topic logstash_integration_topic_plain --zookeeper localhost:2181
+build/kafka/bin/kafka-topics.sh --create --partitions 3 --replication-factor 1 --topic logstash_integration_topic_snappy --zookeeper localhost:2181
+build/kafka/bin/kafka-topics.sh --create --partitions 3 --replication-factor 1 --topic logstash_integration_topic_lz4 --zookeeper localhost:2181
+build/kafka/bin/kafka-topics.sh --create --partitions 1 --replication-factor 1 --topic logstash_integration_topic1 --zookeeper localhost:2181
+build/kafka/bin/kafka-topics.sh --create --partitions 2 --replication-factor 1 --topic logstash_integration_topic2 --zookeeper localhost:2181
+build/kafka/bin/kafka-topics.sh --create --partitions 1 --replication-factor 1 --topic logstash_integration_gzip_topic --zookeeper localhost:2181
+build/kafka/bin/kafka-topics.sh --create --partitions 1 --replication-factor 1 --topic logstash_integration_snappy_topic --zookeeper localhost:2181
+build/kafka/bin/kafka-topics.sh --create --partitions 1 --replication-factor 1 --topic logstash_integration_lz4_topic --zookeeper localhost:2181
+build/kafka/bin/kafka-topics.sh --create --partitions 3 --replication-factor 1 --topic logstash_integration_topic3 --zookeeper localhost:2181
 curl -s -o build/apache_logs.txt https://s3.amazonaws.com/data.elasticsearch.org/apache_logs/apache_logs.txt
-cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_topic_plain --broker-list localhost:9092
-cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_topic_snappy --broker-list localhost:9092 --compression-codec snappy
-cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_topic_lz4 --broker-list localhost:9092 --compression-codec lz4
+cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_integration_topic_plain --broker-list localhost:9092
+cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_integration_topic_snappy --broker-list localhost:9092 --compression-codec snappy
+cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_integration_topic_lz4 --broker-list localhost:9092 --compression-codec lz4
 echo "Setup complete, running specs"

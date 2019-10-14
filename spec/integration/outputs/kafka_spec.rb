@@ -14,7 +14,7 @@ describe "outputs/kafka", :integration => true do
 
 
   context 'when outputting messages serialized as String' do
-    let(:test_topic) { 'topic1' }
+    let(:test_topic) { 'logstash_integration_topic1' }
     let(:num_events) { 3 }
     let(:consumer) do
       Poseidon::PartitionConsumer.new("my_test_consumer", kafka_host, kafka_port,
@@ -70,7 +70,7 @@ describe "outputs/kafka", :integration => true do
 
   context 'when setting message_key' do
     let(:num_events) { 10 }
-    let(:test_topic) { 'topic2' }
+    let(:test_topic) { 'logstash_integration_topic2' }
     let!(:consumer0) do
       Poseidon::PartitionConsumer.new("my_test_consumer", kafka_host, kafka_port,
                                       test_topic, 0, :earliest_offset)
@@ -91,7 +91,7 @@ describe "outputs/kafka", :integration => true do
   end
 
   context 'when using gzip compression' do
-    let(:test_topic) { 'gzip_topic' }
+    let(:test_topic) { 'logstash_integration_gzip_topic' }
     let!(:consumer) do
       Poseidon::PartitionConsumer.new("my_test_consumer", kafka_host, kafka_port,
                                       test_topic, 0, :earliest_offset)
@@ -114,7 +114,7 @@ describe "outputs/kafka", :integration => true do
   end
 
   context 'when using snappy compression' do
-    let(:test_topic) { 'snappy_topic' }
+    let(:test_topic) { 'logstash_integration_snappy_topic' }
     let!(:consumer) do
       Poseidon::PartitionConsumer.new("my_test_consumer", kafka_host, kafka_port,
                                       test_topic, 0, :earliest_offset)
@@ -137,7 +137,7 @@ describe "outputs/kafka", :integration => true do
   end
 
   context 'when using LZ4 compression' do
-    let(:test_topic) { 'lz4_topic' }
+    let(:test_topic) { 'logstash_integration_lz4_topic' }
 
     before :each do
       config = base_config.merge({"topic_id" => test_topic, "compression_type" => "lz4"})
@@ -147,7 +147,7 @@ describe "outputs/kafka", :integration => true do
 
   context 'when using multi partition topic' do
     let(:num_events) { 10 }
-    let(:test_topic) { 'topic3' }
+    let(:test_topic) { 'logstash_integration_topic3' }
     let!(:consumer0) do
       Poseidon::PartitionConsumer.new("my_test_consumer", kafka_host, kafka_port,
                                       test_topic, 0, :earliest_offset)

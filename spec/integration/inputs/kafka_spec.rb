@@ -12,13 +12,13 @@ describe "inputs/kafka", :integration => true do
   let(:group_id_3) {rand(36**8).to_s(36)}
   let(:group_id_4) {rand(36**8).to_s(36)}
   let(:group_id_5) {rand(36**8).to_s(36)}
-  let(:plain_config) { { 'topics' => ['logstash_topic_plain'], 'codec' => 'plain', 'group_id' => group_id_1, 'auto_offset_reset' => 'earliest'} }
+  let(:plain_config) { { 'topics' => ['logstash_integration_topic_plain'], 'codec' => 'plain', 'group_id' => group_id_1, 'auto_offset_reset' => 'earliest'} }
   let(:multi_consumer_config) { plain_config.merge({"group_id" => group_id_4, "client_id" => "spec", "consumer_threads" => 3}) }
-  let(:snappy_config) { { 'topics' => ['logstash_topic_snappy'], 'codec' => 'plain', 'group_id' => group_id_1, 'auto_offset_reset' => 'earliest'} }
-  let(:lz4_config) { { 'topics' => ['logstash_topic_lz4'], 'codec' => 'plain', 'group_id' => group_id_1, 'auto_offset_reset' => 'earliest'} }
-  let(:pattern_config) { { 'topics_pattern' => 'logstash_topic_.*', 'group_id' => group_id_2, 'codec' => 'plain', 'auto_offset_reset' => 'earliest'} }  
-  let(:decorate_config) { { 'topics' => ['logstash_topic_plain'], 'codec' => 'plain', 'group_id' => group_id_3, 'auto_offset_reset' => 'earliest', 'decorate_events' => true} }
-  let(:manual_commit_config) { { 'topics' => ['logstash_topic_plain'], 'codec' => 'plain', 'group_id' => group_id_5, 'auto_offset_reset' => 'earliest', 'enable_auto_commit' => 'false'} }
+  let(:snappy_config) { { 'topics' => ['logstash_integration_topic_snappy'], 'codec' => 'plain', 'group_id' => group_id_1, 'auto_offset_reset' => 'earliest'} }
+  let(:lz4_config) { { 'topics' => ['logstash_integration_topic_lz4'], 'codec' => 'plain', 'group_id' => group_id_1, 'auto_offset_reset' => 'earliest'} }
+  let(:pattern_config) { { 'topics_pattern' => 'logstash_integration_topic_.*', 'group_id' => group_id_2, 'codec' => 'plain', 'auto_offset_reset' => 'earliest'} }
+  let(:decorate_config) { { 'topics' => ['logstash_integration_topic_plain'], 'codec' => 'plain', 'group_id' => group_id_3, 'auto_offset_reset' => 'earliest', 'decorate_events' => true} }
+  let(:manual_commit_config) { { 'topics' => ['logstash_integration_topic_plain'], 'codec' => 'plain', 'group_id' => group_id_5, 'auto_offset_reset' => 'earliest', 'enable_auto_commit' => 'false'} }
   let(:timeout_seconds) { 30 }
   let(:num_events) { 103 }
 
@@ -134,7 +134,7 @@ describe "inputs/kafka", :integration => true do
         wait(timeout_seconds).for {queue.length}.to eq(num_events)
         expect(queue.length).to eq(num_events)
         event = queue.shift
-        expect(event.get("[@metadata][kafka][topic]")).to eq("logstash_topic_plain")
+        expect(event.get("[@metadata][kafka][topic]")).to eq("logstash_integration_topic_plain")
         expect(event.get("[@metadata][kafka][consumer_group]")).to eq(group_id_3)
         expect(event.get("[@metadata][kafka][timestamp]")).to be >= start
       ensure
