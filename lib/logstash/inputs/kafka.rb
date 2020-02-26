@@ -159,6 +159,11 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   config :topics_pattern, :validate => :string
   # Time kafka consumer will wait to receive new messages from topics
   config :poll_timeout_ms, :validate => :number, :default => 100
+  # The rack id string to pass to the server when making requests. This is used 
+  # as a selector for a rack, region, or datacenter. Corresponds to the broker.rack parameter
+  # in the broker configuration. 
+  # Only has an effect in combination with brokers with Kafka 2.4+ with the broker.rack setting. Ignored otherwise. 
+  config :client_rack, :validate => :string
   # The truststore type.
   config :ssl_truststore_type, :validate => :string
   # The JKS truststore path to validate the Kafka broker's certificate.
@@ -313,6 +318,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
       props.put(kafka::SEND_BUFFER_CONFIG, send_buffer_bytes) unless send_buffer_bytes.nil?
       props.put(kafka::SESSION_TIMEOUT_MS_CONFIG, session_timeout_ms) unless session_timeout_ms.nil?
       props.put(kafka::VALUE_DESERIALIZER_CLASS_CONFIG, value_deserializer_class)
+      props.put(kafka::CLIENT_RACK_CONFIG, client_rack) unless client_rack.nil? 
 
       props.put("security.protocol", security_protocol) unless security_protocol.nil?
 
