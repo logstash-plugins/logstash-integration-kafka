@@ -1,3 +1,7 @@
+## 10.1.0
+  - updated kafka client to version 2.4.0
+  - added the `client_rack` parameter to enable support for follower fetching
+
 ## 10.0.0
   - Initial release of the Kafka Integration Plugin, which combines
     previously-separate Kafka plugins and shared dependencies into a single
