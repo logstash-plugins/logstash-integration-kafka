@@ -23,6 +23,6 @@ include::{include_path}/plugin_header.asciidoc[]
 
 The Kafka Integration Plugin provides integrated plugins for working with the https://kafka.apache.org/[Kafka] distributed streaming platform.
 
-This plugin uses Kafka Client 2.1.0. For broker compatibility, see the official https://cwiki.apache.org/confluence/display/KAFKA/Compatibility+Matrix[Kafka compatibility reference]. If the linked compatibility wiki is not up-to-date, please contact Kafka support/community to confirm compatibility.
+This plugin uses Kafka Client 2.3.0. For broker compatibility, see the official https://cwiki.apache.org/confluence/display/KAFKA/Compatibility+Matrix[Kafka compatibility reference]. If the linked compatibility wiki is not up-to-date, please contact Kafka support/community to confirm compatibility.
 
 :no_codec!:
