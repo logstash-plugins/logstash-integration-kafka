@@ -35,7 +35,7 @@ Gem::Specification.new do |s|
       "integration_plugins" => "logstash-input-kafka,logstash-output-kafka"
   }
 
-  s.add_development_dependency 'jar-dependencies', '~> 0.3.12'
+  s.add_development_dependency 'jar-dependencies', '>= 0.3.12'
 
   s.platform = RUBY_PLATFORM
 
