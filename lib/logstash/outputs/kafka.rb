@@ -3,8 +3,6 @@ require 'logstash/outputs/base'
 require 'java'
 require 'logstash-integration-kafka_jars.rb'
 
-java_import org.apache.kafka.clients.producer.ProducerRecord
-
 # Write events to a Kafka topic. This uses the Kafka Producer API to write messages to a topic on
 # the broker.
 #
@@ -49,6 +47,9 @@ java_import org.apache.kafka.clients.producer.ProducerRecord
 #
 # Kafka producer configuration: http://kafka.apache.org/documentation.html#newproducerconfigs
 class LogStash::Outputs::Kafka < LogStash::Outputs::Base
+
+  java_import org.apache.kafka.clients.producer.ProducerRecord
+
   declare_threadsafe!
 
   config_name 'kafka'
