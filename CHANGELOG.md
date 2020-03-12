@@ -1,5 +1,6 @@
 ## 10.0.1
   - Fix links in changelog pointing to stand-alone plugin changelogs.
+  - Refactor: scope java_import to plugin class
 
 ## 10.0.0
   - Initial release of the Kafka Integration Plugin, which combines
