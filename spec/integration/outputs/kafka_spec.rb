@@ -3,26 +3,26 @@
 require "logstash/devutils/rspec/spec_helper"
 require 'logstash/outputs/kafka'
 require 'json'
-require 'poseidon'
+require 'kafka'
 
 describe "outputs/kafka", :integration => true do
   let(:kafka_host) { 'localhost' }
   let(:kafka_port) { 9092 }
   let(:num_events) { 10 }
-  let(:base_config) { {'client_id' => 'kafkaoutputspec'} }
-  let(:event) { LogStash::Event.new({'message' => '183.60.215.50 - - [11/Sep/2014:22:00:00 +0000] "GET /scripts/netcat-webserver HTTP/1.1" 200 182 "-" "Mozilla/5.0 (compatible; EasouSpider; +http://www.easou.com/search/spider.html)"', '@timestamp' => LogStash::Timestamp.at(0) }) }
 
+  let(:base_config) { {'client_id' => 'kafkaoutputspec'} }
+  let(:event) do
+    LogStash::Event.new({ 'message' =>
+      '183.60.215.50 - - [11/Sep/2014:22:00:00 +0000] "GET /scripts/netcat-webserver HTTP/1.1" 200 182 "-" "Mozilla/5.0 (compatible; EasouSpider; +http://www.easou.com/search/spider.html)"',
+      '@timestamp' => LogStash::Timestamp.at(0)
+    })
+  end
+
+  let(:kafka_client) { Kafka.new ["#{kafka_host}:#{kafka_port}"] }
 
   context 'when outputting messages serialized as String' do
     let(:test_topic) { 'logstash_integration_topic1' }
     let(:num_events) { 3 }
-    let(:consumer) do
-      Poseidon::PartitionConsumer.new("my_test_consumer", kafka_host, kafka_port,
-                                      test_topic, 0, :earliest_offset)
-    end
-    subject do
-      consumer.fetch
-    end
 
     before :each do
       config = base_config.merge({"topic_id" => test_topic})
@@ -30,8 +30,10 @@ describe "outputs/kafka", :integration => true do
     end
 
     it 'should have data integrity' do
-      expect(subject.size).to eq(num_events)
-      subject.each do |m|
+      messages = fetch_messages(test_topic)
+
+      expect(messages.size).to eq(num_events)
+      messages.each do |m|
         expect(m.value).to eq(event.to_s)
       end
     end
@@ -41,13 +43,6 @@ describe "outputs/kafka", :integration => true do
   context 'when outputting messages serialized as Byte Array' do
     let(:test_topic) { 'topic1b' }
     let(:num_events) { 3 }
-    let(:consumer) do
-      Poseidon::PartitionConsumer.new("my_test_consumer", kafka_host, kafka_port,
-                                      test_topic, 0, :earliest_offset)
-    end
-    subject do
-      consumer.fetch
-    end
 
     before :each do
       config = base_config.merge(
@@ -60,8 +55,10 @@ describe "outputs/kafka", :integration => true do
     end
 
     it 'should have data integrity' do
-      expect(subject.size).to eq(num_events)
-      subject.each do |m|
+      messages = fetch_messages(test_topic)
+
+      expect(messages.size).to eq(num_events)
+      messages.each do |m|
         expect(m.value).to eq(event.to_s)
       end
     end
@@ -71,14 +68,6 @@ describe "outputs/kafka", :integration => true do
   context 'when setting message_key' do
     let(:num_events) { 10 }
     let(:test_topic) { 'logstash_integration_topic2' }
-    let!(:consumer0) do
-      Poseidon::PartitionConsumer.new("my_test_consumer", kafka_host, kafka_port,
-                                      test_topic, 0, :earliest_offset)
-    end
-    let!(:consumer1) do
-      Poseidon::PartitionConsumer.new("my_test_consumer", kafka_host, kafka_port,
-                                      test_topic, 1, :earliest_offset)
-    end
 
     before :each do
       config = base_config.merge({"topic_id" => test_topic, "message_key" => "static_key"})
@@ -86,19 +75,14 @@ describe "outputs/kafka", :integration => true do
     end
 
     it 'should send all events to one partition' do
-      expect(consumer0.fetch.size == num_events || consumer1.fetch.size == num_events).to be true
+      data0 = fetch_messages(test_topic, partition: 0)
+      data1 = fetch_messages(test_topic, partition: 1)
+      expect(data0.size == num_events || data1.size == num_events).to be true
     end
   end
 
   context 'when using gzip compression' do
     let(:test_topic) { 'logstash_integration_gzip_topic' }
-    let!(:consumer) do
-      Poseidon::PartitionConsumer.new("my_test_consumer", kafka_host, kafka_port,
-                                      test_topic, 0, :earliest_offset)
-    end
-    subject do
-      consumer.fetch
-    end
 
     before :each do
       config = base_config.merge({"topic_id" => test_topic, "compression_type" => "gzip"})
@@ -106,8 +90,10 @@ describe "outputs/kafka", :integration => true do
     end
 
     it 'should have data integrity' do
-      expect(subject.size).to eq(num_events)
-      subject.each do |m|
+      messages = fetch_messages(test_topic)
+
+      expect(messages.size).to eq(num_events)
+      messages.each do |m|
         expect(m.value).to eq(event.to_s)
       end
     end
@@ -115,13 +101,6 @@ describe "outputs/kafka", :integration => true do
 
   context 'when using snappy compression' do
     let(:test_topic) { 'logstash_integration_snappy_topic' }
-    let!(:consumer) do
-      Poseidon::PartitionConsumer.new("my_test_consumer", kafka_host, kafka_port,
-                                      test_topic, 0, :earliest_offset)
-    end
-    subject do
-      consumer.fetch
-    end
 
     before :each do
       config = base_config.merge({"topic_id" => test_topic, "compression_type" => "snappy"})
@@ -129,8 +108,10 @@ describe "outputs/kafka", :integration => true do
     end
 
     it 'should have data integrity' do
-      expect(subject.size).to eq(num_events)
-      subject.each do |m|
+      messages = fetch_messages(test_topic)
+
+      expect(messages.size).to eq(num_events)
+      messages.each do |m|
         expect(m.value).to eq(event.to_s)
       end
     end
@@ -143,24 +124,21 @@ describe "outputs/kafka", :integration => true do
       config = base_config.merge({"topic_id" => test_topic, "compression_type" => "lz4"})
       load_kafka_data(config)
     end
+
+    # NOTE: depends on extlz4 gem which is using a C-extension
+    # it 'should have data integrity' do
+    #   messages = fetch_messages(test_topic)
+    #
+    #   expect(messages.size).to eq(num_events)
+    #   messages.each do |m|
+    #     expect(m.value).to eq(event.to_s)
+    #   end
+    # end
   end
 
   context 'when using multi partition topic' do
     let(:num_events) { 10 }
     let(:test_topic) { 'logstash_integration_topic3' }
-    let!(:consumer0) do
-      Poseidon::PartitionConsumer.new("my_test_consumer", kafka_host, kafka_port,
-                                      test_topic, 0, :earliest_offset)
-    end
-    let!(:consumer1) do
-      Poseidon::PartitionConsumer.new("my_test_consumer", kafka_host, kafka_port,
-                                      test_topic, 1, :earliest_offset)
-    end
-
-    let!(:consumer2) do
-      Poseidon::PartitionConsumer.new("my_test_consumer", kafka_host, kafka_port,
-                                      test_topic, 2, :earliest_offset)
-    end
 
     before :each do
       config = base_config.merge({"topic_id" => test_topic})
@@ -168,19 +146,19 @@ describe "outputs/kafka", :integration => true do
     end
 
     it 'should distribute events to all partition' do
-      consumer0_records = consumer0.fetch
-      consumer1_records = consumer1.fetch
-      consumer2_records = consumer2.fetch
-
-      expect(consumer0_records.size).to be > 1
-      expect(consumer1_records.size).to be > 1
-      expect(consumer2_records.size).to be > 1
+      consumer0_records = fetch_messages(test_topic, partition: 0)
+      consumer1_records = fetch_messages(test_topic, partition: 1)
+      consumer2_records = fetch_messages(test_topic, partition: 2)
 
       all_records = consumer0_records + consumer1_records + consumer2_records
       expect(all_records.size).to eq(num_events)
       all_records.each do |m|
         expect(m.value).to eq(event.to_s)
       end
+
+      expect(consumer0_records.size).to be > 1
+      expect(consumer1_records.size).to be > 1
+      expect(consumer2_records.size).to be > 1
     end
   end
 
@@ -189,6 +167,10 @@ describe "outputs/kafka", :integration => true do
     kafka.register
     kafka.multi_receive(num_events.times.collect { event })
     kafka.close
+  end
+
+  def fetch_messages(topic, partition: 0, offset: :earliest)
+    kafka_client.fetch_messages(topic: topic, partition: partition, offset: offset)
   end
 
 end
