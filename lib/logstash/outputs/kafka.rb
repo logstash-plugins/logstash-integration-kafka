@@ -123,6 +123,8 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   config :retry_backoff_ms, :validate => :number, :default => 100
   # The size of the TCP send buffer to use when sending data.
   config :send_buffer_bytes, :validate => :number, :default => 131072
+  # The class name of the partitioner to use
+  config :partitioner_name, :validate => :string, :default => 'org.apache.kafka.clients.producer.RoundRobinPartitioner'
   # The truststore type.
   config :ssl_truststore_type, :validate => :string
   # The JKS truststore path to validate the Kafka broker's certificate.
@@ -331,6 +333,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
       props.put(kafka::RETRY_BACKOFF_MS_CONFIG, retry_backoff_ms.to_s) 
       props.put(kafka::SEND_BUFFER_CONFIG, send_buffer_bytes.to_s)
       props.put(kafka::VALUE_SERIALIZER_CLASS_CONFIG, value_serializer)
+      props.put(kafka::PARTITIONER_CLASS_NAME, partitioner_name)
 
       props.put("security.protocol", security_protocol) unless security_protocol.nil?
 
