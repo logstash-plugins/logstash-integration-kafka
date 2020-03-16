@@ -172,9 +172,9 @@ describe "outputs/kafka", :integration => true do
       consumer1_records = consumer1.fetch
       consumer2_records = consumer2.fetch
 
-      expect(consumer0_records.size > 1 &&
-        consumer1_records.size > 1 &&
-          consumer2_records.size > 1).to be true
+      expect(consumer0_records.size).to be > 1
+      expect(consumer1_records.size).to be > 1
+      expect(consumer2_records.size).to be > 1
 
       all_records = consumer0_records + consumer1_records + consumer2_records
       expect(all_records.size).to eq(num_events)
