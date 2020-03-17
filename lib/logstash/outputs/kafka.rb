@@ -101,6 +101,8 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   config :metadata_fetch_timeout_ms, :validate => :number, :default => 60000
   # the max time in milliseconds before a metadata refresh is forced.
   config :metadata_max_age_ms, :validate => :number, :default => 300000
+  # The class name of the partitioner to use.
+  config :partitioner, :validate => :string
   # The size of the TCP receive buffer to use when reading data
   config :receive_buffer_bytes, :validate => :number, :default => 32768
   # The amount of time to wait before attempting to reconnect to a given host when a connection fails.
@@ -123,8 +125,6 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   config :retry_backoff_ms, :validate => :number, :default => 100
   # The size of the TCP send buffer to use when sending data.
   config :send_buffer_bytes, :validate => :number, :default => 131072
-  # The class name of the partitioner to use
-  config :partitioner_name, :validate => :string, :default => 'org.apache.kafka.clients.producer.RoundRobinPartitioner'
   # The truststore type.
   config :ssl_truststore_type, :validate => :string
   # The JKS truststore path to validate the Kafka broker's certificate.
@@ -333,7 +333,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
       props.put(kafka::RETRY_BACKOFF_MS_CONFIG, retry_backoff_ms.to_s) 
       props.put(kafka::SEND_BUFFER_CONFIG, send_buffer_bytes.to_s)
       props.put(kafka::VALUE_SERIALIZER_CLASS_CONFIG, value_serializer)
-      props.put(kafka::PARTITIONER_CLASS_NAME, partitioner_name)
+      props.put(kafka::PARTITIONER_CLASS_CONFIG, partitioner_class_name) unless (partitioner || '').empty?
 
       props.put("security.protocol", security_protocol) unless security_protocol.nil?
 
@@ -353,6 +353,17 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
                    :kafka_error_message => e,
                    :cause => e.respond_to?(:getCause) ? e.getCause() : nil)
       raise e
+    end
+  end
+
+  def partitioner_class_name(partitioner = self.partitioner)
+    case partitioner
+    when 'round_robin'
+      'org.apache.kafka.clients.producer.RoundRobinPartitioner'
+    when 'uniform_sticky'
+      'org.apache.kafka.clients.producer.UniformStickyPartitioner'
+    else
+      partitioner
     end
   end
 
