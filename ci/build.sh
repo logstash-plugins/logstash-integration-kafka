@@ -9,7 +9,7 @@ set -e
 
 ./ci/setup.sh
 
-export KAFKA_VERSION=2.4.1
+export KAFKA_VERSION=2.3.0
 ./kafka_test_setup.sh
 
 export LOGSTASH_SOURCE=1
