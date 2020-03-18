@@ -269,7 +269,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
           result = future.get()
         rescue => e
           # TODO(sissel): Add metric to count failures, possibly by exception type.
-          logger.warn("KafkaProducer.send() failed: #{e}", :exception => e)
+          logger.warn("producer send failed", :exception => e.class, :message => e.message)
           failures << batch[i]
         end
       end
@@ -303,10 +303,9 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
     end
     prepare(record)
   rescue LogStash::ShutdownSignal
-    @logger.debug('Kafka producer got shutdown signal')
+    @logger.debug('producer received shutdown signal')
   rescue => e
-    @logger.warn('kafka producer threw exception, restarting',
-                 :exception => e)
+    @logger.warn('producer threw exception, restarting', :exception => e.class, :message => e.message)
   end
 
   def create_producer
