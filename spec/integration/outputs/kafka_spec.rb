@@ -192,7 +192,7 @@ describe "outputs/kafka", :integration => true do
     end
 
     def fetch_messages_from_all_partitions
-      3.times.sum { |i| fetch_messages(test_topic, partition: i).size }
+      3.times.map { |i| fetch_messages(test_topic, partition: i).size }.sum
     end
   end
 
