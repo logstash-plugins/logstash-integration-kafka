@@ -204,8 +204,6 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
     end
   end
 
-  # def register
-
   def prepare(record)
     # This output is threadsafe, so we need to keep a batch per thread.
     @thread_batch_map[Thread.current].add(record)
@@ -326,6 +324,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
       props.put(kafka::LINGER_MS_CONFIG, linger_ms.to_s)
       props.put(kafka::MAX_REQUEST_SIZE_CONFIG, max_request_size.to_s)
       props.put(kafka::METADATA_MAX_AGE_CONFIG, metadata_max_age_ms) unless metadata_max_age_ms.nil?
+      props.put(kafka::PARTITIONER_CLASS_CONFIG, partitioner_class_name) unless partitioner.nil?
       props.put(kafka::RECEIVE_BUFFER_CONFIG, receive_buffer_bytes.to_s) unless receive_buffer_bytes.nil?
       props.put(kafka::RECONNECT_BACKOFF_MS_CONFIG, reconnect_backoff_ms) unless reconnect_backoff_ms.nil?
       props.put(kafka::REQUEST_TIMEOUT_MS_CONFIG, request_timeout_ms) unless request_timeout_ms.nil?
@@ -333,7 +332,6 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
       props.put(kafka::RETRY_BACKOFF_MS_CONFIG, retry_backoff_ms.to_s) 
       props.put(kafka::SEND_BUFFER_CONFIG, send_buffer_bytes.to_s)
       props.put(kafka::VALUE_SERIALIZER_CLASS_CONFIG, value_serializer)
-      props.put(kafka::PARTITIONER_CLASS_CONFIG, partitioner_class_name) unless (partitioner || '').empty?
 
       props.put("security.protocol", security_protocol) unless security_protocol.nil?
 
@@ -362,8 +360,13 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
       'org.apache.kafka.clients.producer.RoundRobinPartitioner'
     when 'uniform_sticky'
       'org.apache.kafka.clients.producer.UniformStickyPartitioner'
+    when 'default'
+      'org.apache.kafka.clients.producer.internals.DefaultPartitioner'
     else
-      partitioner
+      unless partitioner.index('.')
+        raise LogStash::ConfigurationError, "unsupported partitioner: #{partitioner.inspect}"
+      end
+      partitioner # assume a fully qualified class-name
     end
   end
 

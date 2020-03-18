@@ -171,6 +171,31 @@ describe "outputs/kafka", :integration => true do
     end
   end
 
+  context 'setting partitioner' do
+    let(:test_topic) { 'logstash_integration_partitioner_topic' }
+    let(:partitioner) { nil }
+
+    before :each do
+      @messages_offset = fetch_messages_from_all_partitions
+
+      config = base_config.merge("topic_id" => test_topic, 'partitioner' => partitioner)
+      load_kafka_data(config)
+    end
+
+    [ 'default', 'round_robin', 'uniform_sticky' ].each do |partitioner|
+      describe partitioner do
+        let(:partitioner) { partitioner }
+        it 'loads data' do
+          expect(fetch_messages_from_all_partitions - @messages_offset).to eql num_events
+        end
+      end
+    end
+
+    def fetch_messages_from_all_partitions
+      3.times.sum { |i| fetch_messages(test_topic, partition: i).size }
+    end
+  end
+
   def load_kafka_data(config)
     kafka = LogStash::Outputs::Kafka.new(config)
     kafka.register
