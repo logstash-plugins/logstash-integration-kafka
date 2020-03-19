@@ -122,6 +122,7 @@ https://kafka.apache.org/documentation for more details.
 | <<plugins-{type}s-{plugin}-topics>> |<<array,array>>|No
 | <<plugins-{type}s-{plugin}-topics_pattern>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-value_deserializer_class>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-client_rack>> |<<string,string>>|No
 |=======================================================================
 
 Also see <<plugins-{type}s-{plugin}-common-options>> for a list of options supported by all
@@ -578,6 +579,16 @@ The topics configuration will be ignored when using this configuration.
 Java Class used to deserialize the record's value
 
 
+[id="plugins-{type}s-{plugin}-client_rack"]
+===== `client_rack` 
+
+  * Value type is <<string,string>>
+  * There is no default value for this setting.
+
+A rack identifier for the Kafka consumer. 
+Used to select the physically closest rack for the consumer to read from.
+The setting corresponds with the broker config 'broker.rack'.
+Only available for Kafka 2.4.0 and higher; see https://cwiki.apache.org/confluence/display/KAFKA/KIP-392%3A+Allow+consumers+to+fetch+from+closest+replica[KIP-392].
 
 [id="plugins-{type}s-{plugin}-common-options"]
 include::{include_path}/{type}.asciidoc[]

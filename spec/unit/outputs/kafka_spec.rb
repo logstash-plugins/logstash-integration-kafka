@@ -97,7 +97,7 @@ describe "outputs/kafka" do
       let(:sendcount) { failcount + 1 }
 
       it "should retry until successful" do
-        count = 0;
+        count = 0
 
         expect_any_instance_of(org.apache.kafka.clients.producer.KafkaProducer).to receive(:send)
               .exactly(sendcount).times
