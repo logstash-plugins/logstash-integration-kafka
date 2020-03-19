@@ -264,6 +264,9 @@ Available options for choosing a partitioning strategy are as follows:
 * `round_robin` distributes writes to all partitions equally, regardless of `message_key`
 * `uniform_sticky` sticks to a partition for the duration of a batch than randomly picks a new one
 
+The configuration also allows setting a partitioner class name
+e.g. `org.apache.kafka.clients.producer.UniformStickyPartitioner`.
+
 [id="plugins-{type}s-{plugin}-receive_buffer_bytes"]
 ===== `receive_buffer_bytes` 
 
