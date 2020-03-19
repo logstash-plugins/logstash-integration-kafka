@@ -101,7 +101,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   config :metadata_fetch_timeout_ms, :validate => :number, :default => 60000
   # the max time in milliseconds before a metadata refresh is forced.
   config :metadata_max_age_ms, :validate => :number, :default => 300000
-  # The class name of the partitioner to use.
+  # Partitioner to use - can be `default`, `uniform_sticky`, `round_robin` or a fully qualified class name of a custom partitioner.
   config :partitioner, :validate => :string
   # The size of the TCP receive buffer to use when reading data
   config :receive_buffer_bytes, :validate => :number, :default => 32768
