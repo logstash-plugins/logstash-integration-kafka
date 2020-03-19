@@ -186,7 +186,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
         raise ConfigurationError, "A negative retry count (#{@retries}) is not valid. Must be a value >= 0"
       end
 
-      @logger.warn("Kafka output is configured with finite retry. This instructs Logstash to LOSE DATA after a set number of send attempts fails. If you do not want to lose data if Kafka is down, then you must remove the retry setting.", :retries => @retries)
+      logger.warn("Kafka output is configured with finite retry. This instructs Logstash to LOSE DATA after a set number of send attempts fails. If you do not want to lose data if Kafka is down, then you must remove the retry setting.", :retries => @retries)
     end
 
 
@@ -303,9 +303,9 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
     end
     prepare(record)
   rescue LogStash::ShutdownSignal
-    @logger.debug('producer received shutdown signal')
+    logger.debug('producer received shutdown signal')
   rescue => e
-    @logger.warn('producer threw exception, restarting', :exception => e.class, :message => e.message)
+    logger.warn('producer threw exception, restarting', :exception => e.class, :message => e.message)
   end
 
   def create_producer
