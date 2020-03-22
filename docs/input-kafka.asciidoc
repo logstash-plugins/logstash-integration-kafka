@@ -374,10 +374,11 @@ we haven't seen any partition leadership changes to proactively discover any new
   * Value type is <<string,string>>
   * There is no default value for this setting.
 
-The class name of the partition assignment strategy that the client uses to
-distribute partition ownership amongst consumer instances. Maps to
-the Kafka `partition.assignment.strategy` setting, which defaults to
-`org.apache.kafka.clients.consumer.RangeAssignor`.
+The name of the partition assignment strategy that the client uses to distribute
+partition ownership amongst consumer instances, supported options are `range`,
+`round_robin`, `sticky` and `cooperative_sticky`. These map to Kafka's corresponding
+https://kafka.apache.org/24/javadoc/org/apache/kafka/clients/consumer/ConsumerPartitionAssignor.html[`ConsumerPartitionAssignor`]
+implementations.
 
 [id="plugins-{type}s-{plugin}-poll_timeout_ms"]
 ===== `poll_timeout_ms` 
