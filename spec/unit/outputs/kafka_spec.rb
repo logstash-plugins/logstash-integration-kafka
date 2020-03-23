@@ -189,4 +189,25 @@ describe "outputs/kafka" do
       end
     end
   end
+
+  context 'when ssl endpoint identification disabled' do
+
+    let(:config) do
+      simple_kafka_config.merge('ssl_endpoint_identification_algorithm' => '', 'security_protocol' => 'SSL')
+    end
+
+    subject { LogStash::Outputs::Kafka.new(config) }
+
+    it 'does not configure truststore' do
+      expect(org.apache.kafka.clients.producer.KafkaProducer).
+          to receive(:new).with(hash_excluding('ssl.truststore.location' => anything))
+      subject.register
+    end
+
+    it 'sets empty ssl.endpoint.identification.algorithm' do
+      expect(org.apache.kafka.clients.producer.KafkaProducer).
+          to receive(:new).with(hash_including('ssl.endpoint.identification.algorithm' => ''))
+      subject.register
+    end
+  end
 end
