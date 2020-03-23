@@ -34,6 +34,18 @@ describe LogStash::Inputs::Kafka do
   subject { LogStash::Inputs::Kafka.new(config) }
 
   it "should register" do
-    expect {subject.register}.to_not raise_error
+    expect { subject.register }.to_not raise_error
+  end
+
+  context 'with client_rack' do
+    let(:config) { super.merge('client_rack' => 'EU-R1') }
+
+    it "sets broker rack parameter" do
+      expect(org.apache.kafka.clients.consumer.KafkaConsumer).
+          to receive(:new).with(hash_including('client.rack' => 'EU-R1')).
+              and_return kafka_client = double('kafka-consumer')
+
+      expect( subject.send(:create_consumer, 'sample_client-0') ).to be kafka_client
+    end
   end
 end

@@ -3,8 +3,6 @@ require 'logstash/outputs/base'
 require 'java'
 require 'logstash-integration-kafka_jars.rb'
 
-java_import org.apache.kafka.clients.producer.ProducerRecord
-
 # Write events to a Kafka topic. This uses the Kafka Producer API to write messages to a topic on
 # the broker.
 #
@@ -49,6 +47,9 @@ java_import org.apache.kafka.clients.producer.ProducerRecord
 #
 # Kafka producer configuration: http://kafka.apache.org/documentation.html#newproducerconfigs
 class LogStash::Outputs::Kafka < LogStash::Outputs::Base
+
+  java_import org.apache.kafka.clients.producer.ProducerRecord
+
   declare_threadsafe!
 
   config_name 'kafka'
@@ -100,6 +101,8 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   config :metadata_fetch_timeout_ms, :validate => :number, :default => 60000
   # the max time in milliseconds before a metadata refresh is forced.
   config :metadata_max_age_ms, :validate => :number, :default => 300000
+  # Partitioner to use - can be `default`, `uniform_sticky`, `round_robin` or a fully qualified class name of a custom partitioner.
+  config :partitioner, :validate => :string
   # The size of the TCP receive buffer to use when reading data
   config :receive_buffer_bytes, :validate => :number, :default => 32768
   # The amount of time to wait before attempting to reconnect to a given host when a connection fails.
@@ -183,7 +186,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
         raise ConfigurationError, "A negative retry count (#{@retries}) is not valid. Must be a value >= 0"
       end
 
-      @logger.warn("Kafka output is configured with finite retry. This instructs Logstash to LOSE DATA after a set number of send attempts fails. If you do not want to lose data if Kafka is down, then you must remove the retry setting.", :retries => @retries)
+      logger.warn("Kafka output is configured with finite retry. This instructs Logstash to LOSE DATA after a set number of send attempts fails. If you do not want to lose data if Kafka is down, then you must remove the retry setting.", :retries => @retries)
     end
 
 
@@ -200,8 +203,6 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
       raise ConfigurationError, "'value_serializer' only supports org.apache.kafka.common.serialization.ByteArraySerializer and org.apache.kafka.common.serialization.StringSerializer" 
     end
   end
-
-  # def register
 
   def prepare(record)
     # This output is threadsafe, so we need to keep a batch per thread.
@@ -268,7 +269,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
           result = future.get()
         rescue => e
           # TODO(sissel): Add metric to count failures, possibly by exception type.
-          logger.warn("KafkaProducer.send() failed: #{e}", :exception => e)
+          logger.warn("producer send failed", :exception => e.class, :message => e.message)
           failures << batch[i]
         end
       end
@@ -302,10 +303,9 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
     end
     prepare(record)
   rescue LogStash::ShutdownSignal
-    @logger.debug('Kafka producer got shutdown signal')
+    logger.debug('producer received shutdown signal')
   rescue => e
-    @logger.warn('kafka producer threw exception, restarting',
-                 :exception => e)
+    logger.warn('producer threw exception, restarting', :exception => e.class, :message => e.message)
   end
 
   def create_producer
@@ -323,6 +323,10 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
       props.put(kafka::LINGER_MS_CONFIG, linger_ms.to_s)
       props.put(kafka::MAX_REQUEST_SIZE_CONFIG, max_request_size.to_s)
       props.put(kafka::METADATA_MAX_AGE_CONFIG, metadata_max_age_ms) unless metadata_max_age_ms.nil?
+      unless partitioner.nil?
+        props.put(kafka::PARTITIONER_CLASS_CONFIG, partitioner_class = partitioner_class_name)
+        logger.debug('producer configured using partitioner', :partitioner_class => partitioner_class)
+      end
       props.put(kafka::RECEIVE_BUFFER_CONFIG, receive_buffer_bytes.to_s) unless receive_buffer_bytes.nil?
       props.put(kafka::RECONNECT_BACKOFF_MS_CONFIG, reconnect_backoff_ms) unless reconnect_backoff_ms.nil?
       props.put(kafka::REQUEST_TIMEOUT_MS_CONFIG, request_timeout_ms) unless request_timeout_ms.nil?
@@ -349,6 +353,22 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
                    :kafka_error_message => e,
                    :cause => e.respond_to?(:getCause) ? e.getCause() : nil)
       raise e
+    end
+  end
+
+  def partitioner_class_name(partitioner = self.partitioner)
+    case partitioner
+    when 'round_robin'
+      'org.apache.kafka.clients.producer.RoundRobinPartitioner'
+    when 'uniform_sticky'
+      'org.apache.kafka.clients.producer.UniformStickyPartitioner'
+    when 'default'
+      'org.apache.kafka.clients.producer.internals.DefaultPartitioner'
+    else
+      unless partitioner.index('.')
+        raise LogStash::ConfigurationError, "unsupported partitioner: #{partitioner.inspect}"
+      end
+      partitioner # assume a fully qualified class-name
     end
   end
 
