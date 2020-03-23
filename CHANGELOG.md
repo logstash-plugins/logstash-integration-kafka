@@ -3,6 +3,7 @@
   - added the input `client_rack` parameter to enable support for follower fetching
   - added the output `partitioner` parameter for tuning partitioning strategy
   - Refactor: normalized error logging a bit - make sure exception type is logged
+  - Fix: properly handle empty ssl_endpoint_identification_algorithm [#8](https://github.com/logstash-plugins/logstash-integration-kafka/pull/8)
   - Refactor: partition_assignment_strategy to accept enumerated values ([#25](https://github.com/logstash-plugins/logstash-integration-kafka/pull/25))
 
 ## 10.0.1
