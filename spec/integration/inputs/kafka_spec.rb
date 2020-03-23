@@ -115,7 +115,7 @@ describe "inputs/kafka", :integration => true do
       describe partition_assignment_strategy do
         let(:partition_assignment_strategy) { partition_assignment_strategy }
         it 'consumes data' do
-          consume_messages(consumer_config, timeout: nil, event_count: 0)
+          consume_messages(consumer_config, timeout: false, event_count: 0)
         end
       end
     end
@@ -128,7 +128,7 @@ describe "inputs/kafka", :integration => true do
     t = Thread.new { kafka_input.run(queue) }
     begin
       t.run
-      wait(timeout).for { queue.length }.to eq(event_count) unless timeout.nil?
+      wait(timeout).for { queue.length }.to eq(event_count) unless timeout.eql?(false)
       block_given? ? yield(queue, kafka_input) : queue
     ensure
       t.kill
