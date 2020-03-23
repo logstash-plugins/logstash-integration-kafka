@@ -391,15 +391,15 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   end
 
   def set_sasl_config(props)
-    java.lang.System.setProperty("java.security.auth.login.config",jaas_path) unless jaas_path.nil?
-    java.lang.System.setProperty("java.security.krb5.conf",kerberos_config) unless kerberos_config.nil?
+    java.lang.System.setProperty("java.security.auth.login.config", jaas_path) unless jaas_path.nil?
+    java.lang.System.setProperty("java.security.krb5.conf", kerberos_config) unless kerberos_config.nil?
 
     props.put("sasl.mechanism",sasl_mechanism)
     if sasl_mechanism == "GSSAPI" && sasl_kerberos_service_name.nil?
       raise LogStash::ConfigurationError, "sasl_kerberos_service_name must be specified when SASL mechanism is GSSAPI"
     end
 
-    props.put("sasl.kerberos.service.name",sasl_kerberos_service_name) unless sasl_kerberos_service_name.nil?
+    props.put("sasl.kerberos.service.name", sasl_kerberos_service_name) unless sasl_kerberos_service_name.nil?
     props.put("sasl.jaas.config", sasl_jaas_config) unless sasl_jaas_config.nil?
   end
 
