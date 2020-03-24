@@ -136,8 +136,4 @@ describe "inputs/kafka", :integration => true do
     end
   end
 
-  def thread_it(kafka_input, queue)
-    Thread.new { kafka_input.run(queue) }
-  end
-
 end
