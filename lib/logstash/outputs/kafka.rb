@@ -324,8 +324,8 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
       props.put(kafka::MAX_REQUEST_SIZE_CONFIG, max_request_size.to_s)
       props.put(kafka::METADATA_MAX_AGE_CONFIG, metadata_max_age_ms) unless metadata_max_age_ms.nil?
       unless partitioner.nil?
-        props.put(kafka::PARTITIONER_CLASS_CONFIG, partitioner_class = partitioner_class_name)
-        logger.debug('producer configured using partitioner', :partitioner_class => partitioner_class)
+        props.put(kafka::PARTITIONER_CLASS_CONFIG, partitioner = partitioner_class)
+        logger.debug('producer configured using partitioner', :partitioner_class => partitioner)
       end
       props.put(kafka::RECEIVE_BUFFER_CONFIG, receive_buffer_bytes.to_s) unless receive_buffer_bytes.nil?
       props.put(kafka::RECONNECT_BACKOFF_MS_CONFIG, reconnect_backoff_ms) unless reconnect_backoff_ms.nil?
@@ -356,7 +356,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
     end
   end
 
-  def partitioner_class_name
+  def partitioner_class
     case partitioner
     when 'round_robin'
       'org.apache.kafka.clients.producer.RoundRobinPartitioner'
