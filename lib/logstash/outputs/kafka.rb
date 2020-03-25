@@ -356,7 +356,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
     end
   end
 
-  def partitioner_class_name(partitioner = self.partitioner)
+  def partitioner_class_name
     case partitioner
     when 'round_robin'
       'org.apache.kafka.clients.producer.RoundRobinPartitioner'

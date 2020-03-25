@@ -342,7 +342,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
     end
   end
 
-  def partition_assignment_strategy_class(partition_assignment_strategy = self.partition_assignment_strategy)
+  def partition_assignment_strategy_class
     case partition_assignment_strategy
     when 'range'
       'org.apache.kafka.clients.consumer.RangeAssignor'
