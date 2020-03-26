@@ -128,8 +128,10 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # The period of time in milliseconds after which we force a refresh of metadata even if
   # we haven't seen any partition leadership changes to proactively discover any new brokers or partitions
   config :metadata_max_age_ms, :validate => :string
-  # The class name of the partition assignment strategy that the client will use to distribute
-  # partition ownership amongst consumer instances
+  # The name of the partition assignment strategy that the client uses to distribute
+  # partition ownership amongst consumer instances, supported options are `range`,
+  # `round_robin`, `sticky` and `cooperative_sticky`
+  # (for backwards compatibility setting the class name directly is supported).
   config :partition_assignment_strategy, :validate => :string
   # The size of the TCP receive buffer (SO_RCVBUF) to use when reading data.
   config :receive_buffer_bytes, :validate => :string
@@ -310,7 +312,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
       props.put(kafka::MAX_POLL_RECORDS_CONFIG, max_poll_records) unless max_poll_records.nil?
       props.put(kafka::MAX_POLL_INTERVAL_MS_CONFIG, max_poll_interval_ms) unless max_poll_interval_ms.nil?
       props.put(kafka::METADATA_MAX_AGE_CONFIG, metadata_max_age_ms) unless metadata_max_age_ms.nil?
-      props.put(kafka::PARTITION_ASSIGNMENT_STRATEGY_CONFIG, partition_assignment_strategy) unless partition_assignment_strategy.nil?
+      props.put(kafka::PARTITION_ASSIGNMENT_STRATEGY_CONFIG, partition_assignment_strategy_class) unless partition_assignment_strategy.nil?
       props.put(kafka::RECEIVE_BUFFER_CONFIG, receive_buffer_bytes) unless receive_buffer_bytes.nil?
       props.put(kafka::RECONNECT_BACKOFF_MS_CONFIG, reconnect_backoff_ms) unless reconnect_backoff_ms.nil?
       props.put(kafka::REQUEST_TIMEOUT_MS_CONFIG, request_timeout_ms) unless request_timeout_ms.nil?
@@ -337,6 +339,24 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
                    :kafka_error_message => e,
                    :cause => e.respond_to?(:getCause) ? e.getCause() : nil)
       raise e
+    end
+  end
+
+  def partition_assignment_strategy_class
+    case partition_assignment_strategy
+    when 'range'
+      'org.apache.kafka.clients.consumer.RangeAssignor'
+    when 'round_robin'
+      'org.apache.kafka.clients.consumer.RoundRobinAssignor'
+    when 'sticky'
+      'org.apache.kafka.clients.consumer.StickyAssignor'
+    when 'cooperative_sticky'
+      'org.apache.kafka.clients.consumer.CooperativeStickyAssignor'
+    else
+      unless partition_assignment_strategy.index('.')
+        raise LogStash::ConfigurationError, "unsupported partition_assignment_strategy: #{partition_assignment_strategy.inspect}"
+      end
+      partition_assignment_strategy # assume a fully qualified class-name
     end
   end
 
