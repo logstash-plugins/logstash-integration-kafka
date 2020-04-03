@@ -80,6 +80,7 @@ NOTE: Some of these options map to a Kafka option. See the https://kafka.apache.
 | <<plugins-{type}s-{plugin}-auto_offset_reset>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-bootstrap_servers>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-check_crcs>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-client_dns_lookup>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-client_id>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-connections_max_idle_ms>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-consumer_threads>> |<<number,number>>|No
@@ -171,6 +172,17 @@ case a server is down).
 Automatically check the CRC32 of the records consumed. This ensures no on-the-wire or on-disk
 corruption to the messages occurred. This check adds some overhead, so it may be
 disabled in cases seeking extreme performance.
+
+[id="plugins-{type}s-{plugin}-client_dns_lookup"]
+===== `client_dns_lookup` 
+
+  * Value type is <<string,string>>
+  * Default value is `"default"`
+
+How DNS lookups should be done. If set to `use_all_dns_ips`, when the lookup returns multiple 
+IP addresses for a hostname, they will all be attempted to connect to before failing the 
+connection. If the value is `resolve_canonical_bootstrap_servers_only` each entry will be 
+resolved and expanded into a list of canonical names.
 
 [id="plugins-{type}s-{plugin}-client_id"]
 ===== `client_id` 
