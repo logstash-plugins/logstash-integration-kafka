@@ -75,7 +75,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # IP addresses for a hostname, they will all be attempted to connect to before failing the 
   # connection. If the value is `resolve_canonical_bootstrap_servers_only` each entry will be 
   # resolved and expanded into a list of canonical names.
-  config :client_dns_lookup, :validate => :string, :default => "default"
+  config :client_dns_lookup, :validate => ["default", "use_all_dns_ips", "resolve_canonical_bootstrap_servers_only"], :default => "default"
   # The id string to pass to the server when making requests. The purpose of this
   # is to be able to track the source of requests beyond just ip/port by allowing
   # a logical application name to be included.

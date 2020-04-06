@@ -1,3 +1,6 @@
+## 10.2.0
+  - added the input and output `client_dns_lookup` parameter to allow control of how DNS requests are made
+
 ## 10.1.0
   - updated kafka client (and its dependencies) to version 2.4.1 ([#16](https://github.com/logstash-plugins/logstash-integration-kafka/pull/16))
   - added the input `client_rack` parameter to enable support for follower fetching
