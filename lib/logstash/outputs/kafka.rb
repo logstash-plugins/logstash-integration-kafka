@@ -256,13 +256,14 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
           # send() can throw an exception even before the future is created.
           @producer.send(record)
         rescue org.apache.kafka.common.errors.RetriableException => e
-          logger.info("KafkaProducer#send() failed, will retry", :exception => e)
+          logger.info("producer send failed, will retry sending", :exception => e.class, :message => e.message)
           failures << record
           nil
         rescue org.apache.kafka.common.KafkaException => e
           # This error is not retriable, drop event
           # TODO: add DLQ support
-          logger.warn("KafkaProducer#send() failed, dropping record", :exception => e, :record_value => record.value)
+          logger.warn("producer send failed, dropping record",:exception => e.class, :message => e.message,
+                      :record_value => record.value)
           nil
         end
       end
@@ -275,13 +276,14 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
           rescue java.util.concurrent.ExecutionException => e
             # TODO(sissel): Add metric to count failures, possibly by exception type.
             if e.get_cause.is_a? org.apache.kafka.common.errors.RetriableException
-              logger.info("KafkaProducer#send() future failed, will retry", :exception => e.get_cause)
+              logger.info("producer send failed, will retry sending", :exception => e.cause.class,
+                          :message => e.cause.message)
               failures << batch[i]
             elsif e.get_cause.is_a? org.apache.kafka.common.KafkaException
               # This error is not retriable, drop event
               # TODO: add DLQ support
-              logger.warn("KafkaProducer#send() future failed, dropping record", :exception => e.get_cause,
-                          :record_value => batch[i].value)
+              logger.warn("producer send failed, dropping record", :exception => e.cause.class,
+                          :message => e.cause.message, :record_value => batch[i].value)
             end
           end
         end
