@@ -391,7 +391,12 @@ implementations.
   * Value type is <<number,number>>
   * Default value is `100` milliseconds.
 
-Time kafka consumer will wait to receive new messages from topics
+Time Kafka consumer will wait to receive new messages from topics.
+
+After subscribing to a set of topics, the Kafka consumer automatically joins the group when polling.
+The plugin poll-ing in a loop ensures consumer liveness.
+Underneath the covers, Kafka client sends periodic heartbeats to the server.
+The timeout specified the time to block waiting for input on each poll.
 
 [id="plugins-{type}s-{plugin}-receive_buffer_bytes"]
 ===== `receive_buffer_bytes` 
