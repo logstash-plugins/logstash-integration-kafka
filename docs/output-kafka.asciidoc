@@ -119,7 +119,7 @@ acks=all, This means the leader will wait for the full set of in-sync replicas t
 ===== `batch_size` 
 
   * Value type is <<number,number>>
-  * Default value is `16384`
+  * Default value is `16384`.
 
 The producer will attempt to batch records together into fewer requests whenever multiple
 records are being sent to the same partition. This helps performance on both the client
@@ -141,7 +141,7 @@ subset of brokers.
 ===== `buffer_memory` 
 
   * Value type is <<number,number>>
-  * Default value is `33554432`
+  * Default value is `33554432` (32MB).
 
 The total bytes of memory the producer can use to buffer records waiting to be sent to the server.
 
@@ -221,7 +221,7 @@ to allow other records to be sent so that the sends can be batched together.
 ===== `max_request_size` 
 
   * Value type is <<number,number>>
-  * Default value is `1048576`
+  * Default value is `1048576` (1MB).
 
 The maximum size of a request
 
@@ -231,23 +231,23 @@ The maximum size of a request
   * Value type is <<string,string>>
   * There is no default value for this setting.
 
-The key for the message
+The key for the message.
 
 [id="plugins-{type}s-{plugin}-metadata_fetch_timeout_ms"]
 ===== `metadata_fetch_timeout_ms` 
 
   * Value type is <<number,number>>
-  * Default value is `60000`
+  * Default value is `60000` milliseconds (60 seconds).
 
-the timeout setting for initial metadata request to fetch topic metadata.
+The timeout setting for initial metadata request to fetch topic metadata.
 
 [id="plugins-{type}s-{plugin}-metadata_max_age_ms"]
 ===== `metadata_max_age_ms` 
 
   * Value type is <<number,number>>
-  * Default value is `300000`
+  * Default value is `300000` milliseconds (5 minutes).
 
-the max time in milliseconds before a metadata refresh is forced.
+The max time in milliseconds before a metadata refresh is forced.
 
 [id="plugins-{type}s-{plugin}-partitioner"]
 ===== `partitioner`
@@ -268,7 +268,7 @@ Available options for choosing a partitioning strategy are as follows:
 ===== `receive_buffer_bytes` 
 
   * Value type is <<number,number>>
-  * Default value is `32768`
+  * Default value is `65536` (64KB).
 
 The size of the TCP receive buffer to use when reading data
 
@@ -276,7 +276,7 @@ The size of the TCP receive buffer to use when reading data
 ===== `reconnect_backoff_ms` 
 
   * Value type is <<number,number>>
-  * Default value is `10`
+  * Default value is `50`.
 
 The amount of time to wait before attempting to reconnect to a given host when a connection fails.
 
@@ -311,7 +311,7 @@ A value less than zero is a configuration error.
 ===== `retry_backoff_ms` 
 
   * Value type is <<number,number>>
-  * Default value is `100`
+  * Default value is `100` milliseconds.
 
 The amount of time to wait before attempting to retry a failed produce request to a given topic partition.
 
@@ -364,7 +364,7 @@ Security protocol to use, which can be either of PLAINTEXT,SSL,SASL_PLAINTEXT,SA
 ===== `send_buffer_bytes` 
 
   * Value type is <<number,number>>
-  * Default value is `131072`
+  * Default value is `131072` (128KB).
 
 The size of the TCP send buffer to use when sending data.
 
