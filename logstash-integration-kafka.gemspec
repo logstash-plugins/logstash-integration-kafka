@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name            = 'logstash-integration-kafka'
-  s.version         = '10.1.0'
+  s.version         = '10.1.1'
   s.licenses        = ['Apache-2.0']
   s.summary         = "Integration with Kafka - input and output plugins"
   s.description     = "This gem is a Logstash plugin required to be installed on top of the Logstash core pipeline "+
