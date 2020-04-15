@@ -67,7 +67,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   # The producer will attempt to batch records together into fewer requests whenever multiple
   # records are being sent to the same partition. This helps performance on both the client
   # and the server. This configuration controls the default batch size in bytes.
-  config :batch_size, :validate => :number, :default => 16384
+  config :batch_size, :validate => :number, :default => 16_384 # Kafka default
   # This is for bootstrapping and the producer will only use it for getting metadata (topics,
   # partitions and replicas). The socket connections for sending the actual data will be
   # established based on the broker information returned in the metadata. The format is
@@ -111,7 +111,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   # for the response of a request. If the response is not received before the timeout
   # elapses the client will resend the request if necessary or fail the request if
   # retries are exhausted.
-  config :request_timeout_ms, :validate => :string
+  config :request_timeout_ms, :validate => :number, :default => 40_000 # (40s) Kafka default
   # The default retry behavior is to retry until successful. To prevent data loss,
   # the use of this setting is discouraged.
   #
