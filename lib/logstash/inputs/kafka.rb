@@ -70,7 +70,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # Automatically check the CRC32 of the records consumed. This ensures no on-the-wire or on-disk
   # corruption to the messages occurred. This check adds some overhead, so it may be
   # disabled in cases seeking extreme performance.
-  config :check_crcs, :validate => :string
+  config :check_crcs, :validate => :boolean, :default => true
   # The id string to pass to the server when making requests. The purpose of this
   # is to be able to track the source of requests beyond just ip/port by allowing
   # a logical application name to be included.
@@ -83,7 +83,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # If true, periodically commit to Kafka the offsets of messages already returned by the consumer. 
   # This committed offset will be used when the process fails as the position from
   # which the consumption will begin.
-  config :enable_auto_commit, :validate => :string, :default => "true"
+  config :enable_auto_commit, :validate => :boolean, :default => true
   # Whether records from internal topics (such as offsets) should be exposed to the consumer.
   # If set to true the only way to receive records from an internal topic is subscribing to it.
   config :exclude_internal_topics, :validate => :string
@@ -276,9 +276,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
             end
           end
           # Manual offset commit
-          if @enable_auto_commit == "false"
-            consumer.commitSync
-          end
+          consumer.commitSync if @enable_auto_commit.eql?(false)
         end
       rescue org.apache.kafka.common.errors.WakeupException => e
         raise e if !stop?
@@ -297,10 +295,10 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
       props.put(kafka::AUTO_COMMIT_INTERVAL_MS_CONFIG, auto_commit_interval_ms.to_s) unless auto_commit_interval_ms.nil?
       props.put(kafka::AUTO_OFFSET_RESET_CONFIG, auto_offset_reset) unless auto_offset_reset.nil?
       props.put(kafka::BOOTSTRAP_SERVERS_CONFIG, bootstrap_servers)
-      props.put(kafka::CHECK_CRCS_CONFIG, check_crcs) unless check_crcs.nil?
+      props.put(kafka::CHECK_CRCS_CONFIG, check_crcs.to_s) unless check_crcs.nil?
       props.put(kafka::CLIENT_ID_CONFIG, client_id)
       props.put(kafka::CONNECTIONS_MAX_IDLE_MS_CONFIG, connections_max_idle_ms.to_s) unless connections_max_idle_ms.nil?
-      props.put(kafka::ENABLE_AUTO_COMMIT_CONFIG, enable_auto_commit)
+      props.put(kafka::ENABLE_AUTO_COMMIT_CONFIG, enable_auto_commit.to_s)
       props.put(kafka::EXCLUDE_INTERNAL_TOPICS_CONFIG, exclude_internal_topics) unless exclude_internal_topics.nil?
       props.put(kafka::FETCH_MAX_BYTES_CONFIG, fetch_max_bytes.to_s) unless fetch_max_bytes.nil?
       props.put(kafka::FETCH_MAX_WAIT_MS_CONFIG, fetch_max_wait_ms.to_s) unless fetch_max_wait_ms.nil?
