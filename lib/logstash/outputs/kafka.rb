@@ -104,7 +104,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   # Partitioner to use - can be `default`, `uniform_sticky`, `round_robin` or a fully qualified class name of a custom partitioner.
   config :partitioner, :validate => :string
   # The size of the TCP receive buffer to use when reading data
-  config :receive_buffer_bytes, :validate => :number, :default => 65_536 # (64KB) Kafka default
+  config :receive_buffer_bytes, :validate => :number, :default => 32_768 # (32KB) Kafka default
   # The amount of time to wait before attempting to reconnect to a given host when a connection fails.
   config :reconnect_backoff_ms, :validate => :number, :default => 50 # Kafka default
   # The configuration controls the maximum amount of time the client will wait

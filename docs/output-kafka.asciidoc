@@ -268,7 +268,7 @@ Available options for choosing a partitioning strategy are as follows:
 ===== `receive_buffer_bytes` 
 
   * Value type is <<number,number>>
-  * Default value is `65536` (64KB).
+  * Default value is `32768` (32KB).
 
 The size of the TCP receive buffer to use when reading data
 
