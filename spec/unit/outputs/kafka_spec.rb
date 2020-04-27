@@ -63,7 +63,8 @@ describe "outputs/kafka" do
     let(:exception_classes) { [
       org.apache.kafka.common.errors.TimeoutException,
       org.apache.kafka.common.errors.DisconnectException,
-      org.apache.kafka.common.errors.CoordinatorNotAvailableException
+      org.apache.kafka.common.errors.CoordinatorNotAvailableException,
+      org.apache.kafka.common.errors.InterruptException,
     ] }
 
     before do

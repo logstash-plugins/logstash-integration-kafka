@@ -255,7 +255,8 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
         begin
           # send() can throw an exception even before the future is created.
           @producer.send(record)
-        rescue org.apache.kafka.common.errors.RetriableException => e
+        rescue org.apache.kafka.common.errors.InterruptException,
+               org.apache.kafka.common.errors.RetriableException => e
           logger.info("producer send failed, will retry sending", :exception => e.class, :message => e.message)
           failures << record
           nil
@@ -275,7 +276,8 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
             future.get
           rescue java.util.concurrent.ExecutionException => e
             # TODO(sissel): Add metric to count failures, possibly by exception type.
-            if e.get_cause.is_a? org.apache.kafka.common.errors.RetriableException
+            if e.get_cause.is_a? org.apache.kafka.common.errors.RetriableException or
+               e.get_cause.is_a? org.apache.kafka.common.errors.InterruptException
               logger.info("producer send failed, will retry sending", :exception => e.cause.class,
                           :message => e.cause.message)
               failures << batch[i]
