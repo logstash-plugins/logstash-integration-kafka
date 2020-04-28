@@ -47,14 +47,18 @@ If you want the full content of your events to be sent as json, you should set t
       }
     }
     
-For more information see http://kafka.apache.org/documentation.html#theproducer
+For more information see https://kafka.apache.org/24/documentation.html#theproducer
 
-Kafka producer configuration: http://kafka.apache.org/documentation.html#newproducerconfigs
+Kafka producer configuration: https://kafka.apache.org/24/documentation.html#producerconfigs
 
 [id="plugins-{type}s-{plugin}-options"]
 ==== Kafka Output Configuration Options
 
 This plugin supports the following configuration options plus the <<plugins-{type}s-{plugin}-common-options>> described later.
+
+NOTE: Some of these options map to a Kafka option. Defaults usually reflect the Kafka default setting.
+Please be aware that these might change as the plugin follows Kafka producer recommended settings.
+See the https://kafka.apache.org/24/documentation for more details.
 
 [cols="<,<,<",options="header",]
 |=======================================================================

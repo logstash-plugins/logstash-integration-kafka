@@ -46,9 +46,9 @@ the same `group_id`.
 Ideally you should have as many threads as the number of partitions for a perfect balance --
 more threads than partitions means that some threads will be idle
 
-For more information see http://kafka.apache.org/documentation.html#theconsumer
+For more information see https://kafka.apache.org/24/documentation.html#theconsumer
 
-Kafka consumer configuration: http://kafka.apache.org/documentation.html#consumerconfigs
+Kafka consumer configuration: https://kafka.apache.org/24/documentation.html#consumerconfigs
 
 ==== Metadata fields
 
@@ -71,7 +71,9 @@ inserted into your original event, you'll have to use the `mutate` filter to man
 
 This plugin supports these configuration options plus the <<plugins-{type}s-{plugin}-common-options>> described later.
 
-NOTE: Some of these options map to a Kafka option. See the https://kafka.apache.org/documentation for more details.
+NOTE: Some of these options map to a Kafka option. Defaults usually reflect the Kafka default setting.
+Please be aware that these might change as the plugin follows Kafka consumer recommended settings.
+See the https://kafka.apache.org/24/documentation for more details.
 
 [cols="<,<,<",options="header",]
 |=======================================================================
