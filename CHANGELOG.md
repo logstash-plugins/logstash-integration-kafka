@@ -1,4 +1,4 @@
-## 10.1.1
+## 10.2.0
   - Changed: config defaults to be aligned with Kafka client defaults [#30](https://github.com/logstash-plugins/logstash-integration-kafka/pull/30)
 
 ## 10.1.0

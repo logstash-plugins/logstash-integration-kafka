@@ -71,8 +71,8 @@ inserted into your original event, you'll have to use the `mutate` filter to man
 
 This plugin supports these configuration options plus the <<plugins-{type}s-{plugin}-common-options>> described later.
 
-NOTE: Some of these options map to a Kafka option. Defaults usually reflect the Kafka default setting.
-Please be aware that these might change as the plugin follows Kafka consumer recommended settings.
+NOTE: Some of these options map to a Kafka option. Defaults usually reflect the Kafka default setting,
+and might change if Kafka's consumer defaults change.
 See the https://kafka.apache.org/24/documentation for more details.
 
 [cols="<,<,<",options="header",]

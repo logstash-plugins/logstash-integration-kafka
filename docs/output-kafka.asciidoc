@@ -56,8 +56,8 @@ Kafka producer configuration: https://kafka.apache.org/24/documentation.html#pro
 
 This plugin supports the following configuration options plus the <<plugins-{type}s-{plugin}-common-options>> described later.
 
-NOTE: Some of these options map to a Kafka option. Defaults usually reflect the Kafka default setting.
-Please be aware that these might change as the plugin follows Kafka producer recommended settings.
+NOTE: Some of these options map to a Kafka option. Defaults usually reflect the Kafka default setting,
+and might change if Kafka's producer defaults change.
 See the https://kafka.apache.org/24/documentation for more details.
 
 [cols="<,<,<",options="header",]
