@@ -14,7 +14,7 @@ rm -rf build
 mkdir build
 
 echo "Downloading Kafka version $KAFKA_VERSION"
-curl -s -o build/kafka.tgz "http://ftp.wayne.edu/apache/kafka/$KAFKA_VERSION/kafka_2.11-$KAFKA_VERSION.tgz"
+curl -s -o build/kafka.tgz "https://mirrors.ocf.berkeley.edu/apache/kafka/$KAFKA_VERSION/kafka_2.11-$KAFKA_VERSION.tgz"
 mkdir build/kafka && tar xzf build/kafka.tgz -C build/kafka --strip-components 1
 
 echo "Starting ZooKeeper"
