@@ -48,4 +48,54 @@ describe LogStash::Inputs::Kafka do
       expect( subject.send(:create_consumer, 'sample_client-0') ).to be kafka_client
     end
   end
+
+  context 'string integer config' do
+    let(:config) { super.merge('session_timeout_ms' => '25000', 'max_poll_interval_ms' => '345000') }
+
+    it "sets integer values" do
+      expect(org.apache.kafka.clients.consumer.KafkaConsumer).
+          to receive(:new).with(hash_including('session.timeout.ms' => '25000', 'max.poll.interval.ms' => '345000')).
+              and_return kafka_client = double('kafka-consumer')
+
+      expect( subject.send(:create_consumer, 'sample_client-1') ).to be kafka_client
+    end
+  end
+
+  context 'integer config' do
+    let(:config) { super.merge('session_timeout_ms' => 25200, 'max_poll_interval_ms' => 123_000) }
+
+    it "sets integer values" do
+      expect(org.apache.kafka.clients.consumer.KafkaConsumer).
+          to receive(:new).with(hash_including('session.timeout.ms' => '25200', 'max.poll.interval.ms' => '123000')).
+              and_return kafka_client = double('kafka-consumer')
+
+      expect( subject.send(:create_consumer, 'sample_client-2') ).to be kafka_client
+    end
+  end
+
+  context 'string boolean config' do
+    let(:config) { super.merge('enable_auto_commit' => 'false', 'check_crcs' => 'true') }
+
+    it "sets parameters" do
+      expect(org.apache.kafka.clients.consumer.KafkaConsumer).
+          to receive(:new).with(hash_including('enable.auto.commit' => 'false', 'check.crcs' => 'true')).
+              and_return kafka_client = double('kafka-consumer')
+
+      expect( subject.send(:create_consumer, 'sample_client-3') ).to be kafka_client
+      expect( subject.enable_auto_commit ).to be false
+    end
+  end
+
+  context 'boolean config' do
+    let(:config) { super.merge('enable_auto_commit' => true, 'check_crcs' => false) }
+
+    it "sets parameters" do
+      expect(org.apache.kafka.clients.consumer.KafkaConsumer).
+          to receive(:new).with(hash_including('enable.auto.commit' => 'true', 'check.crcs' => 'false')).
+              and_return kafka_client = double('kafka-consumer')
+
+      expect( subject.send(:create_consumer, 'sample_client-4') ).to be kafka_client
+      expect( subject.enable_auto_commit ).to be true
+    end
+  end
 end
