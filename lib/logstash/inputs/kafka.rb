@@ -71,6 +71,11 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # corruption to the messages occurred. This check adds some overhead, so it may be
   # disabled in cases seeking extreme performance.
   config :check_crcs, :validate => :boolean, :default => true
+  # How DNS lookups should be done. If set to `use_all_dns_ips`, when the lookup returns multiple 
+  # IP addresses for a hostname, they will all be attempted to connect to before failing the 
+  # connection. If the value is `resolve_canonical_bootstrap_servers_only` each entry will be 
+  # resolved and expanded into a list of canonical names.
+  config :client_dns_lookup, :validate => ["default", "use_all_dns_ips", "resolve_canonical_bootstrap_servers_only"], :default => "default"
   # The id string to pass to the server when making requests. The purpose of this
   # is to be able to track the source of requests beyond just ip/port by allowing
   # a logical application name to be included.
@@ -296,6 +301,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
       props.put(kafka::AUTO_OFFSET_RESET_CONFIG, auto_offset_reset) unless auto_offset_reset.nil?
       props.put(kafka::BOOTSTRAP_SERVERS_CONFIG, bootstrap_servers)
       props.put(kafka::CHECK_CRCS_CONFIG, check_crcs.to_s) unless check_crcs.nil?
+      props.put(kafka::CLIENT_DNS_LOOKUP_CONFIG, client_dns_lookup)
       props.put(kafka::CLIENT_ID_CONFIG, client_id)
       props.put(kafka::CONNECTIONS_MAX_IDLE_MS_CONFIG, connections_max_idle_ms.to_s) unless connections_max_idle_ms.nil?
       props.put(kafka::ENABLE_AUTO_COMMIT_CONFIG, enable_auto_commit.to_s)
