@@ -1,5 +1,8 @@
+## 10.3.1
+  - [DOC] Fixed formatting issues and made minor content edits [#43](https://github.com/logstash-plugins/logstash-integration-kafka/pull/43)
+
 ## 10.3.0
-  - added the input and output `client_dns_lookup` parameter to allow control of how DNS requests are made
+  - added the input and output `client_dns_lookup` parameter to allow control of how DNS requests are made [#28](https://github.com/logstash-plugins/logstash-integration-kafka/pull/28)
 
 ## 10.2.0
   - Changed: config defaults to be aligned with Kafka client defaults [#30](https://github.com/logstash-plugins/logstash-integration-kafka/pull/30)
