@@ -1,3 +1,6 @@
+## 10.4.0
+  - added `isolation_level` to override `ConsumerConfig.ISOLATION_LEVEL_CONFIG` to allow for `read_committed`
+
 ## 10.3.0
   - added the input and output `client_dns_lookup` parameter to allow control of how DNS requests are made
 
