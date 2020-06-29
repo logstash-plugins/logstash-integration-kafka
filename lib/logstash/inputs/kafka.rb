@@ -114,6 +114,11 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # `session.timeout.ms`, but typically should be set no higher than 1/3 of that value.
   # It can be adjusted even lower to control the expected time for normal rebalances.
   config :heartbeat_interval_ms, :validate => :number, :default => 3000 # Kafka default
+  # Controls how to read messages written transactionally. If set to read_committed, consumer.poll()
+  # will only return transactional messages which have been committed. If set to read_uncommitted'
+  # (the default), consumer.poll() will return all messages, even transactional messages which have
+  # been aborted. Non-transactional messages will be returned unconditionally in either mode.
+  config :isolation_level, :validate => :string, :default => "read_uncommitted" # Kafka default
   # Java Class used to deserialize the record's key
   config :key_deserializer_class, :validate => :string, :default => "org.apache.kafka.common.serialization.StringDeserializer"
   # The maximum delay between invocations of poll() when using consumer group management. This places 
@@ -311,6 +316,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
       props.put(kafka::FETCH_MIN_BYTES_CONFIG, fetch_min_bytes.to_s) unless fetch_min_bytes.nil?
       props.put(kafka::GROUP_ID_CONFIG, group_id)
       props.put(kafka::HEARTBEAT_INTERVAL_MS_CONFIG, heartbeat_interval_ms.to_s) unless heartbeat_interval_ms.nil?
+      props.put(kafka::ISOLATION_LEVEL_CONFIG, isolation_level)
       props.put(kafka::KEY_DESERIALIZER_CLASS_CONFIG, key_deserializer_class)
       props.put(kafka::MAX_PARTITION_FETCH_BYTES_CONFIG, max_partition_fetch_bytes.to_s) unless max_partition_fetch_bytes.nil?
       props.put(kafka::MAX_POLL_RECORDS_CONFIG, max_poll_records.to_s) unless max_poll_records.nil?
