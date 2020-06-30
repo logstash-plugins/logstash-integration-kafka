@@ -118,7 +118,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # will only return transactional messages which have been committed. If set to read_uncommitted'
   # (the default), consumer.poll() will return all messages, even transactional messages which have
   # been aborted. Non-transactional messages will be returned unconditionally in either mode.
-  config :isolation_level, :validate => :string, :default => "read_uncommitted" # Kafka default
+  config :isolation_level, :validate => ["read_uncommitted", "read_committed"], :default => "read_uncommitted" # Kafka default
   # Java Class used to deserialize the record's key
   config :key_deserializer_class, :validate => :string, :default => "org.apache.kafka.common.serialization.StringDeserializer"
   # The maximum delay between invocations of poll() when using consumer group management. This places 
