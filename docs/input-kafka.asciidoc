@@ -322,8 +322,8 @@ It can be adjusted even lower to control the expected time for normal rebalances
   * Value type is <<string,string>>
   * Default value is `"read_uncommitted"`
 
-Controls how to read messages written transactionally. If set to `read_committed`, `consumer.poll()` will only return
-transactional messages which have been committed. If set to `read_uncommitted` (the default), `consumer.poll()` will
+Controls how to read messages written transactionally. If set to `read_committed`, polling messages will only return
+transactional messages which have been committed. If set to `read_uncommitted` (the default), polling messages will
 return all messages, even transactional messages which have been aborted. Non-transactional messages will be returned
 unconditionally in either mode.
 
