@@ -1,3 +1,6 @@
+## 10.4.0
+ - added the input `isolation_level` to allow fine control of whether to return transactional messages [#44](https://github.com/logstash-plugins/logstash-integration-kafka/pull/44)
+
 ## 10.3.0
   - added the input and output `client_dns_lookup` parameter to allow control of how DNS requests are made
 
