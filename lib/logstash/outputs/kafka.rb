@@ -236,7 +236,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
     remaining = @retries
 
     while batch.any?
-      if !remaining.nil?
+      unless remaining.nil?
         if remaining < 0
           # TODO(sissel): Offer to DLQ? Then again, if it's a transient fault,
           # DLQing would make things worse (you dlq data that would be successful
@@ -255,27 +255,39 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
         begin
           # send() can throw an exception even before the future is created.
           @producer.send(record)
-        rescue org.apache.kafka.common.errors.TimeoutException => e
+        rescue org.apache.kafka.common.errors.InterruptException,
+               org.apache.kafka.common.errors.RetriableException => e
+          logger.info("producer send failed, will retry sending", :exception => e.class, :message => e.message)
           failures << record
           nil
-        rescue org.apache.kafka.common.errors.InterruptException => e
-          failures << record
-          nil
-        rescue org.apache.kafka.common.errors.SerializationException => e
-          # TODO(sissel): Retrying will fail because the data itself has a problem serializing.
-          # TODO(sissel): Let's add DLQ here.
-          failures << record
+        rescue org.apache.kafka.common.KafkaException => e
+          # This error is not retriable, drop event
+          # TODO: add DLQ support
+          logger.warn("producer send failed, dropping record",:exception => e.class, :message => e.message,
+                      :record_value => record.value)
           nil
         end
-      end.compact
+      end
 
       futures.each_with_index do |future, i|
-        begin
-          result = future.get()
-        rescue => e
-          # TODO(sissel): Add metric to count failures, possibly by exception type.
-          logger.warn("producer send failed", :exception => e.class, :message => e.message)
-          failures << batch[i]
+        # We cannot skip nils using `futures.compact` because then our index `i` will not align with `batch`
+        unless future.nil?
+          begin
+            future.get
+          rescue java.util.concurrent.ExecutionException => e
+            # TODO(sissel): Add metric to count failures, possibly by exception type.
+            if e.get_cause.is_a? org.apache.kafka.common.errors.RetriableException or
+               e.get_cause.is_a? org.apache.kafka.common.errors.InterruptException
+              logger.info("producer send failed, will retry sending", :exception => e.cause.class,
+                          :message => e.cause.message)
+              failures << batch[i]
+            elsif e.get_cause.is_a? org.apache.kafka.common.KafkaException
+              # This error is not retriable, drop event
+              # TODO: add DLQ support
+              logger.warn("producer send failed, dropping record", :exception => e.cause.class,
+                          :message => e.cause.message, :record_value => batch[i].value)
+            end
+          end
         end
       end
 
