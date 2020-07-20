@@ -1,3 +1,6 @@
+## 10.5.1
+  - DOC:Replaced plugin_header file with plugin_header-integration file. [#46](https://github.com/logstash-plugins/logstash-integration-kafka/pull/46)
+
 ## 10.5.0
   - Changed: retry sending messages only for retriable exceptions [#27](https://github.com/logstash-plugins/logstash-integration-kafka/pull/29)
 
