@@ -1,3 +1,4 @@
+:integration: kafka
 :plugin: kafka
 :type: output
 :default_codec: plain
