@@ -4,6 +4,10 @@ require 'stud/interval'
 require 'java'
 require 'logstash-integration-kafka_jars.rb'
 require 'logstash/plugin_mixins/kafka_support'
+require "faraday"
+require "json"
+require "logstash/json"
+require_relative '../plugin_mixins/common'
 
 # This input will read events from a Kafka topic. It uses the 0.10 version of
 # the consumer API provided by Kafka to read messages from the broker.
@@ -50,7 +54,10 @@ require 'logstash/plugin_mixins/kafka_support'
 #
 class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
+  DEFAULT_DESERIALIZER_CLASS = "org.apache.kafka.common.serialization.StringDeserializer"
+
   include LogStash::PluginMixins::KafkaSupport
+  include ::LogStash::PluginMixins::KafkaAvroSchemaRegistry
 
   config_name 'kafka'
 
@@ -167,7 +174,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # and a rebalance operation is triggered for the group identified by `group_id`
   config :session_timeout_ms, :validate => :number, :default => 10_000 # (10s) Kafka default
   # Java Class used to deserialize the record's value
-  config :value_deserializer_class, :validate => :string, :default => "org.apache.kafka.common.serialization.StringDeserializer"
+  config :value_deserializer_class, :validate => :string, :default => DEFAULT_DESERIALIZER_CLASS
   # A list of topics to subscribe to, defaults to ["logstash"].
   config :topics, :validate => :array, :default => ["logstash"]
   # A topic regex pattern to subscribe to. 
@@ -236,11 +243,11 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   #   `timestamp`: The timestamp of this message
   config :decorate_events, :validate => :boolean, :default => false
 
-
   public
   def register
     @runner_threads = []
-  end # def register
+    check_schema_registry_parameters
+  end
 
   public
   def run(logstash_queue)
@@ -278,6 +285,13 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
           for record in records do
             codec_instance.decode(record.value.to_s) do |event|
               decorate(event)
+              if schema_registry_url
+                json = LogStash::Json.load(record.value.to_s)
+                json.each do |k, v|
+                  event.set(k, v)
+                end
+                event.remove("message")
+              end
               if @decorate_events
                 event.set("[@metadata][kafka][topic]", record.topic)
                 event.set("[@metadata][kafka][consumer_group]", @group_id)
@@ -337,7 +351,18 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
       props.put(kafka::CLIENT_RACK_CONFIG, client_rack) unless client_rack.nil? 
 
       props.put("security.protocol", security_protocol) unless security_protocol.nil?
-
+      if schema_registry_url
+        props.put(kafka::VALUE_DESERIALIZER_CLASS_CONFIG, Java::io.confluent.kafka.serializers.KafkaAvroDeserializer.java_class)
+        serdes_config = Java::io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig
+        props.put(serdes_config::SCHEMA_REGISTRY_URL_CONFIG, schema_registry_url.to_s)
+        if schema_registry_proxy && !schema_registry_proxy.empty?
+          props.put(serdes_config::PROXY_HOST, @schema_registry_proxy_host)
+          props.put(serdes_config::PROXY_PORT, @schema_registry_proxy_port)
+        end
+        if schema_registry_key && !schema_registry_key.empty?
+          props.put(serdes_config::USER_INFO_CONFIG, schema_registry_key + ":" + schema_registry_secret.value)
+        end
+      end
       if security_protocol == "SSL"
         set_trustore_keystore_config(props)
       elsif security_protocol == "SASL_PLAINTEXT"

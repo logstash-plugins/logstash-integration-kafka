@@ -124,6 +124,10 @@ See the https://kafka.apache.org/{kafka_client_doc}/documentation for more detai
 | <<plugins-{type}s-{plugin}-sasl_jaas_config>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-sasl_kerberos_service_name>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-sasl_mechanism>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-schema_registry_key>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-schema_registry_proxy>> |<<uri,uri>>|No
+| <<plugins-{type}s-{plugin}-schema_registry_secret>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-schema_registry_url>> |<<uri,uri>>|No
 | <<plugins-{type}s-{plugin}-security_protocol>> |<<string,string>>, one of `["PLAINTEXT", "SSL", "SASL_PLAINTEXT", "SASL_SSL"]`|No
 | <<plugins-{type}s-{plugin}-send_buffer_bytes>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-session_timeout_ms>> |<<number,number>>|No
@@ -528,6 +532,44 @@ http://kafka.apache.org/documentation.html#security_sasl[SASL mechanism] used fo
 This may be any mechanism for which a security provider is available.
 GSSAPI is the default mechanism.
 
+[id="plugins-{type}s-{plugin}-schema_registry_key"]
+===== `schema_registry_key`
+
+* Value type is <<string,string>>
+* There is no default value for this setting.
+
+Set the username for basic authorization to access remote Schema Registry.
+
+[id="plugins-{type}s-{plugin}-schema_registry_proxy"]
+===== `schema_registry_proxy`
+
+* Value type is <<uri,uri>>
+* There is no default value for this setting.
+
+Set the address of a forward HTTP proxy. An empty string is treated as if proxy was not set.
+
+[id="plugins-{type}s-{plugin}-schema_registry_secret"]
+===== `schema_registry_secret`
+
+* Value type is <<string,string>>
+* There is no default value for this setting.
+
+Set the password for basic authorization to access remote Schema Registry.
+
+[id="plugins-{type}s-{plugin}-schema_registry_url"]
+===== `schema_registry_url`
+
+* Value type is <<uri,uri>>
+
+The URI that points to an instance of the
+https://docs.confluent.io/current/schema-registry/index.html[Schema Registry] service,
+used to manage Avro schemas. Be sure that the Avro schemas for deserializing the data from
+the specified topics have been uploaded to the Schema Registry service.
+The schemas must follow a naming convention with the pattern <topic name>-value.
+
+Use either the Schema Registry config option or the
+<<plugins-{type}s-{plugin}-value_deserializer_class>> config option, but not both.
+
 [id="plugins-{type}s-{plugin}-security_protocol"]
 ===== `security_protocol` 
 
@@ -641,7 +683,10 @@ The topics configuration will be ignored when using this configuration.
   * Value type is <<string,string>>
   * Default value is `"org.apache.kafka.common.serialization.StringDeserializer"`
 
-Java Class used to deserialize the record's value
+Java Class used to deserialize the record's value.
+A custom value deserializer can be used only if you are not using a Schema Registry.
+Use either the value_deserializer_class config option or the
+<<plugins-{type}s-{plugin}-schema_registry_url>> config option, but not both.
 
 [id="plugins-{type}s-{plugin}-common-options"]
 include::{include_path}/{type}.asciidoc[]
