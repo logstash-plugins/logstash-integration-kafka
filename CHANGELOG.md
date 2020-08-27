@@ -1,3 +1,7 @@
+## 10.6.0
+  - Added functionality to Kafka input to use Avro deserializer in retrieving data from Kafka. The schema is retrieved
+    from an instance of Confluent's Schema Registry service [#51](https://github.com/logstash-plugins/logstash-integration-kafka/pull/51)
+     
 ## 10.5.3
   - Fix: set (optional) truststore when endpoint id check disabled [#60](https://github.com/logstash-plugins/logstash-integration-kafka/pull/60).
     Since **10.1.0** disabling server host-name verification (`ssl_endpoint_identification_algorithm => ""`) did not allow 

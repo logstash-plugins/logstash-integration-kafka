@@ -37,6 +37,22 @@ describe LogStash::Inputs::Kafka do
     expect { subject.register }.to_not raise_error
   end
 
+  context "register parameter verification" do
+    let(:config) do
+      { 'schema_registry_url' => 'http://localhost:8081', 'topics' => ['logstash'], 'consumer_threads' => 4 }
+    end
+
+    it "schema_registry_url conflict with value_deserializer_class should fail" do
+      config['value_deserializer_class'] = 'my.fantasy.Deserializer'
+      expect { subject.register }.to raise_error LogStash::ConfigurationError, /Option schema_registry_url prohibit the customization of value_deserializer_class/
+    end
+
+    it "schema_registry_url conflict with topics_pattern should fail" do
+      config['topics_pattern'] = 'topic_.*'
+      expect { subject.register }.to raise_error LogStash::ConfigurationError, /Option schema_registry_url prohibit the customization of topics_pattern/
+    end
+  end
+
   context 'with client_rack' do
     let(:config) { super.merge('client_rack' => 'EU-R1') }
 
