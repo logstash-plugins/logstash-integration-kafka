@@ -12,12 +12,16 @@ describe "inputs/kafka", :integration => true do
   let(:group_id_4) {rand(36**8).to_s(36)}
   let(:group_id_5) {rand(36**8).to_s(36)}
   let(:group_id_6) {rand(36**8).to_s(36)}
+  let(:group_id_7) {rand(36**8).to_s(36)}
   let(:plain_config) do
     { 'topics' => ['logstash_integration_topic_plain'], 'codec' => 'plain', 'group_id' => group_id_1,
       'auto_offset_reset' => 'earliest' }
   end
   let(:multi_consumer_config) do
     plain_config.merge({"group_id" => group_id_4, "client_id" => "spec", "consumer_threads" => 3})
+  end
+  let(:not_append_thread_num_config) do
+    plain_config.merge({"group_id" => group_id_7, "client_id" => "spec", "consumer_threads" => 3, "append_thread_num_to_client_id" => false})
   end
   let(:snappy_config) do
     { 'topics' => ['logstash_integration_topic_snappy'], 'codec' => 'plain', 'group_id' => group_id_1,
@@ -64,6 +68,14 @@ describe "inputs/kafka", :integration => true do
         expect(queue.length).to eq(num_events)
         kafka_input.kafka_consumers.each_with_index do |consumer, i|
           expect(consumer.metrics.keys.first.tags["client-id"]).to eq("spec-#{i}")
+        end
+      end
+    end
+    it "should consumer all messages with same client_id" do
+      consume_messages(not_append_thread_num_config, timeout: timeout_seconds, event_count: num_events) do |queue, kafka_input|
+        expect(queue.length).to eq(num_events)
+        kafka_input.kafka_consumers.each_with_index do |consumer, i|
+          expect(consumer.metrics.keys.first.tags["client-id"]).to eq("spec")
         end
       end
     end
