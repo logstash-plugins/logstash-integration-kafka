@@ -314,7 +314,11 @@ before answering the request.
 
 The identifier of the group this consumer belongs to. Consumer group is a single logical subscriber
 that happens to be made up of multiple processors. Messages in a topic will be distributed to all
-Logstash instances with the same `group_id`
+Logstash instances with the same `group_id`.
+
+NOTE: In cases when multiple inputs are being used in a single pipeline, reading from different topics,
+it's essential to set a different `group_id => ...` for each input. Setting a unique `client_id => ...`
+is also recommended.
 
 [id="plugins-{type}s-{plugin}-heartbeat_interval_ms"]
 ===== `heartbeat_interval_ms` 

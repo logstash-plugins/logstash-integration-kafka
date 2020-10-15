@@ -1,3 +1,6 @@
+## 10.5.2
+  - Docs: explain group_id in case of multiple inputs [#59](https://github.com/logstash-plugins/logstash-integration-kafka/pull/59)
+
 ## 10.5.1
   - [DOC]Replaced plugin_header file with plugin_header-integration file. [#46](https://github.com/logstash-plugins/logstash-integration-kafka/pull/46)
   - [DOC]Update kafka client version across kafka integration docs [#47](https://github.com/logstash-plugins/logstash-integration-kafka/pull/47)
