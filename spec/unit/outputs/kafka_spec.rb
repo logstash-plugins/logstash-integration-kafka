@@ -50,9 +50,10 @@ describe "outputs/kafka" do
       kafka.multi_receive([event])
     end
 
-    it 'should raise config error when truststore location is not set and ssl is enabled' do
+    it 'should not raise config error when truststore location is not set and ssl is enabled' do
       kafka = LogStash::Outputs::Kafka.new(simple_kafka_config.merge("security_protocol" => "SSL"))
-      expect { kafka.register }.to raise_error(LogStash::ConfigurationError, /ssl_truststore_location must be set when SSL is enabled/)
+      expect(org.apache.kafka.clients.producer.KafkaProducer).to receive(:new)
+      expect { kafka.register }.to_not raise_error
     end
   end
 
@@ -225,21 +226,31 @@ describe "outputs/kafka" do
   context 'when ssl endpoint identification disabled' do
 
     let(:config) do
-      simple_kafka_config.merge('ssl_endpoint_identification_algorithm' => '', 'security_protocol' => 'SSL')
+      simple_kafka_config.merge(
+          'security_protocol' => 'SSL',
+          'ssl_endpoint_identification_algorithm' => '',
+          'ssl_truststore_location' => truststore_path,
+      )
+    end
+
+    let(:truststore_path) do
+      File.join(File.dirname(__FILE__), '../../fixtures/trust-store_stub.jks')
     end
 
     subject { LogStash::Outputs::Kafka.new(config) }
-
-    it 'does not configure truststore' do
-      expect(org.apache.kafka.clients.producer.KafkaProducer).
-          to receive(:new).with(hash_excluding('ssl.truststore.location' => anything))
-      subject.register
-    end
 
     it 'sets empty ssl.endpoint.identification.algorithm' do
       expect(org.apache.kafka.clients.producer.KafkaProducer).
           to receive(:new).with(hash_including('ssl.endpoint.identification.algorithm' => ''))
       subject.register
     end
+
+    it 'configures truststore' do
+      expect(org.apache.kafka.clients.producer.KafkaProducer).
+          to receive(:new).with(hash_including('ssl.truststore.location' => truststore_path))
+      subject.register
+    end
+
   end
+
 end
