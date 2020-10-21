@@ -1,3 +1,8 @@
+## 10.5.3
+  - Fix: set (optional) truststore when endpoint id check disabled [#60](https://github.com/logstash-plugins/logstash-integration-kafka/pull/60).
+    Since **10.1.0** disabling server host-name verification (`ssl_endpoint_identification_algorithm => ""`) did not allow 
+    the (output) plugin to set `ssl_truststore_location => "..."`.
+
 ## 10.5.2
   - Docs: explain group_id in case of multiple inputs [#59](https://github.com/logstash-plugins/logstash-integration-kafka/pull/59)
 
