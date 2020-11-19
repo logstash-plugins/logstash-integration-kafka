@@ -243,6 +243,11 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   #   `timestamp`: The timestamp of this message
   config :decorate_events, :validate => :boolean, :default => false
 
+  # Option to add Kafka message headers to the event metadata.
+  # This will add a field named `kafka.headers` to the logstash event containing a key/value pair for each of the headers contained in the message
+  config :decorate_headers, :validate => :boolean, :default => false
+
+
   public
   def register
     @runner_threads = []
@@ -299,6 +304,11 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
                 event.set("[@metadata][kafka][offset]", record.offset)
                 event.set("[@metadata][kafka][key]", record.key)
                 event.set("[@metadata][kafka][timestamp]", record.timestamp)
+              end
+              if @decorate_headers
+                for header in record.headers do
+                  event.set("[@metadata][kafka][headers]["+header.key+"]", header.value.to_s)
+                end
               end
               logstash_queue << event
             end
