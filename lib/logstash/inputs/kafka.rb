@@ -4,7 +4,7 @@ require 'stud/interval'
 require 'java'
 require 'logstash-integration-kafka_jars.rb'
 require 'logstash/plugin_mixins/kafka_support'
-require "faraday"
+require 'manticore'
 require "json"
 require "logstash/json"
 require_relative '../plugin_mixins/common'
