@@ -3,7 +3,7 @@ require "logstash/devutils/rspec/spec_helper"
 require "logstash/inputs/kafka"
 require "rspec/wait"
 require "stud/try"
-require "faraday"
+require "manticore"
 require "json"
 
 # Please run kafka_test_setup.sh prior to executing this integration test.
@@ -164,11 +164,11 @@ describe "schema registry connection options" do
 
       before(:each) do
         response = save_avro_schema_to_schema_registry(File.join(Dir.pwd, "spec", "unit", "inputs", "avro_schema_fixture_payment.asvc"), SUBJECT_NAME)
-        expect( response.status ).to be(200)
+        expect( response.code ).to be(200)
       end
 
       after(:each) do
-        schema_registry_client = Faraday.new('http://localhost:8081')
+        schema_registry_client = Manticore::Client.new
         delete_remote_schema(schema_registry_client, SUBJECT_NAME)
       end
 
@@ -187,26 +187,26 @@ end
 def save_avro_schema_to_schema_registry(schema_file, subject_name)
   raw_schema = File.readlines(schema_file).map(&:chomp).join
   raw_schema_quoted = raw_schema.gsub('"', '\"')
-  response = Faraday.post("http://localhost:8081/subjects/#{subject_name}/versions",
-          '{"schema": "' + raw_schema_quoted + '"}',
-          "Content-Type" => "application/vnd.schemaregistry.v1+json")
+  response = Manticore.post("http://localhost:8081/subjects/#{subject_name}/versions",
+          body: '{"schema": "' + raw_schema_quoted + '"}',
+          headers: {"Content-Type" => "application/vnd.schemaregistry.v1+json"})
   response
 end
 
 def delete_remote_schema(schema_registry_client, subject_name)
-  expect(schema_registry_client.delete("/subjects/#{subject_name}").status ).to be(200)
-  expect(schema_registry_client.delete("/subjects/#{subject_name}?permanent=true").status ).to be(200)
+  expect(schema_registry_client.delete("http://localhost:8081/subjects/#{subject_name}").code ).to be(200)
+  expect(schema_registry_client.delete("http://localhost:8081/subjects/#{subject_name}?permanent=true").code ).to be(200)
 end
 
 # AdminClientConfig = org.alpache.kafka.clients.admin.AdminClientConfig
 
 describe "Schema registry API", :integration => true do
 
-  let(:schema_registry) { Faraday.new('http://localhost:8081') }
+  let(:schema_registry) { Manticore::Client.new }
 
   context 'listing subject on clean instance' do
     it "should return an empty set" do
-      subjects = JSON.parse schema_registry.get('/subjects').body
+      subjects = JSON.parse schema_registry.get('http://localhost:8081/subjects').body
       expect( subjects ).to be_empty
     end
   end
@@ -214,30 +214,30 @@ describe "Schema registry API", :integration => true do
   context 'send a schema definition' do
     it "save the definition" do
       response = save_avro_schema_to_schema_registry(File.join(Dir.pwd, "spec", "unit", "inputs", "avro_schema_fixture_payment.asvc"), "schema_test_1")
-      expect( response.status ).to be(200)
+      expect( response.code ).to be(200)
       delete_remote_schema(schema_registry, "schema_test_1")
     end
 
     it "delete the schema just added" do
       response = save_avro_schema_to_schema_registry(File.join(Dir.pwd, "spec", "unit", "inputs", "avro_schema_fixture_payment.asvc"), "schema_test_1")
-      expect( response.status ).to be(200)
+      expect( response.code ).to be(200)
 
-      expect( schema_registry.delete('/subjects/schema_test_1?permanent=false').status ).to be(200)
+      expect( schema_registry.delete('http://localhost:8081/subjects/schema_test_1?permanent=false').code ).to be(200)
       sleep(1)
-      subjects = JSON.parse schema_registry.get('/subjects').body
+      subjects = JSON.parse schema_registry.get('http://localhost:8081/subjects').body
       expect( subjects ).to be_empty
     end
   end
 
   context 'use the schema to serialize' do
     after(:each) do
-      expect( schema_registry.delete('/subjects/topic_avro-value').status ).to be(200)
+      expect( schema_registry.delete('http://localhost:8081/subjects/topic_avro-value').code ).to be(200)
       sleep 1
-      expect( schema_registry.delete('/subjects/topic_avro-value?permanent=true').status ).to be(200)
+      expect( schema_registry.delete('http://localhost:8081/subjects/topic_avro-value?permanent=true').code ).to be(200)
 
       Stud.try(3.times, [StandardError, RSpec::Expectations::ExpectationNotMetError]) do
         wait(10).for do
-          subjects = JSON.parse schema_registry.get('/subjects').body
+          subjects = JSON.parse schema_registry.get('http://localhost:8081/subjects').body
           subjects.empty?
         end.to be_truthy
       end
@@ -299,7 +299,7 @@ describe "Schema registry API", :integration => true do
       delete_topic_if_exists avro_topic_name
       write_some_data_to avro_topic_name
 
-      subjects = JSON.parse schema_registry.get('/subjects').body
+      subjects = JSON.parse schema_registry.get('http://localhost:8081/subjects').body
       expect( subjects ).to contain_exactly("topic_avro-value")
 
       num_events = 1

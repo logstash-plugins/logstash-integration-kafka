@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name            = 'logstash-integration-kafka'
-  s.version         = '10.6.0'
+  s.version         = '10.7.0'
   s.licenses        = ['Apache-2.0']
   s.summary         = "Integration with Kafka - input and output plugins"
   s.description     = "This gem is a Logstash plugin required to be installed on top of the Logstash core pipeline "+
@@ -46,6 +46,7 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'logstash-codec-json'
   s.add_runtime_dependency 'logstash-codec-plain'
   s.add_runtime_dependency 'stud', '>= 0.0.22', '< 0.1.0'
+  s.add_runtime_dependency "manticore", '>= 0.5.4', '< 1.0.0'
 
   s.add_development_dependency 'logstash-devutils'
   s.add_development_dependency 'rspec-wait'

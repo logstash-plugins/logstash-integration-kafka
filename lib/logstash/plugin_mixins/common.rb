@@ -45,20 +45,21 @@ module LogStash
 
       private
       def check_for_schema_registry_connectivity_and_subjects
-        client = Faraday.new(@schema_registry_url.to_s) do |conn|
-          if schema_registry_proxy && !schema_registry_proxy.empty?
-            conn.proxy = schema_registry_proxy.to_s
-          end
-          if schema_registry_key and !schema_registry_key.empty?
-            conn.basic_auth(schema_registry_key, schema_registry_secret.value)
-          end
+        options = {}
+        if schema_registry_proxy && !schema_registry_proxy.empty?
+          options[:proxy] = schema_registry_proxy.to_s
         end
+        if schema_registry_key and !schema_registry_key.empty?
+          options[:auth] = {:user => schema_registry_key, :password => schema_registry_secret.value}
+        end
+        client = Manticore::Client.new(options)
+
         begin
-          response = client.get('/subjects')
-        rescue Faraday::Error => e
+          response = client.get(@schema_registry_url.to_s + '/subjects').body
+        rescue Manticore::ManticoreException => e
           raise LogStash::ConfigurationError.new("Schema registry service doesn't respond, error: #{e.message}")
         end
-        registered_subjects = JSON.parse response.body
+        registered_subjects = JSON.parse response
         expected_subjects = @topics.map { |t| "#{t}-value"}
         if (expected_subjects & registered_subjects).size != expected_subjects.size
           undefined_topic_subjects = expected_subjects - registered_subjects
