@@ -21,7 +21,7 @@ echo "Starting ZooKeeper"
 build/kafka/bin/zookeeper-server-start.sh -daemon build/kafka/config/zookeeper.properties
 sleep 10
 echo "Starting Kafka broker"
-build/kafka/bin/kafka-server-start.sh -daemon build/kafka/config/server.properties  --override log.dirs="${PWD}/build/kafka-logs" --override advertised.listeners=INSIDE://:9092,OUTSIDE://host.docker.internal:9094 --override listener.security.protocol.map="INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT" --override listeners=INSIDE://:9092,OUTSIDE://:9094 --override  inter.broker.listener.name=INSIDE
+build/kafka/bin/kafka-server-start.sh -daemon build/kafka/config/server.properties --override advertised.host.name=127.0.0.1 --override log.dirs="${PWD}/build/kafka-logs"
 sleep 10
 
 echo "Downloading Confluent Platform"
@@ -40,9 +40,9 @@ build/kafka/bin/kafka-topics.sh --create --partitions 1 --replication-factor 1 -
 build/kafka/bin/kafka-topics.sh --create --partitions 1 --replication-factor 1 --topic logstash_integration_lz4_topic --zookeeper localhost:2181
 build/kafka/bin/kafka-topics.sh --create --partitions 3 --replication-factor 1 --topic logstash_integration_partitioner_topic --zookeeper localhost:2181
 curl -s -o build/apache_logs.txt https://s3.amazonaws.com/data.elasticsearch.org/apache_logs/apache_logs.txt
-cat build/apache_logs.txt | docker run --rm -i confluentinc/cp-kafkacat:6.0.0 kafkacat -b host.docker.internal:9094 -t logstash_integration_topic_plain -H compression.header=none
-cat build/apache_logs.txt | docker run --rm -i confluentinc/cp-kafkacat:6.0.0 kafkacat -b host.docker.internal:9094 -t logstash_integration_topic_snappy -z snappy -H compression.header=snappy
-cat build/apache_logs.txt | docker run --rm -i confluentinc/cp-kafkacat:6.0.0 kafkacat -b host.docker.internal:9094 -t logstash_integration_topic_lz4 -z snappy -H compression.header=lz4
+cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_integration_topic_plain --broker-list localhost:9092
+cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_integration_topic_snappy --broker-list localhost:9092 --compression-codec snappy
+cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_integration_topic_lz4 --broker-list localhost:9092 --compression-codec lz4
 
 echo "Starting SchemaRegistry"
 build/confluent_platform/bin/schema-registry-start build/confluent_platform/etc/schema-registry/schema-registry.properties > /dev/null 2>&1 &

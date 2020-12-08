@@ -38,10 +38,6 @@ describe "inputs/kafka", :integration => true do
     { 'topics' => ['logstash_integration_topic_plain'], 'codec' => 'plain', 'group_id' => group_id_3,
       'auto_offset_reset' => 'earliest', 'decorate_events' => true }
   end
-  let(:decorate_headers_config) do
-    { 'topics' => ['logstash_integration_topic_plain'], 'codec' => 'plain', 'group_id' => group_id_3,
-      'auto_offset_reset' => 'earliest', 'decorate_headers' => true }
-  end
   let(:manual_commit_config) do
     { 'topics' => ['logstash_integration_topic_plain'], 'codec' => 'plain', 'group_id' => group_id_5,
       'auto_offset_reset' => 'earliest', 'enable_auto_commit' => 'false' }
@@ -93,16 +89,6 @@ describe "inputs/kafka", :integration => true do
         expect(event.get("[@metadata][kafka][topic]")).to eq("logstash_integration_topic_plain")
         expect(event.get("[@metadata][kafka][consumer_group]")).to eq(group_id_3)
         expect(event.get("[@metadata][kafka][timestamp]")).to be >= start
-      end
-    end
-  end
-
-  context "#kafka-decorate-headers" do
-    it "should show the right header key and value in decorated kafka headers section" do
-      consume_messages(decorate_headers_config, timeout: timeout_seconds, event_count: num_events) do |queue, _|
-        expect(queue.length).to eq(num_events)
-        event = queue.shift
-        expect(event.get("[@metadata][kafka][headers][compression.header]")).to eq("none")
       end
     end
   end
