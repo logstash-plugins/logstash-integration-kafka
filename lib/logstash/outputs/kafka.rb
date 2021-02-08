@@ -224,7 +224,6 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
     end
 
     events.each do |event|
-      break if event == LogStash::SHUTDOWN
       @codec.encode(event)
     end
 
