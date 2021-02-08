@@ -1,6 +1,6 @@
 ## 10.7.0
   - Switched use from Faraday to Manticore as HTTP client library to access Schema Registry service 
-    to fix issue [#63](https://github.com/logstash-plugins/logstash-integration-kafka/issue/63) 
+    to fix issue [#63](https://github.com/logstash-plugins/logstash-integration-kafka/pull/63) 
 
 ## 10.6.0
   - Added functionality to Kafka input to use Avro deserializer in retrieving data from Kafka. The schema is retrieved
