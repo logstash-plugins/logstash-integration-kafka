@@ -54,7 +54,7 @@ describe LogStash::Inputs::Kafka do
   end
 
   context 'with client_rack' do
-    let(:config) { super.merge('client_rack' => 'EU-R1') }
+    let(:config) { super().merge('client_rack' => 'EU-R1') }
 
     it "sets broker rack parameter" do
       expect(org.apache.kafka.clients.consumer.KafkaConsumer).
@@ -66,7 +66,7 @@ describe LogStash::Inputs::Kafka do
   end
 
   context 'string integer config' do
-    let(:config) { super.merge('session_timeout_ms' => '25000', 'max_poll_interval_ms' => '345000') }
+    let(:config) { super().merge('session_timeout_ms' => '25000', 'max_poll_interval_ms' => '345000') }
 
     it "sets integer values" do
       expect(org.apache.kafka.clients.consumer.KafkaConsumer).
@@ -78,7 +78,7 @@ describe LogStash::Inputs::Kafka do
   end
 
   context 'integer config' do
-    let(:config) { super.merge('session_timeout_ms' => 25200, 'max_poll_interval_ms' => 123_000) }
+    let(:config) { super().merge('session_timeout_ms' => 25200, 'max_poll_interval_ms' => 123_000) }
 
     it "sets integer values" do
       expect(org.apache.kafka.clients.consumer.KafkaConsumer).
@@ -90,7 +90,7 @@ describe LogStash::Inputs::Kafka do
   end
 
   context 'string boolean config' do
-    let(:config) { super.merge('enable_auto_commit' => 'false', 'check_crcs' => 'true') }
+    let(:config) { super().merge('enable_auto_commit' => 'false', 'check_crcs' => 'true') }
 
     it "sets parameters" do
       expect(org.apache.kafka.clients.consumer.KafkaConsumer).
@@ -103,7 +103,7 @@ describe LogStash::Inputs::Kafka do
   end
 
   context 'boolean config' do
-    let(:config) { super.merge('enable_auto_commit' => true, 'check_crcs' => false) }
+    let(:config) { super().merge('enable_auto_commit' => true, 'check_crcs' => false) }
 
     it "sets parameters" do
       expect(org.apache.kafka.clients.consumer.KafkaConsumer).
