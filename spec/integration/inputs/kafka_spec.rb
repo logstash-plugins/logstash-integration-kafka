@@ -38,6 +38,10 @@ describe "inputs/kafka", :integration => true do
     { 'topics' => ['logstash_integration_topic_plain'], 'codec' => 'plain', 'group_id' => group_id_3,
       'auto_offset_reset' => 'earliest', 'decorate_events' => true }
   end
+  let(:decorate_headers_config) do
+    { 'topics' => ['logstash_integration_topic_plain_with_headers'], 'codec' => 'plain', 'group_id' => group_id_3,
+      'auto_offset_reset' => 'earliest', 'decorate_events' => true, 'decorate_headers' => true }
+  end
   let(:manual_commit_config) do
     { 'topics' => ['logstash_integration_topic_plain'], 'codec' => 'plain', 'group_id' => group_id_5,
       'auto_offset_reset' => 'earliest', 'enable_auto_commit' => 'false' }
@@ -91,6 +95,36 @@ describe "inputs/kafka", :integration => true do
         expect(event.get("[@metadata][kafka][timestamp]")).to be >= start
       end
     end
+
+    it "should show the right topic and group name in and kafka headers decorated kafka section" do
+      header = org.apache.kafka.common.header.internals.RecordHeader.new("name", "John".to_java_bytes)
+      record = org.apache.kafka.clients.producer.ProducerRecord.new(
+            "logstash_integration_topic_plain_with_headers", 0, "key", "value", [header])
+
+      send_message(record)
+      start = LogStash::Timestamp.now.time.to_i
+      consume_messages(decorate_headers_config, timeout: timeout_seconds, event_count: 1) do |queue, _|
+        expect(queue.length).to eq(1)
+        event = queue.shift
+        expect(event.get("[@metadata][kafka][topic]")).to eq("logstash_integration_topic_plain_with_headers")
+        expect(event.get("[@metadata][kafka][consumer_group]")).to eq(group_id_3)
+        expect(event.get("[@metadata][kafka][timestamp]")).to be >= start
+        expect(event.get("[@metadata][kafka][headers][name]")).to eq("John")
+      end
+    end
+  end
+
+  def send_message(record)
+    props = java.util.Properties.new
+    kafka = org.apache.kafka.clients.producer.ProducerConfig
+    props.put(kafka::BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+    props.put(kafka::KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+    props.put(kafka::VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+
+    producer = org.apache.kafka.clients.producer.KafkaProducer.new(props)
+
+    producer.send(record)
+    producer.close
   end
 
   context "#kafka-offset-commit" do
