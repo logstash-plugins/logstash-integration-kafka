@@ -42,6 +42,10 @@ describe "inputs/kafka", :integration => true do
     { 'topics' => ['logstash_integration_topic_plain_with_headers'], 'codec' => 'plain', 'group_id' => group_id_3,
       'auto_offset_reset' => 'earliest', 'decorate_events' => true, 'decorate_headers' => true }
   end
+  let(:decorate_bad_headers_config) do
+    { 'topics' => ['logstash_integration_topic_plain_with_headers_badly'], 'codec' => 'plain', 'group_id' => group_id_3,
+      'auto_offset_reset' => 'earliest', 'decorate_events' => true, 'decorate_headers' => true }
+  end
   let(:manual_commit_config) do
     { 'topics' => ['logstash_integration_topic_plain'], 'codec' => 'plain', 'group_id' => group_id_5,
       'auto_offset_reset' => 'earliest', 'enable_auto_commit' => 'false' }
@@ -110,6 +114,25 @@ describe "inputs/kafka", :integration => true do
         expect(event.get("[@metadata][kafka][consumer_group]")).to eq(group_id_3)
         expect(event.get("[@metadata][kafka][timestamp]")).to be >= start
         expect(event.get("[@metadata][kafka][headers][name]")).to eq("John")
+      end
+    end
+
+    it "should skip headers not encoded in UTF-8" do
+      invalid = "😵".to_java_bytes
+      header = org.apache.kafka.common.header.internals.RecordHeader.new("name", invalid)
+      record = org.apache.kafka.clients.producer.ProducerRecord.new(
+            "logstash_integration_topic_plain_with_headers_badly", 0, "key", "value", [header])
+
+      send_message(record)
+      start = LogStash::Timestamp.now.time.to_i
+      consume_messages(decorate_bad_headers_config, timeout: timeout_seconds, event_count: 1) do |queue, _|
+        expect(queue.length).to eq(1)
+        event = queue.shift
+        expect(event.get("[@metadata][kafka][topic]")).to eq("logstash_integration_topic_plain_with_headers_badly")
+        expect(event.get("[@metadata][kafka][consumer_group]")).to eq(group_id_3)
+        expect(event.get("[@metadata][kafka][timestamp]")).to be >= start
+
+        expect(event.include?("[@metadata][kafka][headers][name]")).to eq(false)
       end
     end
   end
