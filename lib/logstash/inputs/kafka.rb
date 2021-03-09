@@ -307,7 +307,12 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
               end
               if @decorate_headers
                 for header in record.headers do
-                  event.set("[@metadata][kafka][headers]["+header.key+"]", header.value.to_s)
+                  s = String.from_java_bytes(header.value)
+                  begin
+                    s.encode!("UTF-8")
+                    event.set("[@metadata][kafka][headers]["+header.key+"]", s)
+                  rescue Encoding::UndefinedConversionError => e
+                  end
                 end
               end
               logstash_queue << event
