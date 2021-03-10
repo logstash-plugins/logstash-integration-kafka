@@ -36,15 +36,15 @@ describe "inputs/kafka", :integration => true do
   end
   let(:decorate_config) do
     { 'topics' => ['logstash_integration_topic_plain'], 'codec' => 'plain', 'group_id' => group_id_3,
-      'auto_offset_reset' => 'earliest', 'decorate_events' => true }
+      'auto_offset_reset' => 'earliest', 'decorate_mode' => 'basic' }
   end
   let(:decorate_headers_config) do
     { 'topics' => ['logstash_integration_topic_plain_with_headers'], 'codec' => 'plain', 'group_id' => group_id_3,
-      'auto_offset_reset' => 'earliest', 'decorate_events' => true, 'decorate_headers' => true }
+      'auto_offset_reset' => 'earliest', 'decorate_mode' => 'extended' }
   end
   let(:decorate_bad_headers_config) do
     { 'topics' => ['logstash_integration_topic_plain_with_headers_badly'], 'codec' => 'plain', 'group_id' => group_id_3,
-      'auto_offset_reset' => 'earliest', 'decorate_events' => true, 'decorate_headers' => true }
+      'auto_offset_reset' => 'earliest', 'decorate_mode' => 'extended' }
   end
   let(:manual_commit_config) do
     { 'topics' => ['logstash_integration_topic_plain'], 'codec' => 'plain', 'group_id' => group_id_5,

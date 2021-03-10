@@ -38,18 +38,35 @@ describe LogStash::Inputs::Kafka do
   end
 
   context "register parameter verification" do
-    let(:config) do
-      { 'schema_registry_url' => 'http://localhost:8081', 'topics' => ['logstash'], 'consumer_threads' => 4 }
+    context "schema_registry_url" do
+      let(:config) do
+        { 'schema_registry_url' => 'http://localhost:8081', 'topics' => ['logstash'], 'consumer_threads' => 4 }
+      end
+
+      it "conflict with value_deserializer_class should fail" do
+        config['value_deserializer_class'] = 'my.fantasy.Deserializer'
+        expect { subject.register }.to raise_error LogStash::ConfigurationError, /Option schema_registry_url prohibit the customization of value_deserializer_class/
+      end
+
+      it "conflict with topics_pattern should fail" do
+        config['topics_pattern'] = 'topic_.*'
+        expect { subject.register }.to raise_error LogStash::ConfigurationError, /Option schema_registry_url prohibit the customization of topics_pattern/
+      end
     end
 
-    it "schema_registry_url conflict with value_deserializer_class should fail" do
-      config['value_deserializer_class'] = 'my.fantasy.Deserializer'
-      expect { subject.register }.to raise_error LogStash::ConfigurationError, /Option schema_registry_url prohibit the customization of value_deserializer_class/
-    end
+    context "decorate_mode" do
+      let(:config) { { 'decorate_mode' => 'extended'} }
 
-    it "schema_registry_url conflict with topics_pattern should fail" do
-      config['topics_pattern'] = 'topic_.*'
-      expect { subject.register }.to raise_error LogStash::ConfigurationError, /Option schema_registry_url prohibit the customization of topics_pattern/
+      it "should raise error for invalid value" do
+        config['decorate_mode'] = 'avoid'
+        expect { subject.register }.to raise_error LogStash::ConfigurationError, /decorate_mode must be one of \["none", "basic", "extended"\] while received \[avoid\]/
+      end
+
+      it "should give precedence to deprecated 'decorate_event' if defined" do
+        config['decorate_events'] = true
+        subject.register
+        expect(subject.decorate_mode).to eq("basic")
+      end
     end
   end
 
