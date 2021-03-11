@@ -36,15 +36,15 @@ describe "inputs/kafka", :integration => true do
   end
   let(:decorate_config) do
     { 'topics' => ['logstash_integration_topic_plain'], 'codec' => 'plain', 'group_id' => group_id_3,
-      'auto_offset_reset' => 'earliest', 'decorate_mode' => 'basic' }
+      'auto_offset_reset' => 'earliest', 'decorate_events' => 'true' }
   end
   let(:decorate_headers_config) do
     { 'topics' => ['logstash_integration_topic_plain_with_headers'], 'codec' => 'plain', 'group_id' => group_id_3,
-      'auto_offset_reset' => 'earliest', 'decorate_mode' => 'extended' }
+      'auto_offset_reset' => 'earliest', 'decorate_events' => 'extended' }
   end
   let(:decorate_bad_headers_config) do
     { 'topics' => ['logstash_integration_topic_plain_with_headers_badly'], 'codec' => 'plain', 'group_id' => group_id_3,
-      'auto_offset_reset' => 'earliest', 'decorate_mode' => 'extended' }
+      'auto_offset_reset' => 'earliest', 'decorate_events' => 'extended' }
   end
   let(:manual_commit_config) do
     { 'topics' => ['logstash_integration_topic_plain'], 'codec' => 'plain', 'group_id' => group_id_5,
@@ -186,6 +186,7 @@ private
 
 def consume_messages(config, queue: Queue.new, timeout:, event_count:)
   kafka_input = LogStash::Inputs::Kafka.new(config)
+  kafka_input.register
   t = Thread.new { kafka_input.run(queue) }
   begin
     t.run

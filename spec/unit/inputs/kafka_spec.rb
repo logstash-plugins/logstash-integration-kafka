@@ -54,18 +54,18 @@ describe LogStash::Inputs::Kafka do
       end
     end
 
-    context "decorate_mode" do
-      let(:config) { { 'decorate_mode' => 'extended'} }
+    context "decorate_events" do
+      let(:config) { { 'decorate_events' => 'extended'} }
 
       it "should raise error for invalid value" do
-        config['decorate_mode'] = 'avoid'
-        expect { subject.register }.to raise_error LogStash::ConfigurationError, /decorate_mode must be one of \["none", "basic", "extended"\] while received \[avoid\]/
+        config['decorate_events'] = 'avoid'
+        expect { subject.register }.to raise_error LogStash::ConfigurationError, /Something is wrong with your configuration./
       end
 
-      it "should give precedence to deprecated 'decorate_event' if defined" do
-        config['decorate_events'] = true
+      it "should map old true boolean value to :record_props mode" do
+        config['decorate_events'] = "true"
         subject.register
-        expect(subject.decorate_mode).to eq("basic")
+        expect(subject.metadata_mode).to include(:record_props)
       end
     end
   end
