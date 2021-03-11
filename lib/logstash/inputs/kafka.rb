@@ -233,44 +233,47 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   config :sasl_jaas_config, :validate => :string
   # Optional path to kerberos config file. This is krb5.conf style as detailed in https://web.mit.edu/kerberos/krb5-1.12/doc/admin/conf_files/krb5_conf.html
   config :kerberos_config, :validate => :path
-  # (deprecated use `decorate_mode`) Option to add Kafka metadata like topic, message size to the event.
-  # This will add a field named `kafka` to the logstash event containing the following attributes:
+  # Option to add Kafka metadata like topic, message size to the event and header key values.
+  # With `basic` this will add a field named `kafka` to the logstash event containing the following attributes:
   #   `topic`: The topic this message is associated with
   #   `consumer_group`: The consumer group used to read in this event
   #   `partition`: The partition this message is associated with
   #   `offset`: The offset from the partition this message is associated with
   #   `key`: A ByteBuffer containing the message key
   #   `timestamp`: The timestamp of this message
-  config :decorate_events, :validate => :boolean
+  # While with `extended` it adds also all the key values present in the Kafka header if the key is valid UTF-8 else
+  # silently skip it.
+  config :decorate_events, :validate => %w(none basic extended false true), :default => "none"
 
-  # Option to add Kafka metadata like topic, message size to the event.
-  # This will add a field named `kafka` to the logstash event containing the following attributes if it's value is 'basic':
-  #   `topic`: The topic this message is associated with
-  #   `consumer_group`: The consumer group used to read in this event
-  #   `partition`: The partition this message is associated with
-  #   `offset`: The offset from the partition this message is associated with
-  #   `key`: A ByteBuffer containing the message key
-  #   `timestamp`: The timestamp of this message
-  # When this option assumes the value 'extended' add Kafka message headers to the event metadata.
-  # This will add a field named `kafka.headers` to the logstash event containing a key/value pair for each
-  # of the headers contained in the message
-  config :decorate_mode, :validate => :string, :default => "none"
-  DECORATION_MODES = %w{none basic extended}
-
+  attr_reader :metadata_mode
 
   public
   def register
     @runner_threads = []
-    unless @decorate_events.nil?
-      @deprecation_logger.deprecated("'decorate_events' is deprecated, use 'decorate_mode'")
-      @logger.warn("'decorate_events' and 'decorate_mode' configured at same time, 'decorate_events' takes precedence")
-      @decorate_mode = @decorate_events ? "basic" : "none"
+    @metadata_mode = extract_metadata_level(@decorate_events)
+    check_schema_registry_parameters
+  end
+
+  METADATA_NONE     = Set[].freeze
+  METADATA_BASIC    = Set[:record_props].freeze
+  METADATA_EXTENDED = Set[:record_props, :headers].freeze
+  METADATA_DEPRECATION_MAP = { 'true' => 'basic', 'false' => 'none' }
+
+  private
+  def extract_metadata_level(decorate_events_setting)
+    metadata_enabled = decorate_events_setting
+
+    if METADATA_DEPRECATION_MAP.include?(metadata_enabled)
+      canonical_value = METADATA_DEPRECATION_MAP[metadata_enabled]
+      @deprecation_logger.deprecated("Deprecated value `#{decorate_events_setting}` for `decorate_events` option; use `#{canonical_value}` instead.")
+      metadata_enabled = canonical_value
     end
 
-    unless DECORATION_MODES.include?(@decorate_mode)
-      raise LogStash::ConfigurationError, "decorate_mode must be one of #{DECORATION_MODES} while received [#{@decorate_mode}]"
+    case metadata_enabled
+    when 'none'     then METADATA_NONE
+    when 'basic'    then METADATA_BASIC
+    when 'extended' then METADATA_EXTENDED
     end
-    check_schema_registry_parameters
   end
 
   public
@@ -316,7 +319,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
                 end
                 event.remove("message")
               end
-              if @decorate_mode == "basic" || @decorate_mode == "extended"
+              if @metadata_mode.include?(:record_props)
                 event.set("[@metadata][kafka][topic]", record.topic)
                 event.set("[@metadata][kafka][consumer_group]", @group_id)
                 event.set("[@metadata][kafka][partition]", record.partition)
@@ -324,7 +327,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
                 event.set("[@metadata][kafka][key]", record.key)
                 event.set("[@metadata][kafka][timestamp]", record.timestamp)
               end
-              if @decorate_mode == "extended"
+              if @metadata_mode.include?(:headers)
                 for header in record.headers do
                   s = String.from_java_bytes(header.value)
                   begin
