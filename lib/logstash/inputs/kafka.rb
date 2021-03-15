@@ -331,8 +331,10 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
                 for header in record.headers do
                   s = String.from_java_bytes(header.value)
                   begin
-                    s.encode!("UTF-8")
-                    event.set("[@metadata][kafka][headers]["+header.key+"]", s)
+                    s.encode!(Encoding::UTF_8)
+                    if s.valid_encoding?
+                      event.set("[@metadata][kafka][headers]["+header.key+"]", s)
+                    end
                   rescue Encoding::UndefinedConversionError => e
                   end
                 end
