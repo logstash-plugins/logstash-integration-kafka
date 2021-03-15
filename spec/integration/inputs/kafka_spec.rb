@@ -101,7 +101,7 @@ describe "inputs/kafka", :integration => true do
     end
 
     it "should show the right topic and group name in and kafka headers decorated kafka section" do
-      header = org.apache.kafka.common.header.internals.RecordHeader.new("name", "John".to_java_bytes)
+      header = org.apache.kafka.common.header.internals.RecordHeader.new("name", "John 日本".to_java_bytes)
       record = org.apache.kafka.clients.producer.ProducerRecord.new(
             "logstash_integration_topic_plain_with_headers", 0, "key", "value", [header])
 
@@ -118,7 +118,7 @@ describe "inputs/kafka", :integration => true do
     end
 
     it "should skip headers not encoded in UTF-8" do
-      invalid = "😵".to_java_bytes
+      invalid = "日本".encode(:Shift_JIS).force_encoding('UTF-8').to_java_bytes
       header = org.apache.kafka.common.header.internals.RecordHeader.new("name", invalid)
       record = org.apache.kafka.clients.producer.ProducerRecord.new(
             "logstash_integration_topic_plain_with_headers_badly", 0, "key", "value", [header])
