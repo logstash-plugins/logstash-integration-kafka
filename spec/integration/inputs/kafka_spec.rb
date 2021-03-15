@@ -82,7 +82,7 @@ describe "inputs/kafka", :integration => true do
 
   context "#kafka-topics-pattern" do
     it "should consume all messages from all 3 topics" do
-      total_events = num_events * 3
+      total_events = num_events * 3 + 2
       queue = consume_messages(pattern_config, timeout: timeout_seconds, event_count: total_events)
       expect(queue.length).to eq(total_events)
     end
