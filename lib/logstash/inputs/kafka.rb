@@ -233,7 +233,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   config :sasl_jaas_config, :validate => :string
   # Optional path to kerberos config file. This is krb5.conf style as detailed in https://web.mit.edu/kerberos/krb5-1.12/doc/admin/conf_files/krb5_conf.html
   config :kerberos_config, :validate => :path
-  # Option to add Kafka metadata like topic, message size to the event and header key values.
+  # Option to add Kafka metadata like topic, message size and header key values to the event.
   # With `basic` this will add a field named `kafka` to the logstash event containing the following attributes:
   #   `topic`: The topic this message is associated with
   #   `consumer_group`: The consumer group used to read in this event
