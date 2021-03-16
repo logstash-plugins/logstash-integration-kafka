@@ -330,12 +330,9 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
               if @metadata_mode.include?(:headers)
                 for header in record.headers do
                   s = String.from_java_bytes(header.value)
-                  begin
-                    s.encode!(Encoding::UTF_8)
-                    if s.valid_encoding?
-                      event.set("[@metadata][kafka][headers]["+header.key+"]", s)
-                    end
-                  rescue Encoding::UndefinedConversionError => e
+                  s.force_encoding(Encoding::UTF_8)
+                  if s.valid_encoding?
+                    event.set("[@metadata][kafka][headers]["+header.key+"]", s)
                   end
                 end
               end
