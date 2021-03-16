@@ -113,7 +113,7 @@ describe "inputs/kafka", :integration => true do
         expect(event.get("[@metadata][kafka][topic]")).to eq("logstash_integration_topic_plain_with_headers")
         expect(event.get("[@metadata][kafka][consumer_group]")).to eq(group_id_3)
         expect(event.get("[@metadata][kafka][timestamp]")).to be >= start
-        expect(event.get("[@metadata][kafka][headers][name]")).to eq("John")
+        expect(event.get("[@metadata][kafka][headers][name]")).to eq("John 日本")
       end
     end
 
