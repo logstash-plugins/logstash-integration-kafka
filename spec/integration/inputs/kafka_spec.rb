@@ -53,6 +53,35 @@ describe "inputs/kafka", :integration => true do
   let(:timeout_seconds) { 30 }
   let(:num_events) { 103 }
 
+  before(:all) do
+    # Prepare message with headers with valid UTF-8 chars
+    header = org.apache.kafka.common.header.internals.RecordHeader.new("name", "John ανδρεα €".to_java_bytes)
+    record = org.apache.kafka.clients.producer.ProducerRecord.new(
+                "logstash_integration_topic_plain_with_headers", 0, "key", "value", [header])
+    send_message(record)
+
+    # Prepare message with headers with invalid UTF-8 chars
+    invalid = "日本".encode('Shift_JIS').force_encoding(Encoding::UTF_8).to_java_bytes
+    header = org.apache.kafka.common.header.internals.RecordHeader.new("name", invalid)
+    record = org.apache.kafka.clients.producer.ProducerRecord.new(
+                "logstash_integration_topic_plain_with_headers_badly", 0, "key", "value", [header])
+
+    send_message(record)
+  end
+
+  def send_message(record)
+    props = java.util.Properties.new
+    kafka = org.apache.kafka.clients.producer.ProducerConfig
+    props.put(kafka::BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+    props.put(kafka::KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+    props.put(kafka::VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+
+    producer = org.apache.kafka.clients.producer.KafkaProducer.new(props)
+
+    producer.send(record)
+    producer.close
+  end
+
   describe "#kafka-topics" do
 
     it "should consume all messages from plain 3-partition topic" do
@@ -101,11 +130,6 @@ describe "inputs/kafka", :integration => true do
     end
 
     it "should show the right topic and group name in and kafka headers decorated kafka section" do
-      header = org.apache.kafka.common.header.internals.RecordHeader.new("name", "John ανδρεα €".to_java_bytes)
-      record = org.apache.kafka.clients.producer.ProducerRecord.new(
-            "logstash_integration_topic_plain_with_headers", 0, "key", "value", [header])
-
-      send_message(record)
       start = LogStash::Timestamp.now.time.to_i
       consume_messages(decorate_headers_config, timeout: timeout_seconds, event_count: 1) do |queue, _|
         expect(queue.length).to eq(1)
@@ -118,12 +142,6 @@ describe "inputs/kafka", :integration => true do
     end
 
     it "should skip headers not encoded in UTF-8" do
-      invalid = "日本".encode('Shift_JIS').force_encoding(Encoding::UTF_8).to_java_bytes
-      header = org.apache.kafka.common.header.internals.RecordHeader.new("name", invalid)
-      record = org.apache.kafka.clients.producer.ProducerRecord.new(
-            "logstash_integration_topic_plain_with_headers_badly", 0, "key", "value", [header])
-
-      send_message(record)
       start = LogStash::Timestamp.now.time.to_i
       consume_messages(decorate_bad_headers_config, timeout: timeout_seconds, event_count: 1) do |queue, _|
         expect(queue.length).to eq(1)
@@ -135,19 +153,6 @@ describe "inputs/kafka", :integration => true do
         expect(event.include?("[@metadata][kafka][headers][name]")).to eq(false)
       end
     end
-  end
-
-  def send_message(record)
-    props = java.util.Properties.new
-    kafka = org.apache.kafka.clients.producer.ProducerConfig
-    props.put(kafka::BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
-    props.put(kafka::KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
-    props.put(kafka::VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
-
-    producer = org.apache.kafka.clients.producer.KafkaProducer.new(props)
-
-    producer.send(record)
-    producer.close
   end
 
   context "#kafka-offset-commit" do
