@@ -8,6 +8,7 @@ require 'manticore'
 require "json"
 require "logstash/json"
 require_relative '../plugin_mixins/common'
+require 'logstash/plugin_mixins/deprecation_logger_support'
 
 # This input will read events from a Kafka topic. It uses the 0.10 version of
 # the consumer API provided by Kafka to read messages from the broker.
@@ -58,6 +59,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
   include LogStash::PluginMixins::KafkaSupport
   include ::LogStash::PluginMixins::KafkaAvroSchemaRegistry
+  include LogStash::PluginMixins::DeprecationLoggerSupport
 
   config_name 'kafka'
 
@@ -265,7 +267,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
     if METADATA_DEPRECATION_MAP.include?(metadata_enabled)
       canonical_value = METADATA_DEPRECATION_MAP[metadata_enabled]
-      @deprecation_logger.deprecated("Deprecated value `#{decorate_events_setting}` for `decorate_events` option; use `#{canonical_value}` instead.")
+      deprecation_logger.deprecated("Deprecated value `#{decorate_events_setting}` for `decorate_events` option; use `#{canonical_value}` instead.")
       metadata_enabled = canonical_value
     end
 
