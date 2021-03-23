@@ -2,7 +2,7 @@
   - Update Jersey dependency to version 2.33 [#75](https://github.com/logstash-plugins/logstash-integration-kafka/pull/75)
 
 ## 10.7.1
-  - Fix: dropped usage of SHUTDOWN event deprecated since Logstash 5.0 [#71](https://github.com/logstash-plugins/logstash-integration-kafka/issue/71)
+  - Fix: dropped usage of SHUTDOWN event deprecated since Logstash 5.0 [#71](https://github.com/logstash-plugins/logstash-integration-kafka/pull/71)
   
 ## 10.7.0
   - Switched use from Faraday to Manticore as HTTP client library to access Schema Registry service 
