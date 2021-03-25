@@ -1,5 +1,5 @@
 ## 10.7.3
-  - Changed `decorate_events` to add also Kafka headers [#62](https://github.com/logstash-plugins/logstash-integration-kafka/pull/62)
+  - Changed `decorate_events` to add also Kafka headers [#78](https://github.com/logstash-plugins/logstash-integration-kafka/pull/78)
 
 ## 10.7.2
   - Update Jersey dependency to version 2.33 [#75](https://github.com/logstash-plugins/logstash-integration-kafka/pull/75)

@@ -330,7 +330,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
                 event.set("[@metadata][kafka][timestamp]", record.timestamp)
               end
               if @metadata_mode.include?(:headers)
-                for header in record.headers do
+                record.headers.each do |header|
                   s = String.from_java_bytes(header.value)
                   s.force_encoding(Encoding::UTF_8)
                   if s.valid_encoding?
