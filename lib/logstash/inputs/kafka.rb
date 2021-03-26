@@ -8,6 +8,7 @@ require 'manticore'
 require "json"
 require "logstash/json"
 require_relative '../plugin_mixins/common'
+require 'logstash/plugin_mixins/deprecation_logger_support'
 
 # This input will read events from a Kafka topic. It uses the 0.10 version of
 # the consumer API provided by Kafka to read messages from the broker.
@@ -58,6 +59,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
   include LogStash::PluginMixins::KafkaSupport
   include ::LogStash::PluginMixins::KafkaAvroSchemaRegistry
+  include LogStash::PluginMixins::DeprecationLoggerSupport
 
   config_name 'kafka'
 
@@ -233,20 +235,47 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   config :sasl_jaas_config, :validate => :string
   # Optional path to kerberos config file. This is krb5.conf style as detailed in https://web.mit.edu/kerberos/krb5-1.12/doc/admin/conf_files/krb5_conf.html
   config :kerberos_config, :validate => :path
-  # Option to add Kafka metadata like topic, message size to the event.
-  # This will add a field named `kafka` to the logstash event containing the following attributes:
+  # Option to add Kafka metadata like topic, message size and header key values to the event.
+  # With `basic` this will add a field named `kafka` to the logstash event containing the following attributes:
   #   `topic`: The topic this message is associated with
   #   `consumer_group`: The consumer group used to read in this event
   #   `partition`: The partition this message is associated with
   #   `offset`: The offset from the partition this message is associated with
   #   `key`: A ByteBuffer containing the message key
   #   `timestamp`: The timestamp of this message
-  config :decorate_events, :validate => :boolean, :default => false
+  # While with `extended` it adds also all the key values present in the Kafka header if the key is valid UTF-8 else
+  # silently skip it.
+  config :decorate_events, :validate => %w(none basic extended false true), :default => "none"
+
+  attr_reader :metadata_mode
 
   public
   def register
     @runner_threads = []
+    @metadata_mode = extract_metadata_level(@decorate_events)
     check_schema_registry_parameters
+  end
+
+  METADATA_NONE     = Set[].freeze
+  METADATA_BASIC    = Set[:record_props].freeze
+  METADATA_EXTENDED = Set[:record_props, :headers].freeze
+  METADATA_DEPRECATION_MAP = { 'true' => 'basic', 'false' => 'none' }
+
+  private
+  def extract_metadata_level(decorate_events_setting)
+    metadata_enabled = decorate_events_setting
+
+    if METADATA_DEPRECATION_MAP.include?(metadata_enabled)
+      canonical_value = METADATA_DEPRECATION_MAP[metadata_enabled]
+      deprecation_logger.deprecated("Deprecated value `#{decorate_events_setting}` for `decorate_events` option; use `#{canonical_value}` instead.")
+      metadata_enabled = canonical_value
+    end
+
+    case metadata_enabled
+    when 'none'     then METADATA_NONE
+    when 'basic'    then METADATA_BASIC
+    when 'extended' then METADATA_EXTENDED
+    end
   end
 
   public
@@ -292,13 +321,22 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
                 end
                 event.remove("message")
               end
-              if @decorate_events
+              if @metadata_mode.include?(:record_props)
                 event.set("[@metadata][kafka][topic]", record.topic)
                 event.set("[@metadata][kafka][consumer_group]", @group_id)
                 event.set("[@metadata][kafka][partition]", record.partition)
                 event.set("[@metadata][kafka][offset]", record.offset)
                 event.set("[@metadata][kafka][key]", record.key)
                 event.set("[@metadata][kafka][timestamp]", record.timestamp)
+              end
+              if @metadata_mode.include?(:headers)
+                record.headers.each do |header|
+                  s = String.from_java_bytes(header.value)
+                  s.force_encoding(Encoding::UTF_8)
+                  if s.valid_encoding?
+                    event.set("[@metadata][kafka][headers]["+header.key+"]", s)
+                  end
+                end
               end
               logstash_queue << event
             end

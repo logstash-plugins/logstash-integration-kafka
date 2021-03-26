@@ -36,7 +36,15 @@ describe "inputs/kafka", :integration => true do
   end
   let(:decorate_config) do
     { 'topics' => ['logstash_integration_topic_plain'], 'codec' => 'plain', 'group_id' => group_id_3,
-      'auto_offset_reset' => 'earliest', 'decorate_events' => true }
+      'auto_offset_reset' => 'earliest', 'decorate_events' => 'true' }
+  end
+  let(:decorate_headers_config) do
+    { 'topics' => ['logstash_integration_topic_plain_with_headers'], 'codec' => 'plain', 'group_id' => group_id_3,
+      'auto_offset_reset' => 'earliest', 'decorate_events' => 'extended' }
+  end
+  let(:decorate_bad_headers_config) do
+    { 'topics' => ['logstash_integration_topic_plain_with_headers_badly'], 'codec' => 'plain', 'group_id' => group_id_3,
+      'auto_offset_reset' => 'earliest', 'decorate_events' => 'extended' }
   end
   let(:manual_commit_config) do
     { 'topics' => ['logstash_integration_topic_plain'], 'codec' => 'plain', 'group_id' => group_id_5,
@@ -44,6 +52,35 @@ describe "inputs/kafka", :integration => true do
   end
   let(:timeout_seconds) { 30 }
   let(:num_events) { 103 }
+
+  before(:all) do
+    # Prepare message with headers with valid UTF-8 chars
+    header = org.apache.kafka.common.header.internals.RecordHeader.new("name", "John ανδρεα €".to_java_bytes)
+    record = org.apache.kafka.clients.producer.ProducerRecord.new(
+                "logstash_integration_topic_plain_with_headers", 0, "key", "value", [header])
+    send_message(record)
+
+    # Prepare message with headers with invalid UTF-8 chars
+    invalid = "日本".encode('Shift_JIS').force_encoding(Encoding::UTF_8).to_java_bytes
+    header = org.apache.kafka.common.header.internals.RecordHeader.new("name", invalid)
+    record = org.apache.kafka.clients.producer.ProducerRecord.new(
+                "logstash_integration_topic_plain_with_headers_badly", 0, "key", "value", [header])
+
+    send_message(record)
+  end
+
+  def send_message(record)
+    props = java.util.Properties.new
+    kafka = org.apache.kafka.clients.producer.ProducerConfig
+    props.put(kafka::BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+    props.put(kafka::KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+    props.put(kafka::VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+
+    producer = org.apache.kafka.clients.producer.KafkaProducer.new(props)
+
+    producer.send(record)
+    producer.close
+  end
 
   describe "#kafka-topics" do
 
@@ -74,7 +111,7 @@ describe "inputs/kafka", :integration => true do
 
   context "#kafka-topics-pattern" do
     it "should consume all messages from all 3 topics" do
-      total_events = num_events * 3
+      total_events = num_events * 3 + 2
       queue = consume_messages(pattern_config, timeout: timeout_seconds, event_count: total_events)
       expect(queue.length).to eq(total_events)
     end
@@ -89,6 +126,31 @@ describe "inputs/kafka", :integration => true do
         expect(event.get("[@metadata][kafka][topic]")).to eq("logstash_integration_topic_plain")
         expect(event.get("[@metadata][kafka][consumer_group]")).to eq(group_id_3)
         expect(event.get("[@metadata][kafka][timestamp]")).to be >= start
+      end
+    end
+
+    it "should show the right topic and group name in and kafka headers decorated kafka section" do
+      start = LogStash::Timestamp.now.time.to_i
+      consume_messages(decorate_headers_config, timeout: timeout_seconds, event_count: 1) do |queue, _|
+        expect(queue.length).to eq(1)
+        event = queue.shift
+        expect(event.get("[@metadata][kafka][topic]")).to eq("logstash_integration_topic_plain_with_headers")
+        expect(event.get("[@metadata][kafka][consumer_group]")).to eq(group_id_3)
+        expect(event.get("[@metadata][kafka][timestamp]")).to be >= start
+        expect(event.get("[@metadata][kafka][headers][name]")).to eq("John ανδρεα €")
+      end
+    end
+
+    it "should skip headers not encoded in UTF-8" do
+      start = LogStash::Timestamp.now.time.to_i
+      consume_messages(decorate_bad_headers_config, timeout: timeout_seconds, event_count: 1) do |queue, _|
+        expect(queue.length).to eq(1)
+        event = queue.shift
+        expect(event.get("[@metadata][kafka][topic]")).to eq("logstash_integration_topic_plain_with_headers_badly")
+        expect(event.get("[@metadata][kafka][consumer_group]")).to eq(group_id_3)
+        expect(event.get("[@metadata][kafka][timestamp]")).to be >= start
+
+        expect(event.include?("[@metadata][kafka][headers][name]")).to eq(false)
       end
     end
   end
@@ -129,6 +191,7 @@ private
 
 def consume_messages(config, queue: Queue.new, timeout:, event_count:)
   kafka_input = LogStash::Inputs::Kafka.new(config)
+  kafka_input.register
   t = Thread.new { kafka_input.run(queue) }
   begin
     t.run

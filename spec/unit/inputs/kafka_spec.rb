@@ -38,18 +38,35 @@ describe LogStash::Inputs::Kafka do
   end
 
   context "register parameter verification" do
-    let(:config) do
-      { 'schema_registry_url' => 'http://localhost:8081', 'topics' => ['logstash'], 'consumer_threads' => 4 }
+    context "schema_registry_url" do
+      let(:config) do
+        { 'schema_registry_url' => 'http://localhost:8081', 'topics' => ['logstash'], 'consumer_threads' => 4 }
+      end
+
+      it "conflict with value_deserializer_class should fail" do
+        config['value_deserializer_class'] = 'my.fantasy.Deserializer'
+        expect { subject.register }.to raise_error LogStash::ConfigurationError, /Option schema_registry_url prohibit the customization of value_deserializer_class/
+      end
+
+      it "conflict with topics_pattern should fail" do
+        config['topics_pattern'] = 'topic_.*'
+        expect { subject.register }.to raise_error LogStash::ConfigurationError, /Option schema_registry_url prohibit the customization of topics_pattern/
+      end
     end
 
-    it "schema_registry_url conflict with value_deserializer_class should fail" do
-      config['value_deserializer_class'] = 'my.fantasy.Deserializer'
-      expect { subject.register }.to raise_error LogStash::ConfigurationError, /Option schema_registry_url prohibit the customization of value_deserializer_class/
-    end
+    context "decorate_events" do
+      let(:config) { { 'decorate_events' => 'extended'} }
 
-    it "schema_registry_url conflict with topics_pattern should fail" do
-      config['topics_pattern'] = 'topic_.*'
-      expect { subject.register }.to raise_error LogStash::ConfigurationError, /Option schema_registry_url prohibit the customization of topics_pattern/
+      it "should raise error for invalid value" do
+        config['decorate_events'] = 'avoid'
+        expect { subject.register }.to raise_error LogStash::ConfigurationError, /Something is wrong with your configuration./
+      end
+
+      it "should map old true boolean value to :record_props mode" do
+        config['decorate_events'] = "true"
+        subject.register
+        expect(subject.metadata_mode).to include(:record_props)
+      end
     end
   end
 
