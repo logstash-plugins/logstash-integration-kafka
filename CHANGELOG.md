@@ -1,3 +1,7 @@
+## 10.7.4
+  - Docs: make sure Kafka clients version is updated in docs [#83](https://github.com/logstash-plugins/logstash-integration-kafka/pull/83)
+    Since **10.6.0** Kafka client was updated to **2.5.1**
+
 ## 10.7.3
   - Changed `decorate_events` to add also Kafka headers [#78](https://github.com/logstash-plugins/logstash-integration-kafka/pull/78)
 
