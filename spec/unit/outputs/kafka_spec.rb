@@ -73,7 +73,7 @@ describe "outputs/kafka" do
     before do
       count = 0
       expect_any_instance_of(org.apache.kafka.clients.producer.KafkaProducer).to receive(:send)
-        .exactly(sendcount).times.and_wrap_original do |m, *args|
+        .exactly(sendcount).times do
         if count < failcount # fail 'failcount' times in a row.
           count += 1
           # Pick an exception at random
@@ -90,6 +90,7 @@ describe "outputs/kafka" do
       kafka = LogStash::Outputs::Kafka.new(simple_kafka_config)
       kafka.register
       kafka.multi_receive([event])
+      sleep(1.0) # allow for future.get call
     end
   end
 
@@ -104,15 +105,13 @@ describe "outputs/kafka" do
 
     before do
       count = 0
-      expect_any_instance_of(org.apache.kafka.clients.producer.KafkaProducer).to receive(:send)
-        .exactly(1).times.and_wrap_original do |m, *args|
+      expect_any_instance_of(org.apache.kafka.clients.producer.KafkaProducer).to receive(:send).exactly(1).times do
         if count < failcount # fail 'failcount' times in a row.
           count += 1
           # Pick an exception at random
           raise exception_classes.shuffle.first.new("injected exception for testing")
         else
-          count = :done
-          future # return future
+          fail 'unexpected producer#send invocation'
         end
       end
     end
@@ -135,9 +134,7 @@ describe "outputs/kafka" do
       it "should retry until successful" do
         count = 0
         success = nil
-        expect_any_instance_of(org.apache.kafka.clients.producer.KafkaProducer).to receive(:send)
-              .exactly(sendcount).times
-              .and_wrap_original do |m, *args|
+        expect_any_instance_of(org.apache.kafka.clients.producer.KafkaProducer).to receive(:send).exactly(sendcount).times do
           if count < failcount
             count += 1
             # inject some failures.
@@ -145,7 +142,7 @@ describe "outputs/kafka" do
             # Return a custom Future that will raise an exception to simulate a Kafka send() problem.
             future = java.util.concurrent.FutureTask.new { raise org.apache.kafka.common.errors.TimeoutException.new("Failed") }
           else
-            success = args
+            success = true
             future = java.util.concurrent.FutureTask.new { nil } # return no-op future
           end
           future.tap { Thread.start { future.run } }
@@ -153,7 +150,7 @@ describe "outputs/kafka" do
         kafka = LogStash::Outputs::Kafka.new(simple_kafka_config)
         kafka.register
         kafka.multi_receive([event])
-        expect( success ).to be_truthy
+        expect( success ).to be true
       end
     end
 
@@ -162,9 +159,7 @@ describe "outputs/kafka" do
       let(:max_sends) { 1 }
 
       it "should should only send once" do
-        expect_any_instance_of(org.apache.kafka.clients.producer.KafkaProducer).to receive(:send)
-                                                                                       .once
-                                                                                       .and_wrap_original do |m, *args|
+        expect_any_instance_of(org.apache.kafka.clients.producer.KafkaProducer).to receive(:send).once do
           # Always fail.
           future = java.util.concurrent.FutureTask.new { raise org.apache.kafka.common.errors.TimeoutException.new("Failed") }
           future.run
@@ -176,9 +171,7 @@ describe "outputs/kafka" do
       end
 
       it 'should not sleep' do
-        expect_any_instance_of(org.apache.kafka.clients.producer.KafkaProducer).to receive(:send)
-                                                                                       .once
-                                                                                       .and_wrap_original do |m, *args|
+        expect_any_instance_of(org.apache.kafka.clients.producer.KafkaProducer).to receive(:send).once do
           # Always fail.
           future = java.util.concurrent.FutureTask.new { raise org.apache.kafka.common.errors.TimeoutException.new("Failed") }
           future.run
@@ -197,9 +190,7 @@ describe "outputs/kafka" do
       let(:max_sends) { retries + 1 }
 
       it "should give up after retries are exhausted" do
-        expect_any_instance_of(org.apache.kafka.clients.producer.KafkaProducer).to receive(:send)
-              .at_most(max_sends).times
-              .and_wrap_original do |m, *args|
+        expect_any_instance_of(org.apache.kafka.clients.producer.KafkaProducer).to receive(:send).at_most(max_sends).times do
           # Always fail.
           future = java.util.concurrent.FutureTask.new { raise org.apache.kafka.common.errors.TimeoutException.new("Failed") }
           future.tap { Thread.start { future.run } }
@@ -210,9 +201,7 @@ describe "outputs/kafka" do
       end
 
       it 'should only sleep retries number of times' do
-        expect_any_instance_of(org.apache.kafka.clients.producer.KafkaProducer).to receive(:send)
-                                                                                       .at_most(max_sends).times
-                                                                                       .and_wrap_original do |m, *args|
+        expect_any_instance_of(org.apache.kafka.clients.producer.KafkaProducer).to receive(:send).at_most(max_sends).times do
           # Always fail.
           future = java.util.concurrent.FutureTask.new { raise org.apache.kafka.common.errors.TimeoutException.new("Failed") }
           future.run
