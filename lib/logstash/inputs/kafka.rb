@@ -262,6 +262,19 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   METADATA_DEPRECATION_MAP = { 'true' => 'basic', 'false' => 'none' }
 
   private
+  def pattern
+    @pattern ||= java.util.regex.Pattern.compile(@topics_pattern) unless @topics_pattern.nil?
+  end
+
+  private
+  def subscribe(consumer)
+    unless pattern.nil?
+      consumer.subscribe(pattern)
+    else
+      consumer.subscribe(topics)
+    end
+  end
+
   def extract_metadata_level(decorate_events_setting)
     metadata_enabled = decorate_events_setting
 
@@ -300,13 +313,6 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   def thread_runner(logstash_queue, consumer)
     Thread.new do
       begin
-        unless @topics_pattern.nil?
-          nooplistener = org.apache.kafka.clients.consumer.internals.NoOpConsumerRebalanceListener.new
-          pattern = java.util.regex.Pattern.compile(@topics_pattern)
-          consumer.subscribe(pattern, nooplistener)
-        else
-          consumer.subscribe(topics);
-        end
         codec_instance = @codec.clone
         while !stop?
           records = consumer.poll(poll_timeout_ms)
@@ -410,7 +416,9 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
         set_sasl_config(props)
       end
 
-      org.apache.kafka.clients.consumer.KafkaConsumer.new(props)
+      consumer = org.apache.kafka.clients.consumer.KafkaConsumer.new(props)
+      subscribe(consumer)
+      consumer
     rescue => e
       logger.error("Unable to create Kafka consumer from given configuration",
                    :kafka_error_message => e,
