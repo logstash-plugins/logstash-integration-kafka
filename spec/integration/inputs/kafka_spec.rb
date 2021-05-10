@@ -198,8 +198,9 @@ def consume_messages(config, queue: Queue.new, timeout:, event_count:)
     wait(timeout).for { queue.length }.to eq(event_count) unless timeout.eql?(false)
     block_given? ? yield(queue, kafka_input) : queue
   ensure
+    kafka_input.do_stop
     t.kill
-    t.join(30_000)
+    t.join(30)
   end
 end
 
