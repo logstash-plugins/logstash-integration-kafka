@@ -253,6 +253,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   def register
     @runner_threads = []
     @metadata_mode = extract_metadata_level(@decorate_events)
+    @pattern ||= java.util.regex.Pattern.compile(@topics_pattern) unless @topics_pattern.nil?
     check_schema_registry_parameters
   end
 
@@ -260,7 +261,6 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   METADATA_BASIC    = Set[:record_props].freeze
   METADATA_EXTENDED = Set[:record_props, :headers].freeze
   METADATA_DEPRECATION_MAP = { 'true' => 'basic', 'false' => 'none' }
-
 
   def extract_metadata_level(decorate_events_setting)
     metadata_enabled = decorate_events_setting
@@ -297,12 +297,8 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
     @runner_consumers
   end
 
-  def pattern
-    @pattern ||= java.util.regex.Pattern.compile(@topics_pattern) unless @topics_pattern.nil?
-  end
-
   def subscribe(consumer)
-    pattern.nil? ? consumer.subscribe(topics) : consumer.subscribe(pattern)
+    @pattern.nil? ? consumer.subscribe(topics) : consumer.subscribe(@pattern)
     consumer
   end
 

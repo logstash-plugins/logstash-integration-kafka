@@ -5,9 +5,10 @@ require "concurrent"
 
 
 describe LogStash::Inputs::Kafka do
-  let(:common_config) { { 'topics' => ['logstash'], 'consumer_threads' => 1 } }
+  let(:common_config) { { 'topics' => ['logstash'] } }
   let(:config) { common_config }
   let(:consumer_double) { double(:consumer) }
+  let(:needs_raise) { false }
   let(:payload) {
     10.times.map do
       org.apache.kafka.clients.consumer.ConsumerRecord.new("logstash", 0, 0, "key", "value")
@@ -17,11 +18,10 @@ describe LogStash::Inputs::Kafka do
 
   describe '#poll' do
     before do
-    polled = false
+      polled = false
       allow(consumer_double).to receive(:poll) do
         unless polled
           polled = true
-          puts payload.class
           payload
         end
       end
@@ -61,6 +61,11 @@ describe LogStash::Inputs::Kafka do
         expect{subject.maybe_commit_offset(consumer_double)}.not_to raise_error
       end
 
+      it 'should not throw if a Kafka Exception is encountered' do
+        expect(consumer_double).to receive(:commitSync).and_raise(StandardError.new(''))
+        expect{subject.maybe_commit_offset(consumer_double)}.not_to raise_error
+      end
+
       it 'should throw if Assertion Error is encountered' do
         expect(consumer_double).to receive(:commitSync).and_raise(java.lang.AssertionError.new(''))
         expect{subject.maybe_commit_offset(consumer_double)}.to raise_error(java.lang.AssertionError)
@@ -90,6 +95,7 @@ describe LogStash::Inputs::Kafka do
       allow(consumer_double).to receive(:close)
       allow(consumer_double).to receive(:subscribe)
     end
+
     it "should run" do
       polled = false
       allow(consumer_double).to receive(:poll) do
@@ -110,52 +116,51 @@ describe LogStash::Inputs::Kafka do
       expect(q.size).to eq(10)
     end
 
-    it "should retry Kafka Exception" do
-      raised, polled = false
-
-      allow(consumer_double).to receive(:poll) do
-        unless raised
-          raised = true
-          raise org.apache.kafka.common.errors.TopicAuthorizationException.new('')
+    context 'wnen errors are encountered' do
+      before do
+        raised, polled = false
+        allow(consumer_double).to receive(:poll) do
+          unless raised
+            raised = true
+            raise exception
+          end
+          unless polled
+            polled = true
+            payload
+          end
         end
-        unless polled
-          polled = true
-          payload
+        subject.register
+        q = Queue.new
+        Thread.new do
+          sleep 3
+          subject.do_stop
         end
+        subject.run(q)
       end
-
-      subject.register
-      q = Queue.new
-      Thread.new do
-        sleep 3
-        subject.do_stop
-      end
-      subject.run(q)
-      expect(q.size).to eq(10)
     end
 
-    it "should not retry Errors" do
-      raised, polled = false
+    context "when a Kafka exception is raised" do
+      let(:exception) { org.apache.kafka.common.errors.TopicAuthorizationException.new('Invalid topic') }
 
-      allow(consumer_double).to receive(:poll) do
-        unless raised
-          raised = true
-          raise java.lang.AssertionError.new('')
-        end
-        unless polled
-          polled = true
-          payload
-        end
+      it 'should poll successfully' do
+        expect(q.size).to eq(10)
       end
+    end
 
-      subject.register
-      q = Queue.new
-      Thread.new do
-        sleep 3
-        subject.do_stop
+    context "when a StandardError is raised" do
+      let(:exception) { StandardError.new('Standard Error') }
+
+      it 'should retry and poll successfully' do
+        expect(q.size).to eq(10)
       end
-      subject.run(q)
-      expect(q.size).to eq(0)
+    end
+
+    context "when a java error is raised" do
+      let(:exception) { java.lang.AssertionError.new('Fatal assertion') }
+
+      it "should not retry" do
+        expect(q.size).to eq(0)
+      end
     end
   end
 
