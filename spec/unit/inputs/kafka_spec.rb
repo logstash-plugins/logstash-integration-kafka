@@ -61,11 +61,6 @@ describe LogStash::Inputs::Kafka do
         expect{subject.maybe_commit_offset(consumer_double)}.not_to raise_error
       end
 
-      it 'should not throw if a Kafka Exception is encountered' do
-        expect(consumer_double).to receive(:commitSync).and_raise(StandardError.new(''))
-        expect{subject.maybe_commit_offset(consumer_double)}.not_to raise_error
-      end
-
       it 'should throw if Assertion Error is encountered' do
         expect(consumer_double).to receive(:commitSync).and_raise(java.lang.AssertionError.new(''))
         expect{subject.maybe_commit_offset(consumer_double)}.to raise_error(java.lang.AssertionError)
@@ -89,6 +84,8 @@ describe LogStash::Inputs::Kafka do
   end
 
   describe '#running' do
+    let(:q) { Queue.new }
+
     before do
       expect(subject).to receive(:create_consumer).once.and_return(consumer_double)
       allow(consumer_double).to receive(:wakeup)
@@ -106,17 +103,17 @@ describe LogStash::Inputs::Kafka do
       end
 
       subject.register
-      q = Queue.new
-      Thread.new do
+      t = Thread.new do
         sleep(1)
         subject.do_stop
       end
       subject.run(q)
+      t.join
 
       expect(q.size).to eq(10)
     end
 
-    context 'wnen errors are encountered' do
+    context 'when errors are encountered during poll' do
       before do
         raised, polled = false
         allow(consumer_double).to receive(:poll) do
@@ -124,42 +121,44 @@ describe LogStash::Inputs::Kafka do
             raised = true
             raise exception
           end
+
           unless polled
             polled = true
             payload
           end
         end
+
         subject.register
-        q = Queue.new
-        Thread.new do
-          sleep 3
+        t = Thread.new do
+          sleep 2
           subject.do_stop
         end
         subject.run(q)
+        t.join
       end
-    end
 
-    context "when a Kafka exception is raised" do
-      let(:exception) { org.apache.kafka.common.errors.TopicAuthorizationException.new('Invalid topic') }
+      context "when a Kafka exception is raised" do
+        let(:exception) { org.apache.kafka.common.errors.TopicAuthorizationException.new('Invalid topic') }
 
-      it 'should poll successfully' do
-        expect(q.size).to eq(10)
+        it 'should poll successfully' do
+          expect(q.size).to eq(10)
+        end
       end
-    end
 
-    context "when a StandardError is raised" do
-      let(:exception) { StandardError.new('Standard Error') }
+      context "when a StandardError is raised" do
+        let(:exception) { StandardError.new('Standard Error') }
 
-      it 'should retry and poll successfully' do
-        expect(q.size).to eq(10)
+        it 'should retry and poll successfully' do
+          expect(q.size).to eq(10)
+        end
       end
-    end
 
-    context "when a java error is raised" do
-      let(:exception) { java.lang.AssertionError.new('Fatal assertion') }
+      context "when a java error is raised" do
+        let(:exception) { java.lang.AssertionError.new('Fatal assertion') }
 
-      it "should not retry" do
-        expect(q.size).to eq(0)
+        it "should not retry" do
+          expect(q.size).to eq(0)
+        end
       end
     end
   end
@@ -259,4 +258,3 @@ describe LogStash::Inputs::Kafka do
     end
   end
 end
-

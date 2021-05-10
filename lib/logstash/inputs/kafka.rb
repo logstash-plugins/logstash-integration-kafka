@@ -262,6 +262,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   METADATA_EXTENDED = Set[:record_props, :headers].freeze
   METADATA_DEPRECATION_MAP = { 'true' => 'basic', 'false' => 'none' }
 
+  private
   def extract_metadata_level(decorate_events_setting)
     metadata_enabled = decorate_events_setting
 
@@ -339,7 +340,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
     codec_instance.decode(record.value.to_s) do |event|
       decorate(event)
       maybe_apply_schema(event, record)
-      maybe_apply_metadata(event, record)
+      maybe_set_metadata(event, record)
       queue << event
     end
   end
@@ -354,7 +355,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
     end
   end
 
-  def maybe_apply_metadata(event, record)
+  def maybe_set_metadata(event, record)
     if @metadata_mode.include?(:record_props)
       event.set("[@metadata][kafka][topic]", record.topic)
       event.set("[@metadata][kafka][consumer_group]", @group_id)
