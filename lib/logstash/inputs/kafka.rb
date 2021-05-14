@@ -309,7 +309,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
         codec_instance = @codec.clone
         until stop?
           records = do_poll(consumer)
-          unless records.nil? || records.count == 0
+            unless records.empty?
             records.each { |record| handle_record(record, codec_instance, logstash_queue) }
             maybe_commit_offset(consumer)
           end
@@ -321,7 +321,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   end
 
   def do_poll(consumer)
-    records = nil
+    records = []
     begin
       records = consumer.poll(poll_timeout_ms)
     rescue org.apache.kafka.common.errors.WakeupException => e

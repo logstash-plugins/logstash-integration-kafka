@@ -20,7 +20,9 @@ describe LogStash::Inputs::Kafka do
     before do
       polled = false
       allow(consumer_double).to receive(:poll) do
-        unless polled
+        if polled
+          []
+        else
           polled = true
           payload
         end
@@ -34,7 +36,7 @@ describe LogStash::Inputs::Kafka do
 
     it 'should return nil if Kafka Exception is encountered' do
       expect(consumer_double).to receive(:poll).and_raise(org.apache.kafka.common.errors.TopicAuthorizationException.new(''))
-      expect(subject.do_poll(consumer_double)).to be_nil
+      expect(subject.do_poll(consumer_double)).to be_empty
     end
 
     it 'should not throw if Kafka Exception is encountered' do
@@ -96,7 +98,9 @@ describe LogStash::Inputs::Kafka do
     it "should run" do
       polled = false
       allow(consumer_double).to receive(:poll) do
-        unless polled
+        if polled
+          []
+        else
           polled = true
           payload
         end
@@ -121,8 +125,9 @@ describe LogStash::Inputs::Kafka do
             raised = true
             raise exception
           end
-
-          unless polled
+          if polled
+            []
+          else
             polled = true
             payload
           end
