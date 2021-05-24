@@ -1,3 +1,7 @@
+## 10.7.5
+  - Improved error handling in the input plugin to avoid errors 'escaping' from the plugin, and crashing the logstash
+    process [#87](https://github.com/logstash-plugins/logstash-integration-kafka/pull/87)
+
 ## 10.7.4
   - Docs: make sure Kafka clients version is updated in docs [#83](https://github.com/logstash-plugins/logstash-integration-kafka/pull/83)
     Since **10.6.0** Kafka client was updated to **2.5.1**
