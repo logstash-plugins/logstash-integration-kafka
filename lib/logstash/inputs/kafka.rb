@@ -309,7 +309,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
         codec_instance = @codec.clone
         until stop?
           records = do_poll(consumer)
-            unless records.empty?
+          unless records.empty?
             records.each { |record| handle_record(record, codec_instance, logstash_queue) }
             maybe_commit_offset(consumer)
           end
