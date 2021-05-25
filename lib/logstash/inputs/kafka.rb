@@ -282,7 +282,8 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   public
   def run(logstash_queue)
     @runner_consumers = consumer_threads.times.map { |i| subscribe(create_consumer("#{client_id}-#{i}")) }
-    @runner_threads = @runner_consumers.map { |consumer| thread_runner(logstash_queue, consumer) }
+    @runner_threads = @runner_consumers.map.with_index { |consumer, i| thread_runner(logstash_queue, consumer,
+                                                                                     "kafka-input-worker-#{client_id}-#{i}") }
     @runner_threads.each(&:start)
     @runner_threads.each(&:join)
   end # def run
@@ -303,8 +304,9 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
     consumer
   end
 
-  def thread_runner(logstash_queue, consumer)
+  def thread_runner(logstash_queue, consumer, name)
     java.lang.Thread.new do
+      LogStash::Util::set_thread_name(name)
       begin
         codec_instance = @codec.clone
         until stop?

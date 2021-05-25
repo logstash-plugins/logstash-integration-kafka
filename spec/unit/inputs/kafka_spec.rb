@@ -87,6 +87,7 @@ describe LogStash::Inputs::Kafka do
 
   describe '#running' do
     let(:q) { Queue.new }
+    let(:config) { common_config.merge('client_id' => 'test') }
 
     before do
       expect(subject).to receive(:create_consumer).once.and_return(consumer_double)
@@ -95,26 +96,34 @@ describe LogStash::Inputs::Kafka do
       allow(consumer_double).to receive(:subscribe)
     end
 
-    it "should run" do
-      polled = false
-      allow(consumer_double).to receive(:poll) do
-        if polled
-          []
-        else
-          polled = true
-          payload
+    context 'when running' do
+      before do
+        polled = false
+        allow(consumer_double).to receive(:poll) do
+          if polled
+            []
+          else
+            polled = true
+            payload
+          end
         end
+
+        subject.register
+        t = Thread.new do
+          sleep(1)
+          subject.do_stop
+        end
+        subject.run(q)
+        t.join
       end
 
-      subject.register
-      t = Thread.new do
-        sleep(1)
-        subject.do_stop
+      it 'should process the correct number of events' do
+        expect(q.size).to eq(10)
       end
-      subject.run(q)
-      t.join
 
-      expect(q.size).to eq(10)
+      it 'should set the consumer thread name' do
+        expect(subject.instance_variable_get('@runner_threads').first.get_name).to eq("kafka-input-worker-test-0")
+      end
     end
 
     context 'when errors are encountered during poll' do
