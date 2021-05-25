@@ -275,7 +275,8 @@ which the consumption will begin.
 
 If true, periodically commit to Kafka the offsets of messages already returned by
 the consumer. If value is `false` however, the offset is committed every time the
-consumer fetches the data from the topic.
+consumer fetches the data from the topic and the data is written to the in-memory
+or persistent queue.
 
 [id="plugins-{type}s-{plugin}-exclude_internal_topics"]
 ===== `exclude_internal_topics` 
