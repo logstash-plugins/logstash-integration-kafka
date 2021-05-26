@@ -44,7 +44,7 @@ describe "outputs/kafka", :integration => true do
   end
 
   context 'when outputting messages serialized as Byte Array' do
-    let(:test_topic) { 'topic1b' }
+    let(:test_topic) { 'logstash_integration_topicbytearray' }
     let(:num_events) { 3 }
 
     before :each do

@@ -3,38 +3,178 @@ require "logstash/devutils/rspec/spec_helper"
 require "logstash/inputs/kafka"
 require "concurrent"
 
-class MockConsumer
-  def initialize
-    @wake = Concurrent::AtomicBoolean.new(false)
+
+describe LogStash::Inputs::Kafka do
+  let(:common_config) { { 'topics' => ['logstash'] } }
+  let(:config) { common_config }
+  let(:consumer_double) { double(:consumer) }
+  let(:needs_raise) { false }
+  let(:payload) {
+    10.times.map do
+      org.apache.kafka.clients.consumer.ConsumerRecord.new("logstash", 0, 0, "key", "value")
+    end
+  }
+  subject { LogStash::Inputs::Kafka.new(config) }
+
+  describe '#poll' do
+    before do
+      polled = false
+      allow(consumer_double).to receive(:poll) do
+        if polled
+          []
+        else
+          polled = true
+          payload
+        end
+      end
+    end
+
+    it 'should poll' do
+      expect(consumer_double).to receive(:poll)
+      expect(subject.do_poll(consumer_double)).to eq(payload)
+    end
+
+    it 'should return nil if Kafka Exception is encountered' do
+      expect(consumer_double).to receive(:poll).and_raise(org.apache.kafka.common.errors.TopicAuthorizationException.new(''))
+      expect(subject.do_poll(consumer_double)).to be_empty
+    end
+
+    it 'should not throw if Kafka Exception is encountered' do
+      expect(consumer_double).to receive(:poll).and_raise(org.apache.kafka.common.errors.TopicAuthorizationException.new(''))
+      expect{subject.do_poll(consumer_double)}.not_to raise_error
+    end
+
+    it 'should return no records if Assertion Error is encountered' do
+      expect(consumer_double).to receive(:poll).and_raise(java.lang.AssertionError.new(''))
+      expect{subject.do_poll(consumer_double)}.to raise_error(java.lang.AssertionError)
+    end
   end
 
-  def subscribe(topics)
-  end
-  
-  def poll(ms)
-    if @wake.value
-      raise org.apache.kafka.common.errors.WakeupException.new
-    else
-      10.times.map do
-        org.apache.kafka.clients.consumer.ConsumerRecord.new("logstash", 0, 0, "key", "value")
+  describe '#maybe_commit_offset' do
+    context 'with auto commit disabled' do
+      let(:config) { common_config.merge('enable_auto_commit' => false) }
+
+      it 'should call commit on the consumer' do
+        expect(consumer_double).to receive(:commitSync)
+        subject.maybe_commit_offset(consumer_double)
+      end
+      it 'should not throw if a Kafka Exception is encountered' do
+        expect(consumer_double).to receive(:commitSync).and_raise(org.apache.kafka.common.errors.TopicAuthorizationException.new(''))
+        expect{subject.maybe_commit_offset(consumer_double)}.not_to raise_error
+      end
+
+      it 'should throw if Assertion Error is encountered' do
+        expect(consumer_double).to receive(:commitSync).and_raise(java.lang.AssertionError.new(''))
+        expect{subject.maybe_commit_offset(consumer_double)}.to raise_error(java.lang.AssertionError)
+      end
+    end
+
+    context 'with auto commit enabled' do
+      let(:config) { common_config.merge('enable_auto_commit' => true) }
+
+      it 'should not call commit on the consumer' do
+        expect(consumer_double).not_to receive(:commitSync)
+        subject.maybe_commit_offset(consumer_double)
       end
     end
   end
 
-  def close
+  describe '#register' do
+    it "should register" do
+      expect { subject.register }.to_not raise_error
+    end
   end
 
-  def wakeup
-    @wake.make_true
-  end
-end
+  describe '#running' do
+    let(:q) { Queue.new }
+    let(:config) { common_config.merge('client_id' => 'test') }
 
-describe LogStash::Inputs::Kafka do
-  let(:config) { { 'topics' => ['logstash'], 'consumer_threads' => 4 } }
-  subject { LogStash::Inputs::Kafka.new(config) }
+    before do
+      expect(subject).to receive(:create_consumer).once.and_return(consumer_double)
+      allow(consumer_double).to receive(:wakeup)
+      allow(consumer_double).to receive(:close)
+      allow(consumer_double).to receive(:subscribe)
+    end
 
-  it "should register" do
-    expect { subject.register }.to_not raise_error
+    context 'when running' do
+      before do
+        polled = false
+        allow(consumer_double).to receive(:poll) do
+          if polled
+            []
+          else
+            polled = true
+            payload
+          end
+        end
+
+        subject.register
+        t = Thread.new do
+          sleep(1)
+          subject.do_stop
+        end
+        subject.run(q)
+        t.join
+      end
+
+      it 'should process the correct number of events' do
+        expect(q.size).to eq(10)
+      end
+
+      it 'should set the consumer thread name' do
+        expect(subject.instance_variable_get('@runner_threads').first.get_name).to eq("kafka-input-worker-test-0")
+      end
+    end
+
+    context 'when errors are encountered during poll' do
+      before do
+        raised, polled = false
+        allow(consumer_double).to receive(:poll) do
+          unless raised
+            raised = true
+            raise exception
+          end
+          if polled
+            []
+          else
+            polled = true
+            payload
+          end
+        end
+
+        subject.register
+        t = Thread.new do
+          sleep 2
+          subject.do_stop
+        end
+        subject.run(q)
+        t.join
+      end
+
+      context "when a Kafka exception is raised" do
+        let(:exception) { org.apache.kafka.common.errors.TopicAuthorizationException.new('Invalid topic') }
+
+        it 'should poll successfully' do
+          expect(q.size).to eq(10)
+        end
+      end
+
+      context "when a StandardError is raised" do
+        let(:exception) { StandardError.new('Standard Error') }
+
+        it 'should retry and poll successfully' do
+          expect(q.size).to eq(10)
+        end
+      end
+
+      context "when a java error is raised" do
+        let(:exception) { java.lang.AssertionError.new('Fatal assertion') }
+
+        it "should not retry" do
+          expect(q.size).to eq(0)
+        end
+      end
+    end
   end
 
   context "register parameter verification" do
