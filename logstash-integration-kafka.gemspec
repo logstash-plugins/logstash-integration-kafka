@@ -51,6 +51,7 @@ Gem::Specification.new do |s|
 
   s.add_development_dependency 'logstash-devutils'
   s.add_development_dependency 'rspec-wait'
-  s.add_development_dependency 'ruby-kafka'
+  s.add_development_dependency 'digest-crc', '~> 0.5.1' # 0.6.0 started using a C-ext
+  s.add_development_dependency 'ruby-kafka' # depends on digest-crc
   s.add_development_dependency 'snappy'
 end
