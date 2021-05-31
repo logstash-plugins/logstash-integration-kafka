@@ -1,3 +1,6 @@
+## 10.7.6
+  - Test: specify development dependency version [#91](https://github.com/logstash-plugins/logstash-integration-kafka/pull/91)
+
 ## 10.7.5
   - Improved error handling in the input plugin to avoid errors 'escaping' from the plugin, and crashing the logstash
     process [#87](https://github.com/logstash-plugins/logstash-integration-kafka/pull/87)
