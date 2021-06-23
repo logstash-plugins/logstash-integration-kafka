@@ -53,9 +53,8 @@ module LogStash
           options[:auth] = {:user => schema_registry_key, :password => schema_registry_secret.value}
         end
         client = Manticore::Client.new(options)
-
         begin
-          response = client.get(@schema_registry_url.to_s + '/subjects').body
+          response = client.get(@schema_registry_url.uri.to_s + '/subjects').body
         rescue Manticore::ManticoreException => e
           raise LogStash::ConfigurationError.new("Schema registry service doesn't respond, error: #{e.message}")
         end
