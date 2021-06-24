@@ -208,16 +208,12 @@ end
 describe "schema registry connection options" do
   schema_registry = Manticore::Client.new
   before (:all) do
-    system('./stop_schema_registry.sh')
-    system('./start_schema_registry.sh')
-    Stud.try(20.times, [Manticore::SocketException, StandardError, RSpec::Expectations::ExpectationNotMetError]) do
-      expect(schema_registry.get("http://localhost:8081").code).to eq(200)
-    end
-
+    cleanup_schema_registry
+    startup_schema_registry(schema_registry)
   end
 
   after(:all) do
-    system('./stop_schema_registry.sh')
+    cleanup_schema_registry
   end
 
   context "remote endpoint validation" do
@@ -261,34 +257,39 @@ describe "schema registry connection options" do
   end
 end
 
-def save_avro_schema_to_schema_registry(schema_file, subject_name, port=8081)
+def save_avro_schema_to_schema_registry(schema_file, subject_name)
   raw_schema = File.readlines(schema_file).map(&:chomp).join
   raw_schema_quoted = raw_schema.gsub('"', '\"')
-  response = Manticore.post("http://localhost:#{port}/subjects/#{subject_name}/versions",
+  response = Manticore.post("http://localhost:8081/subjects/#{subject_name}/versions",
           body: '{"schema": "' + raw_schema_quoted + '"}',
           headers: {"Content-Type" => "application/vnd.schemaregistry.v1+json"})
   response
 end
 
-def delete_remote_schema(schema_registry_client, subject_name,port=8081)
-  expect(schema_registry_client.delete("http://localhost:#{port}/subjects/#{subject_name}").code ).to be(200)
-  expect(schema_registry_client.delete("http://localhost:#{port}/subjects/#{subject_name}?permanent=true").code ).to be(200)
+def delete_remote_schema(schema_registry_client, subject_name)
+  expect(schema_registry_client.delete("http://localhost:8081/subjects/#{subject_name}").code ).to be(200)
+  expect(schema_registry_client.delete("http://localhost:8081/subjects/#{subject_name}?permanent=true").code ).to be(200)
 end
 
 # AdminClientConfig = org.alpache.kafka.clients.admin.AdminClientConfig
 
+def startup_schema_registry(schema_registry, auth=false)
+  system('./stop_schema_registry.sh')
+  auth ? system('./start_auth_schema_registry.sh') : system('./start_schema_registry.sh')
+  url = auth ? "http://barney:changeme@localhost:8081" : "http://localhost:8081"
+  Stud.try(20.times, [Manticore::SocketException, StandardError, RSpec::Expectations::ExpectationNotMetError]) do
+    expect(schema_registry.get(url).code).to eq(200)
+  end
+end
+
 describe "Schema registry API", :integration => true do
   schema_registry = Manticore::Client.new
   before(:all) do
-    system('./stop_schema_registry.sh')
-    system('./start_schema_registry.sh')
-    Stud.try(20.times, [Manticore::SocketException, StandardError, RSpec::Expectations::ExpectationNotMetError]) do
-      expect(schema_registry.get("http://localhost:8081").code).to eq(200)
-    end
+    startup_schema_registry(schema_registry)
   end
 
   after(:all) do
-    system('./stop_schema_registry.sh')
+    cleanup_schema_registry
   end
 
   context 'listing subject on clean instance' do
@@ -315,6 +316,10 @@ describe "Schema registry API", :integration => true do
       expect( subjects ).to be_empty
     end
   end
+end
+
+def cleanup_schema_registry
+  system('./stop_schema_registry.sh')
 end
 
 describe "Deserializing with the schema registry", :integration => true do
@@ -361,12 +366,12 @@ describe "Deserializing with the schema registry", :integration => true do
       end
     end
 
-    def write_some_data_to(topic_name, port, user = nil, password = nil)
+    def write_some_data_to(topic_name, user = nil, password = nil)
       props = java.util.Properties.new
       config = org.apache.kafka.clients.producer.ProducerConfig
 
       serdes_config = Java::io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig
-      props.put(serdes_config::SCHEMA_REGISTRY_URL_CONFIG, "http://localhost:#{port}")
+      props.put(serdes_config::SCHEMA_REGISTRY_URL_CONFIG, "http://localhost:8081")
 
       props.put(config::BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
       unless user.nil?
@@ -395,7 +400,7 @@ describe "Deserializing with the schema registry", :integration => true do
 
     it "stored a new schema using Avro Kafka serdes" do
       auth ? delete_topic_if_exists(avro_topic_name, user, password) : delete_topic_if_exists(avro_topic_name)
-      auth ? write_some_data_to(avro_topic_name, port, user, password) : write_some_data_to(avro_topic_name, port)
+      auth ? write_some_data_to(avro_topic_name, user, password) : write_some_data_to(avro_topic_name)
 
       subjects = JSON.parse schema_registry.get(subject_url).body
       expect( subjects ).to contain_exactly("#{avro_topic_name}-value")
@@ -409,53 +414,46 @@ describe "Deserializing with the schema registry", :integration => true do
       expect( elem.get("map_field")["inner_field"] ).to eq("inner value")
     end
   end
+
   context 'with an unauthed schema registry' do
-    let(:port) { 8081 }
     let(:auth) { false }
     let(:avro_topic_name) { "topic_avro" }
-    let(:subject_url) { "http://localhost:#{port}/subjects" }
-    let(:plain_config)  { base_config.merge!({'schema_registry_url' => "http://localhost:#{port}"}) }
+    let(:subject_url) { "http://localhost:8081/subjects" }
+    let(:plain_config)  { base_config.merge!({'schema_registry_url' => "http://localhost:8081"}) }
 
     before (:all) do
-      system('./stop_schema_registry.sh')
-      system('./start_schema_registry.sh')
-      Stud.try(20.times, [Manticore::SocketException, StandardError, RSpec::Expectations::ExpectationNotMetError]) do
-        expect(schema_registry.get("http://localhost:8081").code).to eq(200)
-      end
+      cleanup_schema_registry
+      startup_schema_registry(schema_registry)
     end
 
     after(:all) do
-      system('./stop_schema_registry.sh')
+      cleanup_schema_registry
     end
 
     it_behaves_like 'it reads from a topic using a schema registry'
   end
 
   context 'with an authed schema registry' do
-    let(:port) { 8081 }
     let(:auth) { true }
     let(:user) { "barney" }
     let(:password) { "changeme" }
     let(:avro_topic_name) { "topic_avro_auth" }
-    let(:subject_url) { "http://#{user}:#{password}@localhost:#{port}/subjects" }
+    let(:subject_url) { "http://#{user}:#{password}@localhost:8081/subjects" }
     let(:plain_config) do
       base_config.merge!({
-                             'schema_registry_url' => "http://localhost:#{port}",
+                             'schema_registry_url' => "http://localhost:8081",
                              'schema_registry_key' => user,
                              'schema_registry_secret' => password
                          })
     end
 
     before(:all) do
-      system('./stop_schema_registry.sh')
-      system('./start_auth_schema_registry.sh')
-      Stud.try(30.times, [Manticore::SocketException, StandardError, RSpec::Expectations::ExpectationNotMetError]) do
-        expect(schema_registry.get("http://barney:changeme@localhost:8081").code).to eq(200)
-      end
+      cleanup_schema_registry
+      startup_schema_registry(schema_registry, true)
     end
 
     after(:all) do
-      system('./stop_schema_registry.sh')
+      cleanup_schema_registry
     end
 
     it_behaves_like 'it reads from a topic using a schema registry'
