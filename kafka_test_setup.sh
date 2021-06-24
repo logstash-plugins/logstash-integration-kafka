@@ -27,7 +27,6 @@ sleep 10
 echo "Downloading Confluent Platform"
 curl -s -o build/confluent_platform.tar.gz http://packages.confluent.io/archive/5.5/confluent-community-5.5.1-2.12.tar.gz
 mkdir build/confluent_platform && tar xzf build/confluent_platform.tar.gz -C build/confluent_platform --strip-components 1
-sed 's/8081/8082/' build/confluent_platform/etc/schema-registry/schema-registry.properties > build/confluent_platform/etc/schema-registry/authed-schema-registry.properties
 echo "authentication.method=BASIC" >> build/confluent_platform/etc/schema-registry/authed-schema-registry.properties
 echo "authentication.roles=admin,developer,user,sr-user" >> build/confluent_platform/etc/schema-registry/authed-schema-registry.properties
 echo "authentication.realm=SchemaRegistry-Props" >> build/confluent_platform/etc/schema-registry/authed-schema-registry.properties
@@ -51,8 +50,5 @@ curl -s -o build/apache_logs.txt https://s3.amazonaws.com/data.elasticsearch.org
 cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_integration_topic_plain --broker-list localhost:9092
 cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_integration_topic_snappy --broker-list localhost:9092 --compression-codec snappy
 cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_integration_topic_lz4 --broker-list localhost:9092 --compression-codec lz4
-
-#./start_schema_registry.sh
-sleep 10
 
 echo "Setup complete, running specs"

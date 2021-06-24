@@ -432,7 +432,7 @@ describe "Deserializing with the schema registry", :integration => true do
   end
 
   context 'with an authed schema registry' do
-    let(:port) { 8082 }
+    let(:port) { 8081 }
     let(:auth) { true }
     let(:user) { "barney" }
     let(:password) { "changeme" }
@@ -450,7 +450,7 @@ describe "Deserializing with the schema registry", :integration => true do
       system('./stop_schema_registry.sh')
       system('./start_auth_schema_registry.sh')
       Stud.try(30.times, [Manticore::SocketException, StandardError, RSpec::Expectations::ExpectationNotMetError]) do
-        expect(schema_registry.get("http://barney:changeme@localhost:8082").code).to eq(200)
+        expect(schema_registry.get("http://barney:changeme@localhost:8081").code).to eq(200)
       end
     end
 
