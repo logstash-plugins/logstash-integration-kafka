@@ -2,9 +2,6 @@
 # Setup Kafka and create test topics
 set -ex
 
-echo "Stoppping SchemaRegistry"
-build/confluent_platform/bin/schema-registry-stop
-
 echo "Unregistering test topics"
 build/kafka/bin/kafka-topics.sh --zookeeper localhost:2181 --delete --topic 'logstash_integration_.*'
 build/kafka/bin/kafka-topics.sh --zookeeper localhost:2181 --delete --topic 'topic_avro.*'
