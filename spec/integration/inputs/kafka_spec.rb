@@ -326,11 +326,11 @@ end
 describe "Deserializing with the schema registry", :integration => true do
   schema_registry = Manticore::Client.new
 
-  shared_examples 'it reads from a topic using a schema registry' do
+  shared_examples 'it reads from a topic using a schema registry' do |with_auth|
 
     before(:all) do
       cleanup_schema_registry
-      startup_schema_registry(schema_registry, auth)
+      startup_schema_registry(schema_registry, with_auth)
     end
 
     after(:all) do
@@ -432,7 +432,7 @@ describe "Deserializing with the schema registry", :integration => true do
     let(:subject_url) { "http://localhost:8081/subjects" }
     let(:plain_config)  { base_config.merge!({'schema_registry_url' => "http://localhost:8081"}) }
 
-    it_behaves_like 'it reads from a topic using a schema registry'
+    it_behaves_like 'it reads from a topic using a schema registry', false
   end
 
   context 'with an authed schema registry' do
@@ -451,7 +451,7 @@ describe "Deserializing with the schema registry", :integration => true do
         })
       end
 
-      it_behaves_like 'it reads from a topic using a schema registry'
+      it_behaves_like 'it reads from a topic using a schema registry', true
     end
 
     context 'using schema_registry_url' do
@@ -461,7 +461,7 @@ describe "Deserializing with the schema registry", :integration => true do
         })
       end
 
-      it_behaves_like 'it reads from a topic using a schema registry'
+      it_behaves_like 'it reads from a topic using a schema registry', true
     end
   end
 end
