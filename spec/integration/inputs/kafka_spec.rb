@@ -284,6 +284,7 @@ end
 
 describe "Schema registry API", :integration => true do
   schema_registry = Manticore::Client.new
+
   before(:all) do
     startup_schema_registry(schema_registry)
   end
@@ -326,6 +327,16 @@ describe "Deserializing with the schema registry", :integration => true do
   schema_registry = Manticore::Client.new
 
   shared_examples 'it reads from a topic using a schema registry' do
+
+    before(:all) do
+      cleanup_schema_registry
+      startup_schema_registry(schema_registry, auth)
+    end
+
+    after(:all) do
+      cleanup_schema_registry
+    end
+
     after(:each) do
       expect( schema_registry.delete("#{subject_url}/#{avro_topic_name}-value").code ).to be(200)
       sleep 1
@@ -421,15 +432,6 @@ describe "Deserializing with the schema registry", :integration => true do
     let(:subject_url) { "http://localhost:8081/subjects" }
     let(:plain_config)  { base_config.merge!({'schema_registry_url' => "http://localhost:8081"}) }
 
-    before (:all) do
-      cleanup_schema_registry
-      startup_schema_registry(schema_registry)
-    end
-
-    after(:all) do
-      cleanup_schema_registry
-    end
-
     it_behaves_like 'it reads from a topic using a schema registry'
   end
 
@@ -439,24 +441,27 @@ describe "Deserializing with the schema registry", :integration => true do
     let(:password) { "changeme" }
     let(:avro_topic_name) { "topic_avro_auth" }
     let(:subject_url) { "http://#{user}:#{password}@localhost:8081/subjects" }
-    let(:plain_config) do
-      base_config.merge!({
-                             'schema_registry_url' => "http://localhost:8081",
-                             'schema_registry_key' => user,
-                             'schema_registry_secret' => password
-                         })
+
+    context 'using schema_registry_key' do
+      let(:plain_config) do
+        base_config.merge!({
+          'schema_registry_url' => "http://localhost:8081",
+          'schema_registry_key' => user,
+          'schema_registry_secret' => password
+        })
+      end
+
+      it_behaves_like 'it reads from a topic using a schema registry'
     end
 
-    before(:all) do
-      cleanup_schema_registry
-      startup_schema_registry(schema_registry, true)
-    end
+    context 'using schema_registry_url' do
+      let(:plain_config) do
+        base_config.merge!({
+          'schema_registry_url' => "http://#{user}:#{password}@localhost:8081"
+        })
+      end
 
-    after(:all) do
-      cleanup_schema_registry
+      it_behaves_like 'it reads from a topic using a schema registry'
     end
-
-    it_behaves_like 'it reads from a topic using a schema registry'
   end
-
 end
