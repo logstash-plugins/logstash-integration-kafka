@@ -1,5 +1,5 @@
 ## 10.7.7
-  - Fix: Correct the settings to allow basic auth to work properly, either by setting 'schema_registry_key/secret` or embedding username/password in the
+  - Fix: Correct the settings to allow basic auth to work properly, either by setting `schema_registry_key/secret` or embedding username/password in the
     url [#94](https://github.com/logstash-plugins/logstash-integration-kafka/pull/94)
 
 ## 10.7.6

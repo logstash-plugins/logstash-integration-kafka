@@ -208,12 +208,12 @@ end
 describe "schema registry connection options" do
   schema_registry = Manticore::Client.new
   before (:all) do
-    cleanup_schema_registry
+    shutdown_schema_registry
     startup_schema_registry(schema_registry)
   end
 
   after(:all) do
-    cleanup_schema_registry
+    shutdown_schema_registry
   end
 
   context "remote endpoint validation" do
@@ -290,7 +290,7 @@ describe "Schema registry API", :integration => true do
   end
 
   after(:all) do
-    cleanup_schema_registry
+    shutdown_schema_registry
   end
 
   context 'listing subject on clean instance' do
@@ -319,7 +319,7 @@ describe "Schema registry API", :integration => true do
   end
 end
 
-def cleanup_schema_registry
+def shutdown_schema_registry
   system('./stop_schema_registry.sh')
 end
 
@@ -329,12 +329,12 @@ describe "Deserializing with the schema registry", :integration => true do
   shared_examples 'it reads from a topic using a schema registry' do |with_auth|
 
     before(:all) do
-      cleanup_schema_registry
+      shutdown_schema_registry
       startup_schema_registry(schema_registry, with_auth)
     end
 
     after(:all) do
-      cleanup_schema_registry
+      shutdown_schema_registry
     end
 
     after(:each) do
