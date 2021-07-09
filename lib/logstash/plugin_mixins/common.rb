@@ -22,6 +22,10 @@ module LogStash
         # Option to set the proxy of the Schema Registry.
         # This option permits to define a proxy to be used to reach the schema registry service instance.
         config :schema_registry_proxy, :validate => :uri
+
+        # Option to skip validating the schema registry during registration. This can be useful when using
+        # certificate based auth
+        config :validate_schema_registry, :validate => ['auto', 'skip'], :default => 'auto'
       end
 
       def check_schema_registry_parameters
@@ -29,8 +33,17 @@ module LogStash
           check_for_schema_registry_conflicts
           @schema_registry_proxy_host, @schema_registry_proxy_port  = split_proxy_into_host_and_port(schema_registry_proxy)
           check_for_key_and_secret
-          check_for_schema_registry_connectivity_and_subjects
+          check_for_schema_registry_connectivity_and_subjects if validate_schema_registry?
         end
+      end
+
+      def validate_schema_registry?
+        return false if validate_schema_registry.to_s == 'skip'
+        !using_kerberos?
+      end
+
+      def using_kerberos?
+        security_protocol == "SASL_PLAINTEXT" || security_protocol == "SASL_SSL"
       end
 
       private
