@@ -207,7 +207,7 @@ describe LogStash::Inputs::Kafka do
               let(:config) { base_config.merge({'security_protocol' => protocol,
                                                 'schema_registry_validation' => vsr})
               }
-              it 'should skip verification' do
+              it 'skips verification' do
                 expect(subject).not_to receive(:check_for_schema_registry_connectivity_and_subjects)
                 expect { subject.register }.not_to raise_error
               end
@@ -220,7 +220,7 @@ describe LogStash::Inputs::Kafka do
     context 'when kerberos auth is not used' do
       context "when skip_verify is set to auto" do
         let(:config) { base_config.merge({'schema_registry_validation' => 'auto'})}
-        it 'should not skip verification' do
+        it 'performs verification' do
           expect(subject).to receive(:check_for_schema_registry_connectivity_and_subjects)
           expect { subject.register }.not_to raise_error
         end
@@ -228,7 +228,7 @@ describe LogStash::Inputs::Kafka do
 
       context "when skip_verify is set to default" do
         let(:config) { base_config }
-        it 'should not skip verification' do
+        it 'performs verification' do
           expect(subject).to receive(:check_for_schema_registry_connectivity_and_subjects)
           expect { subject.register }.not_to raise_error
         end
@@ -245,19 +245,19 @@ describe LogStash::Inputs::Kafka do
   end
 
   context "decorate_events" do
-      let(:config) { { 'decorate_events' => 'extended'} }
+    let(:config) { { 'decorate_events' => 'extended'} }
 
-      it "should raise error for invalid value" do
-        config['decorate_events'] = 'avoid'
-        expect { subject.register }.to raise_error LogStash::ConfigurationError, /Something is wrong with your configuration./
-      end
-
-      it "should map old true boolean value to :record_props mode" do
-        config['decorate_events'] = "true"
-        subject.register
-        expect(subject.metadata_mode).to include(:record_props)
-      end
+    it "should raise error for invalid value" do
+      config['decorate_events'] = 'avoid'
+      expect { subject.register }.to raise_error LogStash::ConfigurationError, /Something is wrong with your configuration./
     end
+
+    it "should map old true boolean value to :record_props mode" do
+      config['decorate_events'] = "true"
+      subject.register
+      expect(subject.metadata_mode).to include(:record_props)
+    end
+  end
 
   context 'with client_rack' do
     let(:config) { super().merge('client_rack' => 'EU-R1') }
