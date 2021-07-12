@@ -128,6 +128,7 @@ See the https://kafka.apache.org/{kafka_client_doc}/documentation for more detai
 | <<plugins-{type}s-{plugin}-schema_registry_proxy>> |<<uri,uri>>|No
 | <<plugins-{type}s-{plugin}-schema_registry_secret>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-schema_registry_url>> |<<uri,uri>>|No
+| <<plugins-{type}s-{plugin}-schema_registry_validation>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-security_protocol>> |<<string,string>>, one of `["PLAINTEXT", "SSL", "SASL_PLAINTEXT", "SASL_SSL"]`|No
 | <<plugins-{type}s-{plugin}-send_buffer_bytes>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-session_timeout_ms>> |<<number,number>>|No
@@ -575,6 +576,20 @@ The schemas must follow a naming convention with the pattern <topic name>-value.
 
 Use either the Schema Registry config option or the
 <<plugins-{type}s-{plugin}-value_deserializer_class>> config option, but not both.
+
+[id="plugins-{type}s-{plugin}-validate_schema_registry"]
+===== `schema_registry_validation`
+
+  * Value can be either of: `auto`, `skip`
+  * Default value is `"auto"`
+
+NOTE: Under most circumstances, the default setting of `auto` should not need to be changed.
+
+When using the schema registry, by default a validation process to check connectivity and
+the validity of the schema registry takes place during plugin registration. Under certain
+circumstances when trying to validate an authenticated schema registry, this process may
+fail, and cause the plugin to crash. This setting allows this validation to be skipped during
+registration.
 
 [id="plugins-{type}s-{plugin}-security_protocol"]
 ===== `security_protocol` 

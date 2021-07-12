@@ -25,7 +25,7 @@ module LogStash
 
         # Option to skip validating the schema registry during registration. This can be useful when using
         # certificate based auth
-        config :validate_schema_registry, :validate => ['auto', 'skip'], :default => 'auto'
+        config :schema_registry_validation, :validate => ['auto', 'skip'], :default => 'auto'
       end
 
       def check_schema_registry_parameters
@@ -33,12 +33,12 @@ module LogStash
           check_for_schema_registry_conflicts
           @schema_registry_proxy_host, @schema_registry_proxy_port  = split_proxy_into_host_and_port(schema_registry_proxy)
           check_for_key_and_secret
-          check_for_schema_registry_connectivity_and_subjects if validate_schema_registry?
+          check_for_schema_registry_connectivity_and_subjects if schema_registry_validation?
         end
       end
 
-      def validate_schema_registry?
-        return false if validate_schema_registry.to_s == 'skip'
+      def schema_registry_validation?
+        return false if schema_registry_validation.to_s == 'skip'
         !using_kerberos?
       end
 

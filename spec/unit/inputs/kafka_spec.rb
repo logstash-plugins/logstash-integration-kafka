@@ -205,7 +205,7 @@ describe LogStash::Inputs::Kafka do
           ['auto', 'skip'].each do |vsr|
             context "when validata_schema_registry is #{vsr}" do
               let(:config) { base_config.merge({'security_protocol' => protocol,
-                                                'validate_schema_registry' => vsr})
+                                                'schema_registry_validation' => vsr})
               }
               it 'should skip verification' do
                 expect(subject).not_to receive(:check_for_schema_registry_connectivity_and_subjects)
@@ -219,7 +219,7 @@ describe LogStash::Inputs::Kafka do
 
     context 'when kerberos auth is not used' do
       context "when skip_verify is set to auto" do
-        let(:config) { base_config.merge({'validate_schema_registry' => 'auto'})}
+        let(:config) { base_config.merge({'schema_registry_validation' => 'auto'})}
         it 'should not skip verification' do
           expect(subject).to receive(:check_for_schema_registry_connectivity_and_subjects)
           expect { subject.register }.not_to raise_error
@@ -235,7 +235,7 @@ describe LogStash::Inputs::Kafka do
       end
 
       context "when skip_verify is set to skip" do
-        let(:config) { base_config.merge({'validate_schema_registry' => 'skip'})}
+        let(:config) { base_config.merge({'schema_registry_validation' => 'skip'})}
         it 'should skip verification' do
           expect(subject).not_to receive(:check_for_schema_registry_connectivity_and_subjects)
           expect { subject.register }.not_to raise_error
