@@ -39,7 +39,9 @@ module LogStash
 
       def schema_registry_validation?
         return false if schema_registry_validation.to_s == 'skip'
-        !using_kerberos?
+        return false if using_kerberos? # pre-validation doesn't support kerberos
+        
+        true
       end
 
       def using_kerberos?
