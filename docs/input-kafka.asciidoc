@@ -577,7 +577,7 @@ The schemas must follow a naming convention with the pattern <topic name>-value.
 Use either the Schema Registry config option or the
 <<plugins-{type}s-{plugin}-value_deserializer_class>> config option, but not both.
 
-[id="plugins-{type}s-{plugin}-validate_schema_registry"]
+[id="plugins-{type}s-{plugin}-schema_registry_validation"]
 ===== `schema_registry_validation`
 
   * Value can be either of: `auto`, `skip`
