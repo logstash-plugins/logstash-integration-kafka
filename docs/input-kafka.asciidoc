@@ -585,11 +585,9 @@ Use either the Schema Registry config option or the
 
 NOTE: Under most circumstances, the default setting of `auto` should not need to be changed.
 
-When using the schema registry, by default a validation process to check connectivity and
-the validity of the schema registry takes place during plugin registration. Under certain
-circumstances when trying to validate an authenticated schema registry, this process may
-fail, and cause the plugin to crash. This setting allows this validation to be skipped during
-registration.
+When using the schema registry, by default the plugin checks connectivity and validates the schema registry, during plugin registration, before events are processed.
+In some circumstances, this process may fail when it tries to validate an authenticated schema registry, causing the plugin to crash.
+This setting allows the plugin to skip validation during registration, which allows the plugin to continue and events to be processed. Note that an incorrectly configured schema registry will still stop the plugin from processing events.
 
 [id="plugins-{type}s-{plugin}-security_protocol"]
 ===== `security_protocol` 
