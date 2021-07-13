@@ -177,11 +177,16 @@ describe LogStash::Inputs::Kafka do
     end
   end
 
-  context "register parameter verification" do
+  describe "schema registry parameter verification" do
+    let(:base_config) do {
+          'schema_registry_url' => 'http://localhost:8081',
+          'topics' => ['logstash'],
+          'consumer_threads' => 4
+    }
+    end
+
     context "schema_registry_url" do
-      let(:config) do
-        { 'schema_registry_url' => 'http://localhost:8081', 'topics' => ['logstash'], 'consumer_threads' => 4 }
-      end
+     let(:config) { base_config }
 
       it "conflict with value_deserializer_class should fail" do
         config['value_deserializer_class'] = 'my.fantasy.Deserializer'
@@ -194,19 +199,63 @@ describe LogStash::Inputs::Kafka do
       end
     end
 
-    context "decorate_events" do
-      let(:config) { { 'decorate_events' => 'extended'} }
+    context 'when kerberos auth is used' do
+      ['SASL_SSL', 'SASL_PLAINTEXT'].each do |protocol|
+        context "with #{protocol}" do
+          ['auto', 'skip'].each do |vsr|
+            context "when validata_schema_registry is #{vsr}" do
+              let(:config) { base_config.merge({'security_protocol' => protocol,
+                                                'schema_registry_validation' => vsr})
+              }
+              it 'skips verification' do
+                expect(subject).not_to receive(:check_for_schema_registry_connectivity_and_subjects)
+                expect { subject.register }.not_to raise_error
+              end
+            end
+          end
+        end
+      end
+    end
 
-      it "should raise error for invalid value" do
-        config['decorate_events'] = 'avoid'
-        expect { subject.register }.to raise_error LogStash::ConfigurationError, /Something is wrong with your configuration./
+    context 'when kerberos auth is not used' do
+      context "when skip_verify is set to auto" do
+        let(:config) { base_config.merge({'schema_registry_validation' => 'auto'})}
+        it 'performs verification' do
+          expect(subject).to receive(:check_for_schema_registry_connectivity_and_subjects)
+          expect { subject.register }.not_to raise_error
+        end
       end
 
-      it "should map old true boolean value to :record_props mode" do
-        config['decorate_events'] = "true"
-        subject.register
-        expect(subject.metadata_mode).to include(:record_props)
+      context "when skip_verify is set to default" do
+        let(:config) { base_config }
+        it 'performs verification' do
+          expect(subject).to receive(:check_for_schema_registry_connectivity_and_subjects)
+          expect { subject.register }.not_to raise_error
+        end
       end
+
+      context "when skip_verify is set to skip" do
+        let(:config) { base_config.merge({'schema_registry_validation' => 'skip'})}
+        it 'should skip verification' do
+          expect(subject).not_to receive(:check_for_schema_registry_connectivity_and_subjects)
+          expect { subject.register }.not_to raise_error
+        end
+      end
+    end
+  end
+
+  context "decorate_events" do
+    let(:config) { { 'decorate_events' => 'extended'} }
+
+    it "should raise error for invalid value" do
+      config['decorate_events'] = 'avoid'
+      expect { subject.register }.to raise_error LogStash::ConfigurationError, /Something is wrong with your configuration./
+    end
+
+    it "should map old true boolean value to :record_props mode" do
+      config['decorate_events'] = "true"
+      subject.register
+      expect(subject.metadata_mode).to include(:record_props)
     end
   end
 
