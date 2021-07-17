@@ -1,0 +1,5 @@
+fred: OBF:1w8t1tvf1w261w8v1w1c1tvn1w8x,user,admin
+barney: changeme,user,developer
+admin:admin,admin
+betty: MD5:164c88b302622e17050af52c89945d44,user
+wilma: CRYPT:adpexzg3FUZAk,admin,sr-user
