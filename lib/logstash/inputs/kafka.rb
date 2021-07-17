@@ -80,8 +80,6 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # is to be able to track the source of requests beyond just ip/port by allowing
   # a logical application name to be included.
   config :client_id, :validate => :string, :default => "logstash"
-  # If true, appends the consumer thread number after the client_id string.
-  config :append_thread_num_to_client_id, :validate => :boolean, :default => true
   # Close idle connections after the number of milliseconds specified by this config.
   config :connections_max_idle_ms, :validate => :number, :default => 540_000 # (9m) Kafka default
   # Ideally you should have as many threads as the number of partitions for a perfect
@@ -242,7 +240,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
   public
   def run(logstash_queue)
-    @runner_consumers = consumer_threads.times.map { |i| create_consumer("#{client_id}"+(@append_thread_num_to_client_id ? "-#{i}" : "")) }
+    @runner_consumers = consumer_threads.times.map { |i| create_consumer("#{client_id}-#{i}") }
     @runner_threads = @runner_consumers.map { |consumer| thread_runner(logstash_queue, consumer) }
     @runner_threads.each { |t| t.join }
   end # def run
