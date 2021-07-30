@@ -179,6 +179,10 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   config :sasl_jaas_config, :validate => :string
   # Optional path to kerberos config file. This is krb5.conf style as detailed in https://web.mit.edu/kerberos/krb5-1.12/doc/admin/conf_files/krb5_conf.html
   config :kerberos_config, :validate => :path
+  # Custom sasl client callback handler class.
+  config :sasl_client_callback_handler_class, :validate => :string
+  # Custom sasl login callback handler class.
+  config :sasl_login_callback_handler_class, :validate => :string
 
   # The topic to produce messages to
   config :topic_id, :validate => :string, :required => true
@@ -362,6 +366,8 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
       elsif security_protocol == "SASL_PLAINTEXT"
         set_sasl_config(props)
       elsif security_protocol == "SASL_SSL"
+        props.put("sasl.client.callback.handler.class",sasl_client_callback_handler_class) unless sasl_client_callback_handler_class.nil?
+        props.put("sasl.login.callback.handler.class",sasl_login_callback_handler_class) unless sasl_login_callback_handler_class.nil?
         set_trustore_keystore_config(props)
         set_sasl_config(props)
       end
