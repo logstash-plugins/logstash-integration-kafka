@@ -1,5 +1,24 @@
+## 10.8.2
+  - [DOC] Updates description of `enable_auto_commit=false` to clarify that the commit happens after data is fetched AND written to the queue [#90](https://github.com/logstash-plugins/logstash-integration-kafka/pull/90)
+  - [DOC] Clarify Kafka client does not support proxy [#103](https://github.com/logstash-plugins/logstash-integration-kafka/pull/103)
+
+## 10.8.1
+  - [DOC] Removed a setting recommendation that is no longer applicable for Kafka 2.0+ [#99](https://github.com/logstash-plugins/logstash-integration-kafka/pull/99)
+
+## 10.8.0
+  - Added config setting to enable schema registry validation to be skipped when an authentication scheme unsupported
+    by the validator is used [#97](https://github.com/logstash-plugins/logstash-integration-kafka/pull/97)
+
+## 10.7.7
+  - Fix: Correct the settings to allow basic auth to work properly, either by setting `schema_registry_key/secret` or embedding username/password in the
+    url [#94](https://github.com/logstash-plugins/logstash-integration-kafka/pull/94)
+
+## 10.7.6
+  - Test: specify development dependency version [#91](https://github.com/logstash-plugins/logstash-integration-kafka/pull/91)
+
 ## 10.7.5
-  - Docs: clarify Kafka client does not support proxy 
+  - Improved error handling in the input plugin to avoid errors 'escaping' from the plugin, and crashing the logstash
+    process [#87](https://github.com/logstash-plugins/logstash-integration-kafka/pull/87)
 
 ## 10.7.4
   - Docs: make sure Kafka clients version is updated in docs [#83](https://github.com/logstash-plugins/logstash-integration-kafka/pull/83)

@@ -253,6 +253,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   def register
     @runner_threads = []
     @metadata_mode = extract_metadata_level(@decorate_events)
+    @pattern ||= java.util.regex.Pattern.compile(@topics_pattern) unless @topics_pattern.nil?
     check_schema_registry_parameters
   end
 
@@ -280,9 +281,11 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
   public
   def run(logstash_queue)
-    @runner_consumers = consumer_threads.times.map { |i| create_consumer("#{client_id}-#{i}") }
-    @runner_threads = @runner_consumers.map { |consumer| thread_runner(logstash_queue, consumer) }
-    @runner_threads.each { |t| t.join }
+    @runner_consumers = consumer_threads.times.map { |i| subscribe(create_consumer("#{client_id}-#{i}")) }
+    @runner_threads = @runner_consumers.map.with_index { |consumer, i| thread_runner(logstash_queue, consumer,
+                                                                                     "kafka-input-worker-#{client_id}-#{i}") }
+    @runner_threads.each(&:start)
+    @runner_threads.each(&:join)
   end # def run
 
   public
@@ -296,59 +299,97 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
     @runner_consumers
   end
 
-  private
-  def thread_runner(logstash_queue, consumer)
-    Thread.new do
+  def subscribe(consumer)
+    @pattern.nil? ? consumer.subscribe(topics) : consumer.subscribe(@pattern)
+    consumer
+  end
+
+  def thread_runner(logstash_queue, consumer, name)
+    java.lang.Thread.new do
+      LogStash::Util::set_thread_name(name)
       begin
-        unless @topics_pattern.nil?
-          nooplistener = org.apache.kafka.clients.consumer.internals.NoOpConsumerRebalanceListener.new
-          pattern = java.util.regex.Pattern.compile(@topics_pattern)
-          consumer.subscribe(pattern, nooplistener)
-        else
-          consumer.subscribe(topics);
-        end
         codec_instance = @codec.clone
-        while !stop?
-          records = consumer.poll(poll_timeout_ms)
-          next unless records.count > 0
-          for record in records do
-            codec_instance.decode(record.value.to_s) do |event|
-              decorate(event)
-              if schema_registry_url
-                json = LogStash::Json.load(record.value.to_s)
-                json.each do |k, v|
-                  event.set(k, v)
-                end
-                event.remove("message")
-              end
-              if @metadata_mode.include?(:record_props)
-                event.set("[@metadata][kafka][topic]", record.topic)
-                event.set("[@metadata][kafka][consumer_group]", @group_id)
-                event.set("[@metadata][kafka][partition]", record.partition)
-                event.set("[@metadata][kafka][offset]", record.offset)
-                event.set("[@metadata][kafka][key]", record.key)
-                event.set("[@metadata][kafka][timestamp]", record.timestamp)
-              end
-              if @metadata_mode.include?(:headers)
-                record.headers.each do |header|
-                  s = String.from_java_bytes(header.value)
-                  s.force_encoding(Encoding::UTF_8)
-                  if s.valid_encoding?
-                    event.set("[@metadata][kafka][headers]["+header.key+"]", s)
-                  end
-                end
-              end
-              logstash_queue << event
-            end
+        until stop?
+          records = do_poll(consumer)
+          unless records.empty?
+            records.each { |record| handle_record(record, codec_instance, logstash_queue) }
+            maybe_commit_offset(consumer)
           end
-          # Manual offset commit
-          consumer.commitSync if @enable_auto_commit.eql?(false)
         end
-      rescue org.apache.kafka.common.errors.WakeupException => e
-        raise e if !stop?
       ensure
         consumer.close
       end
+    end
+  end
+
+  def do_poll(consumer)
+    records = []
+    begin
+      records = consumer.poll(poll_timeout_ms)
+    rescue org.apache.kafka.common.errors.WakeupException => e
+      logger.debug("Wake up from poll", :kafka_error_message => e)
+      raise e unless stop?
+    rescue => e
+      logger.error("Unable to poll Kafka consumer",
+                   :kafka_error_message => e,
+                   :cause => e.respond_to?(:getCause) ? e.getCause : nil)
+      Stud.stoppable_sleep(1) { stop? }
+    end
+    records
+  end
+
+  def handle_record(record, codec_instance, queue)
+    codec_instance.decode(record.value.to_s) do |event|
+      decorate(event)
+      maybe_apply_schema(event, record)
+      maybe_set_metadata(event, record)
+      queue << event
+    end
+  end
+
+  def maybe_apply_schema(event, record)
+    if schema_registry_url
+      json = LogStash::Json.load(record.value.to_s)
+      json.each do |k, v|
+        event.set(k, v)
+      end
+      event.remove("message")
+    end
+  end
+
+  def maybe_set_metadata(event, record)
+    if @metadata_mode.include?(:record_props)
+      event.set("[@metadata][kafka][topic]", record.topic)
+      event.set("[@metadata][kafka][consumer_group]", @group_id)
+      event.set("[@metadata][kafka][partition]", record.partition)
+      event.set("[@metadata][kafka][offset]", record.offset)
+      event.set("[@metadata][kafka][key]", record.key)
+      event.set("[@metadata][kafka][timestamp]", record.timestamp)
+    end
+    if @metadata_mode.include?(:headers)
+      record.headers.each do |header|
+        s = String.from_java_bytes(header.value)
+        s.force_encoding(Encoding::UTF_8)
+        if s.valid_encoding?
+          event.set("[@metadata][kafka][headers][" + header.key + "]", s)
+        end
+      end
+    end
+  end
+
+  def maybe_commit_offset(consumer)
+    begin
+      consumer.commitSync if @enable_auto_commit.eql?(false)
+    rescue org.apache.kafka.common.errors.WakeupException => e
+      logger.debug("Wake up from commitSync", :kafka_error_message => e)
+      raise e unless stop?
+    rescue StandardError => e
+      # For transient errors, the commit should be successful after the next set of
+      # polled records has been processed.
+      # But, it might also be worth thinking about adding a configurable retry mechanism
+      logger.error("Unable to commit records",
+                   :kafka_error_message => e,
+                   :cause => e.respond_to?(:getCause) ? e.getCause() : nil)
     end
   end
 
@@ -392,13 +433,16 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
       if schema_registry_url
         props.put(kafka::VALUE_DESERIALIZER_CLASS_CONFIG, Java::io.confluent.kafka.serializers.KafkaAvroDeserializer.java_class)
         serdes_config = Java::io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig
-        props.put(serdes_config::SCHEMA_REGISTRY_URL_CONFIG, schema_registry_url.to_s)
+        props.put(serdes_config::SCHEMA_REGISTRY_URL_CONFIG, schema_registry_url.uri.to_s)
         if schema_registry_proxy && !schema_registry_proxy.empty?
           props.put(serdes_config::PROXY_HOST, @schema_registry_proxy_host)
           props.put(serdes_config::PROXY_PORT, @schema_registry_proxy_port)
         end
         if schema_registry_key && !schema_registry_key.empty?
+          props.put(serdes_config::BASIC_AUTH_CREDENTIALS_SOURCE, 'USER_INFO')
           props.put(serdes_config::USER_INFO_CONFIG, schema_registry_key + ":" + schema_registry_secret.value)
+        else
+          props.put(serdes_config::BASIC_AUTH_CREDENTIALS_SOURCE, 'URL')
         end
       end
       if security_protocol == "SSL"

@@ -22,6 +22,10 @@ module LogStash
         # Option to set the proxy of the Schema Registry.
         # This option permits to define a proxy to be used to reach the schema registry service instance.
         config :schema_registry_proxy, :validate => :uri
+
+        # Option to skip validating the schema registry during registration. This can be useful when using
+        # certificate based auth
+        config :schema_registry_validation, :validate => ['auto', 'skip'], :default => 'auto'
       end
 
       def check_schema_registry_parameters
@@ -29,8 +33,19 @@ module LogStash
           check_for_schema_registry_conflicts
           @schema_registry_proxy_host, @schema_registry_proxy_port  = split_proxy_into_host_and_port(schema_registry_proxy)
           check_for_key_and_secret
-          check_for_schema_registry_connectivity_and_subjects
+          check_for_schema_registry_connectivity_and_subjects if schema_registry_validation?
         end
+      end
+
+      def schema_registry_validation?
+        return false if schema_registry_validation.to_s == 'skip'
+        return false if using_kerberos? # pre-validation doesn't support kerberos
+        
+        true
+      end
+
+      def using_kerberos?
+        security_protocol == "SASL_PLAINTEXT" || security_protocol == "SASL_SSL"
       end
 
       private
@@ -53,9 +68,8 @@ module LogStash
           options[:auth] = {:user => schema_registry_key, :password => schema_registry_secret.value}
         end
         client = Manticore::Client.new(options)
-
         begin
-          response = client.get(@schema_registry_url.to_s + '/subjects').body
+          response = client.get(@schema_registry_url.uri.to_s + '/subjects').body
         rescue Manticore::ManticoreException => e
           raise LogStash::ConfigurationError.new("Schema registry service doesn't respond, error: #{e.message}")
         end
