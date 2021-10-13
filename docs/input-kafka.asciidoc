@@ -42,6 +42,8 @@ This input supports connecting to Kafka over:
 
 By default security is disabled but can be turned on as needed.
 
+Kafka broker doees not support proxy. Only schema registry supports proxy.
+
 The Logstash Kafka consumer handles group management and uses the default offset management
 strategy using Kafka topics.
 
@@ -182,8 +184,6 @@ This list should be in the form of `host1:port1,host2:port2` These urls are just
 for the initial connection to discover the full cluster membership (which may change dynamically)
 so this list need not contain the full set of servers (you may want more than one, though, in
 case a server is down).
-
-NOTE: Kafka client does not support proxy setup. Only schema registry supports proxy.
 
 [id="plugins-{type}s-{plugin}-check_crcs"]
 ===== `check_crcs` 
