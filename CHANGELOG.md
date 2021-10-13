@@ -1,3 +1,6 @@
+## 10.7.5
+  - Docs: clarify Kafka client does not support proxy 
+
 ## 10.7.4
   - Docs: make sure Kafka clients version is updated in docs [#83](https://github.com/logstash-plugins/logstash-integration-kafka/pull/83)
     Since **10.6.0** Kafka client was updated to **2.5.1**

@@ -182,6 +182,8 @@ for the initial connection to discover the full cluster membership (which may ch
 so this list need not contain the full set of servers (you may want more than one, though, in
 case a server is down).
 
+NOTE: Kafka client does not support proxy setup. Only schema registry supports proxy.
+
 [id="plugins-{type}s-{plugin}-check_crcs"]
 ===== `check_crcs` 
 
