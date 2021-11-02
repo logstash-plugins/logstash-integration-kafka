@@ -1,5 +1,6 @@
 ## 10.8.2
   - [DOC] Updates description of `enable_auto_commit=false` to clarify that the commit happens after data is fetched AND written to the queue [#90](https://github.com/logstash-plugins/logstash-integration-kafka/pull/90)
+  - Fix: update to Gradle 7 [#104](https://github.com/logstash-plugins/logstash-integration-kafka/pull/104)
   - [DOC] Clarify Kafka client does not support proxy [#103](https://github.com/logstash-plugins/logstash-integration-kafka/pull/103)
 
 ## 10.8.1
