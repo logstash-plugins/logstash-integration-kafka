@@ -64,6 +64,8 @@ https://kafka.apache.org/{kafka_client_doc}/documentation.html#theproducer
 Kafka producer configuration:
 https://kafka.apache.org/{kafka_client_doc}/documentation.html#producerconfigs
 
+NOTE:  This plugin does not support using a proxy when communicating to the Kafka broker.
+
 [id="plugins-{type}s-{plugin}-options"]
 ==== Kafka Output Configuration Options
 

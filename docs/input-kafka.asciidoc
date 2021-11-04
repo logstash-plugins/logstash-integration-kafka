@@ -42,6 +42,13 @@ This input supports connecting to Kafka over:
 
 By default security is disabled but can be turned on as needed.
 
+[NOTE]
+=======
+This plugin does not support using a proxy when communicating to the Kafka broker.  
+
+This plugin does support using a proxy when communicating to the Schema Registry using the <<plugins-{type}s-{plugin}-schema_registry_proxy>> option.
+=======
+
 The Logstash Kafka consumer handles group management and uses the default offset management
 strategy using Kafka topics.
 
