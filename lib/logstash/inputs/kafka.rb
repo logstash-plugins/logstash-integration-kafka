@@ -66,7 +66,9 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # default :codec, 'plain' or 'json' depending whether schema registry is used
   #
   # @override LogStash::Inputs::Base - removing the `:default => :plain`
-  config :codec, :validate => :codec # default: plain or json (when using schema_registry)
+  config :codec, :validate => :codec
+  # NOTE: isn't necessary due the params['codec'] = ... done in #initialize
+  # having the `nil` default explicit makes the behavior more noticeable.
 
   # The frequency in milliseconds that the consumer offsets are committed to Kafka.
   config :auto_commit_interval_ms, :validate => :number, :default => 5000 # Kafka default
@@ -252,6 +254,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
   attr_reader :metadata_mode
 
+  # @overload based on schema registry change the codec default
   def initialize(params = {})
     unless params.key?('codec')
       params['codec'] = params.key?('schema_registry_url') ? 'json' : 'plain'
