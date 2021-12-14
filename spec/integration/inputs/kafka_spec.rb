@@ -16,38 +16,38 @@ describe "inputs/kafka", :integration => true do
   let(:group_id_5) {rand(36**8).to_s(36)}
   let(:group_id_6) {rand(36**8).to_s(36)}
   let(:plain_config) do
-    { 'topics' => ['logstash_integration_topic_plain'], 'codec' => 'plain', 'group_id' => group_id_1,
+    { 'topics' => ['logstash_integration_topic_plain'], 'group_id' => group_id_1,
       'auto_offset_reset' => 'earliest' }
   end
   let(:multi_consumer_config) do
     plain_config.merge({"group_id" => group_id_4, "client_id" => "spec", "consumer_threads" => 3})
   end
   let(:snappy_config) do
-    { 'topics' => ['logstash_integration_topic_snappy'], 'codec' => 'plain', 'group_id' => group_id_1,
+    { 'topics' => ['logstash_integration_topic_snappy'], 'group_id' => group_id_1,
       'auto_offset_reset' => 'earliest' }
   end
   let(:lz4_config) do
-    { 'topics' => ['logstash_integration_topic_lz4'], 'codec' => 'plain', 'group_id' => group_id_1,
+    { 'topics' => ['logstash_integration_topic_lz4'], 'group_id' => group_id_1,
       'auto_offset_reset' => 'earliest' }
   end
   let(:pattern_config) do
-    { 'topics_pattern' => 'logstash_integration_topic_.*', 'group_id' => group_id_2, 'codec' => 'plain',
+    { 'topics_pattern' => 'logstash_integration_topic_.*', 'group_id' => group_id_2,
       'auto_offset_reset' => 'earliest' }
   end
   let(:decorate_config) do
-    { 'topics' => ['logstash_integration_topic_plain'], 'codec' => 'plain', 'group_id' => group_id_3,
+    { 'topics' => ['logstash_integration_topic_plain'], 'group_id' => group_id_3,
       'auto_offset_reset' => 'earliest', 'decorate_events' => 'true' }
   end
   let(:decorate_headers_config) do
-    { 'topics' => ['logstash_integration_topic_plain_with_headers'], 'codec' => 'plain', 'group_id' => group_id_3,
+    { 'topics' => ['logstash_integration_topic_plain_with_headers'], 'group_id' => group_id_3,
       'auto_offset_reset' => 'earliest', 'decorate_events' => 'extended' }
   end
   let(:decorate_bad_headers_config) do
-    { 'topics' => ['logstash_integration_topic_plain_with_headers_badly'], 'codec' => 'plain', 'group_id' => group_id_3,
+    { 'topics' => ['logstash_integration_topic_plain_with_headers_badly'], 'group_id' => group_id_3,
       'auto_offset_reset' => 'earliest', 'decorate_events' => 'extended' }
   end
   let(:manual_commit_config) do
-    { 'topics' => ['logstash_integration_topic_plain'], 'codec' => 'plain', 'group_id' => group_id_5,
+    { 'topics' => ['logstash_integration_topic_plain'], 'group_id' => group_id_5,
       'auto_offset_reset' => 'earliest', 'enable_auto_commit' => 'false' }
   end
   let(:timeout_seconds) { 30 }
@@ -352,10 +352,7 @@ describe "Deserializing with the schema registry", :integration => true do
 
     let(:base_config) do
       {
-          'topics' => [avro_topic_name],
-          'codec' => 'plain',
-          'group_id' => group_id_1,
-          'auto_offset_reset' => 'earliest'
+          'topics' => [avro_topic_name], 'group_id' => group_id_1, 'auto_offset_reset' => 'earliest'
       }
     end
 

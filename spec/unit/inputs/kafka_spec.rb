@@ -177,7 +177,23 @@ describe LogStash::Inputs::Kafka do
     end
   end
 
-  describe "schema registry parameter verification" do
+  it 'uses plain codec by default' do
+    expect( subject.codec ).to respond_to :decode
+    expect( subject.codec.class ).to be LogStash::Codecs::Plain
+  end
+
+  context 'with codec option' do
+
+    let(:config) { super().merge 'codec' => 'line' }
+
+    it 'uses specified codec' do
+      expect( subject.codec ).to respond_to :decode
+      expect( subject.codec.class ).to be LogStash::Codecs::Line
+    end
+
+  end
+
+  describe "schema registry" do
     let(:base_config) do {
           'schema_registry_url' => 'http://localhost:8081',
           'topics' => ['logstash'],
@@ -186,7 +202,7 @@ describe LogStash::Inputs::Kafka do
     end
 
     context "schema_registry_url" do
-     let(:config) { base_config }
+      let(:config) { base_config }
 
       it "conflict with value_deserializer_class should fail" do
         config['value_deserializer_class'] = 'my.fantasy.Deserializer'
@@ -197,6 +213,11 @@ describe LogStash::Inputs::Kafka do
         config['topics_pattern'] = 'topic_.*'
         expect { subject.register }.to raise_error LogStash::ConfigurationError, /Option schema_registry_url prohibit the customization of topics_pattern/
       end
+
+      it 'switches default codec to json' do
+        expect( subject.codec ).to respond_to :decode
+        expect( subject.codec.class ).to be LogStash::Codecs::JSON
+      end
     end
 
     context 'when kerberos auth is used' do
@@ -204,9 +225,8 @@ describe LogStash::Inputs::Kafka do
         context "with #{protocol}" do
           ['auto', 'skip'].each do |vsr|
             context "when validata_schema_registry is #{vsr}" do
-              let(:config) { base_config.merge({'security_protocol' => protocol,
-                                                'schema_registry_validation' => vsr})
-              }
+              let(:config) { base_config.merge({'security_protocol' => protocol, 'schema_registry_validation' => vsr}) }
+
               it 'skips verification' do
                 expect(subject).not_to receive(:check_for_schema_registry_connectivity_and_subjects)
                 expect { subject.register }.not_to raise_error
