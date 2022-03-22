@@ -8,7 +8,7 @@ task :default do
 end
 
 task :vendor do
-  exit(1) unless system './gradlew vendor'
+  exit(1) unless system './gradlew --no-daemon vendor'
 end
 
 task :clean do
