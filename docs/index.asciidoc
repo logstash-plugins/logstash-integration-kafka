@@ -1,7 +1,7 @@
 :plugin: kafka
 :type: integration
 :no_codec:
-:kafka_client: 2.5.1
+:kafka_client: 2.8.1
 
 ///////////////////////////////////////////
 START - GENERATED VARIABLES, DO NOT EDIT!
