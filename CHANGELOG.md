@@ -1,10 +1,11 @@
-## 10.10.0
+## 10.10.1
+  - Update CHANGELOG.md [#114](https://api.github.com/repos/logstash-plugins/logstash-integration-kafka/pulls/114)
 
+## 10.10.0
   - Added config setting to enable 'zstd' compression in the Kafka output [#112](https://github.com/logstash-plugins/logstash-integration-kafka/pull/112)
 
 ## 10.9.0
   - Refactor: leverage codec when using schema registry [#106](https://github.com/logstash-plugins/logstash-integration-kafka/pull/106)
-  
     Previously using `schema_registry_url` parsed the payload as JSON even if `codec => 'plain'` was set, this is no longer the case.  
 
 ## 10.8.2
@@ -90,7 +91,6 @@
 ## 10.0.1
   - Fix links in changelog pointing to stand-alone plugin changelogs.
   - Refactor: scope java_import to plugin class
-
 
 ## 10.0.0
   - Initial release of the Kafka Integration Plugin, which combines
