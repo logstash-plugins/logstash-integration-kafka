@@ -49,7 +49,7 @@ dependencies {
         exclude group: 'org.apache.kafka', module:'kafka-clients'
     }
     implementation 'io.confluent:common-config:6.2.2'
-    implementation 'org.apache.avro:avro:1.9.2'
+    implementation 'org.apache.avro:avro:1.11.0'
     implementation('io.confluent:kafka-schema-registry-client:6.2.2') {
         exclude group: 'org.apache.kafka', module:'kafka-clients'
     }
@@ -65,7 +65,7 @@ dependencies {
     // Confluent Platform 6.2.x is Apache Kafka 2.8.x
     implementation 'org.apache.kafka:kafka-clients:2.8.1'
     implementation 'com.github.luben:zstd-jni:1.5.2-2'
-    implementation 'org.slf4j:slf4j-api:1.7.30'
+    implementation 'org.slf4j:slf4j-api:1.7.36'
     implementation 'org.lz4:lz4-java:1.7.1'
     implementation 'org.xerial.snappy:snappy-java:1.1.8.4'
 }
