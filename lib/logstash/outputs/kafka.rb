@@ -2,7 +2,7 @@ require 'logstash/namespace'
 require 'logstash/outputs/base'
 require 'java'
 require 'logstash-integration-kafka_jars.rb'
-require 'logstash/plugin_mixins/kafka_support'
+require 'logstash/plugin_mixins/kafka/common'
 
 # Write events to a Kafka topic. This uses the Kafka Producer API to write messages to a topic on
 # the broker.
@@ -51,7 +51,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
 
   java_import org.apache.kafka.clients.producer.ProducerRecord
 
-  include LogStash::PluginMixins::KafkaSupport
+  include LogStash::PluginMixins::Kafka::Common
 
   declare_threadsafe!
 
@@ -107,19 +107,12 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   config :message_key, :validate => :string
   # the timeout setting for initial metadata request to fetch topic metadata.
   config :metadata_fetch_timeout_ms, :validate => :number, :default => 60_000
-  # the max time in milliseconds before a metadata refresh is forced.
-  config :metadata_max_age_ms, :validate => :number, :default => 300_000 # (5m) Kafka default
   # Partitioner to use - can be `default`, `uniform_sticky`, `round_robin` or a fully qualified class name of a custom partitioner.
   config :partitioner, :validate => :string
   # The size of the TCP receive buffer to use when reading data
   config :receive_buffer_bytes, :validate => :number, :default => 32_768 # (32KB) Kafka default
   # The amount of time to wait before attempting to reconnect to a given host when a connection fails.
   config :reconnect_backoff_ms, :validate => :number, :default => 50 # Kafka default
-  # The configuration controls the maximum amount of time the client will wait
-  # for the response of a request. If the response is not received before the timeout
-  # elapses the client will resend the request if necessary or fail the request if
-  # retries are exhausted.
-  config :request_timeout_ms, :validate => :number, :default => 40_000 # (40s) Kafka default
   # The default retry behavior is to retry until successful. To prevent data loss,
   # the use of this setting is discouraged.
   #

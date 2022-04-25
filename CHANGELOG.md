@@ -1,3 +1,7 @@
+## 10.11.0
+  - Feat: added connections_max_idle_ms setting for output [#118](https://github.com/logstash-plugins/logstash-integration-kafka/pull/118)
+  - Refactor: mixins to follow shared mixin module naming
+
 ## 10.10.1
   - Update CHANGELOG.md [#114](https://api.github.com/repos/logstash-plugins/logstash-integration-kafka/pulls/114)
 
