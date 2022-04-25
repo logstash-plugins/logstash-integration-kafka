@@ -6,6 +6,10 @@ module LogStash module PluginMixins module Kafka
 
       # Close idle connections after the number of milliseconds specified by this config.
       base.config :connections_max_idle_ms, :validate => :number, :default => 540_000 # (9m) Kafka default
+
+      # The period of time in milliseconds after which we force a refresh of metadata even if
+      # we haven't seen any partition leadership changes to proactively discover any new brokers or partitions
+      base.config :metadata_max_age_ms, :validate => :number, :default => 300_000 # (5m) Kafka default
     end
 
     def set_trustore_keystore_config(props)

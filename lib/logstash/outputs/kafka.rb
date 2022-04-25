@@ -107,8 +107,6 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   config :message_key, :validate => :string
   # the timeout setting for initial metadata request to fetch topic metadata.
   config :metadata_fetch_timeout_ms, :validate => :number, :default => 60_000
-  # the max time in milliseconds before a metadata refresh is forced.
-  config :metadata_max_age_ms, :validate => :number, :default => 300_000 # (5m) Kafka default
   # Partitioner to use - can be `default`, `uniform_sticky`, `round_robin` or a fully qualified class name of a custom partitioner.
   config :partitioner, :validate => :string
   # The size of the TCP receive buffer to use when reading data

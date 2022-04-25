@@ -149,9 +149,6 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   config :max_partition_fetch_bytes, :validate => :number, :default => 1_048_576 # (1MB) Kafka default
   # The maximum number of records returned in a single call to poll().
   config :max_poll_records, :validate => :number, :default => 500 # Kafka default
-  # The period of time in milliseconds after which we force a refresh of metadata even if
-  # we haven't seen any partition leadership changes to proactively discover any new brokers or partitions
-  config :metadata_max_age_ms, :validate => :number, :default => 300_000 # (5m) Kafka default
   # The name of the partition assignment strategy that the client uses to distribute
   # partition ownership amongst consumer instances, supported options are `range`,
   # `round_robin`, `sticky` and `cooperative_sticky`
