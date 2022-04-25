@@ -97,8 +97,6 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # is to be able to track the source of requests beyond just ip/port by allowing
   # a logical application name to be included.
   config :client_id, :validate => :string, :default => "logstash"
-  # Close idle connections after the number of milliseconds specified by this config.
-  config :connections_max_idle_ms, :validate => :number, :default => 540_000 # (9m) Kafka default
   # Ideally you should have as many threads as the number of partitions for a perfect
   # balance — more threads than partitions means that some threads will be idle
   config :consumer_threads, :validate => :number, :default => 1
