@@ -10,6 +10,11 @@ module LogStash module PluginMixins module Kafka
       # The period of time in milliseconds after which we force a refresh of metadata even if
       # we haven't seen any partition leadership changes to proactively discover any new brokers or partitions
       base.config :metadata_max_age_ms, :validate => :number, :default => 300_000 # (5m) Kafka default
+
+      # The configuration controls the maximum amount of time the client will wait for the response of a request.
+      # If the response is not received before the timeout elapses the client will resend the request if necessary
+      # or fail the request if retries are exhausted.
+      base.config :request_timeout_ms, :validate => :number, :default => 40_000 # Kafka default
     end
 
     def set_trustore_keystore_config(props)

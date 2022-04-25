@@ -113,11 +113,6 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   config :receive_buffer_bytes, :validate => :number, :default => 32_768 # (32KB) Kafka default
   # The amount of time to wait before attempting to reconnect to a given host when a connection fails.
   config :reconnect_backoff_ms, :validate => :number, :default => 50 # Kafka default
-  # The configuration controls the maximum amount of time the client will wait
-  # for the response of a request. If the response is not received before the timeout
-  # elapses the client will resend the request if necessary or fail the request if
-  # retries are exhausted.
-  config :request_timeout_ms, :validate => :number, :default => 40_000 # (40s) Kafka default
   # The default retry behavior is to retry until successful. To prevent data loss,
   # the use of this setting is discouraged.
   #

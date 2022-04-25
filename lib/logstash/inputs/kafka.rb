@@ -161,10 +161,6 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # This avoids repeatedly connecting to a host in a tight loop.
   # This backoff applies to all connection attempts by the client to a broker.
   config :reconnect_backoff_ms, :validate => :number, :default => 50 # Kafka default
-  # The configuration controls the maximum amount of time the client will wait for the response of a request.
-  # If the response is not received before the timeout elapses the client will resend the request if necessary
-  # or fail the request if retries are exhausted.
-  config :request_timeout_ms, :validate => :number, :default => 40_000 # Kafka default
   # The amount of time to wait before attempting to retry a failed fetch request
   # to a given topic partition. This avoids repeated fetching-and-failing in a tight loop.
   config :retry_backoff_ms, :validate => :number, :default => 100 # Kafka default
