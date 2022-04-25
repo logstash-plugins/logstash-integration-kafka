@@ -2,12 +2,11 @@ require 'logstash/namespace'
 require 'logstash/inputs/base'
 require 'stud/interval'
 require 'java'
-require 'logstash-integration-kafka_jars.rb'
-require 'logstash/plugin_mixins/kafka_support'
-require 'manticore'
 require "json"
 require "logstash/json"
-require_relative '../plugin_mixins/kafka_avro_schema_registry'
+require 'logstash-integration-kafka_jars.rb'
+require 'logstash/plugin_mixins/kafka/common'
+require 'logstash/plugin_mixins/kafka/avro_schema_registry'
 require 'logstash/plugin_mixins/deprecation_logger_support'
 
 # This input will read events from a Kafka topic. It uses the 0.10 version of
@@ -57,8 +56,8 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
   DEFAULT_DESERIALIZER_CLASS = "org.apache.kafka.common.serialization.StringDeserializer"
 
-  include LogStash::PluginMixins::KafkaSupport
-  include LogStash::PluginMixins::KafkaAvroSchemaRegistry
+  include LogStash::PluginMixins::Kafka::Common
+  include LogStash::PluginMixins::Kafka::AvroSchemaRegistry
   include LogStash::PluginMixins::DeprecationLoggerSupport
 
   config_name 'kafka'

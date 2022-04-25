@@ -2,7 +2,7 @@ require 'logstash/namespace'
 require 'logstash/outputs/base'
 require 'java'
 require 'logstash-integration-kafka_jars.rb'
-require 'logstash/plugin_mixins/kafka_support'
+require 'logstash/plugin_mixins/kafka/common'
 
 # Write events to a Kafka topic. This uses the Kafka Producer API to write messages to a topic on
 # the broker.
@@ -51,7 +51,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
 
   java_import org.apache.kafka.clients.producer.ProducerRecord
 
-  include LogStash::PluginMixins::KafkaSupport
+  include LogStash::PluginMixins::Kafka::Common
 
   declare_threadsafe!
 
