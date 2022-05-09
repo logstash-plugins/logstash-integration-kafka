@@ -1,5 +1,5 @@
 ## 10.12.0
-  - bump kafka client to 2.8.1 [#115](https://api.github.com/repos/logstash-plugins/logstash-integration-kafka/pulls/115)
+  - bump kafka client to 2.8.1 [#115](https://github.com/logstash-plugins/logstash-integration-kafka/pull/115)
 
 ## 10.11.0
   - Feat: added connections_max_idle_ms setting for output [#118](https://github.com/logstash-plugins/logstash-integration-kafka/pull/118)
