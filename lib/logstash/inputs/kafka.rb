@@ -2,12 +2,11 @@ require 'logstash/namespace'
 require 'logstash/inputs/base'
 require 'stud/interval'
 require 'java'
-require 'logstash-integration-kafka_jars.rb'
-require 'logstash/plugin_mixins/kafka_support'
-require 'manticore'
 require "json"
 require "logstash/json"
-require_relative '../plugin_mixins/common'
+require 'logstash-integration-kafka_jars.rb'
+require 'logstash/plugin_mixins/kafka/common'
+require 'logstash/plugin_mixins/kafka/avro_schema_registry'
 require 'logstash/plugin_mixins/deprecation_logger_support'
 
 # This input will read events from a Kafka topic. It uses the 0.10 version of
@@ -57,8 +56,8 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
   DEFAULT_DESERIALIZER_CLASS = "org.apache.kafka.common.serialization.StringDeserializer"
 
-  include LogStash::PluginMixins::KafkaSupport
-  include ::LogStash::PluginMixins::KafkaAvroSchemaRegistry
+  include LogStash::PluginMixins::Kafka::Common
+  include LogStash::PluginMixins::Kafka::AvroSchemaRegistry
   include LogStash::PluginMixins::DeprecationLoggerSupport
 
   config_name 'kafka'
@@ -98,8 +97,6 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # is to be able to track the source of requests beyond just ip/port by allowing
   # a logical application name to be included.
   config :client_id, :validate => :string, :default => "logstash"
-  # Close idle connections after the number of milliseconds specified by this config.
-  config :connections_max_idle_ms, :validate => :number, :default => 540_000 # (9m) Kafka default
   # Ideally you should have as many threads as the number of partitions for a perfect
   # balance — more threads than partitions means that some threads will be idle
   config :consumer_threads, :validate => :number, :default => 1
@@ -152,9 +149,6 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   config :max_partition_fetch_bytes, :validate => :number, :default => 1_048_576 # (1MB) Kafka default
   # The maximum number of records returned in a single call to poll().
   config :max_poll_records, :validate => :number, :default => 500 # Kafka default
-  # The period of time in milliseconds after which we force a refresh of metadata even if
-  # we haven't seen any partition leadership changes to proactively discover any new brokers or partitions
-  config :metadata_max_age_ms, :validate => :number, :default => 300_000 # (5m) Kafka default
   # The name of the partition assignment strategy that the client uses to distribute
   # partition ownership amongst consumer instances, supported options are `range`,
   # `round_robin`, `sticky` and `cooperative_sticky`
@@ -167,10 +161,6 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # This avoids repeatedly connecting to a host in a tight loop.
   # This backoff applies to all connection attempts by the client to a broker.
   config :reconnect_backoff_ms, :validate => :number, :default => 50 # Kafka default
-  # The configuration controls the maximum amount of time the client will wait for the response of a request.
-  # If the response is not received before the timeout elapses the client will resend the request if necessary
-  # or fail the request if retries are exhausted.
-  config :request_timeout_ms, :validate => :number, :default => 40_000 # Kafka default
   # The amount of time to wait before attempting to retry a failed fetch request
   # to a given topic partition. This avoids repeated fetching-and-failing in a tight loop.
   config :retry_backoff_ms, :validate => :number, :default => 100 # Kafka default

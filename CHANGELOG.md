@@ -1,5 +1,9 @@
-## 10.11.0
+## 10.12.0
   - bump kafka client to 2.8.1 [#115](https://api.github.com/repos/logstash-plugins/logstash-integration-kafka/pulls/115)
+
+## 10.11.0
+  - Feat: added connections_max_idle_ms setting for output [#118](https://github.com/logstash-plugins/logstash-integration-kafka/pull/118)
+  - Refactor: mixins to follow shared mixin module naming
 
 ## 10.10.1
   - Update CHANGELOG.md [#114](https://api.github.com/repos/logstash-plugins/logstash-integration-kafka/pulls/114)

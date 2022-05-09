@@ -28,7 +28,8 @@ describe "outputs/kafka", :integration => true do
     let(:num_events) { 3 }
 
     before :each do
-      config = base_config.merge({"topic_id" => test_topic})
+      # NOTE: the connections_max_idle_ms is irrelevant just testing that configuration works ...
+      config = base_config.merge({"topic_id" => test_topic, "connections_max_idle_ms" => 540_000})
       load_kafka_data(config)
     end
 
