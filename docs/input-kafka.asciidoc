@@ -143,10 +143,10 @@ See the https://kafka.apache.org/{kafka_client_doc}/documentation for more detai
 | <<plugins-{type}s-{plugin}-ssl_key_password>> |<<password,password>>|No
 | <<plugins-{type}s-{plugin}-ssl_keystore_location>> |a valid filesystem path|No
 | <<plugins-{type}s-{plugin}-ssl_keystore_password>> |<<password,password>>|No
-| <<plugins-{type}s-{plugin}-ssl_keystore_type>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-ssl_keystore_type>> |<<string,string>>, one of `["jks", "PKCS12"]`|No
 | <<plugins-{type}s-{plugin}-ssl_truststore_location>> |a valid filesystem path|No
 | <<plugins-{type}s-{plugin}-ssl_truststore_password>> |<<password,password>>|No
-| <<plugins-{type}s-{plugin}-ssl_truststore_type>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-ssl_truststore_type>> |<<string,string>>, one of `["jks", "PKCS12"]`|No
 | <<plugins-{type}s-{plugin}-topics>> |<<array,array>>|No
 | <<plugins-{type}s-{plugin}-topics_pattern>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-value_deserializer_class>> |<<string,string>>|No
@@ -659,7 +659,7 @@ If client authentication is required, this setting stores the keystore password
   * Value type is <<string,string>>
   * There is no default value for this setting.
 
-The keystore type.
+The format of the keystore file. It must be either `jks` or `PKCS12`.
 
 [id="plugins-{type}s-{plugin}-ssl_truststore_location"]
 ===== `ssl_truststore_location` 
@@ -683,7 +683,7 @@ The truststore password.
   * Value type is <<string,string>>
   * There is no default value for this setting.
 
-The truststore type.
+The format of the truststore file. It must be either `jks` or `PKCS12`.
 
 [id="plugins-{type}s-{plugin}-topics"]
 ===== `topics` 
