@@ -699,8 +699,14 @@ A list of topics to subscribe to, defaults to ["logstash"].
   * Value type is <<string,string>>
   * There is no default value for this setting.
 
-A topic regex pattern to subscribe to. 
-The topics configuration will be ignored when using this configuration.
+A topic regex pattern to subscribe to; retrieve the full list from the broker and filters applying the pattern locally.
+The <<plugins-{type}s-{plugin}-topics>> configuration will be ignored when using this configuration.
+
+NOTE: When used with brokers with a lot of topics, this operation, could be very slow especially if there are a lof of consumers.
+
+NOTE: When the broker has some ACL rules, configured with WRITE or DESCRIBE permissions, there are some unexpected access permissions
+on topics that doesn't match the regex pattern. This is due to the fact that the full list of topics has to be retrieved.
+
 
 [id="plugins-{type}s-{plugin}-value_deserializer_class"]
 ===== `value_deserializer_class` 
