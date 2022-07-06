@@ -704,7 +704,7 @@ A topic regular expression pattern to subscribe to.
 Filtering by a regular expression is done by retrieving the full list of topic names from the broker and applying the pattern locally. When used with brokers with a lot of topics this operation could be very slow, especially if there are a lot of consumers.
 
 NOTE:  When the broker has some topics configured with ACL rules and they miss the DESCRIBE permission, then the subscription
-happens as expected but on broker side is logged the fact that it denied to describe some topics from the Logstash's user.
+happens but on the broker side it is logged that the subscription of some topics was denied to the configured user.
 
 
 [id="plugins-{type}s-{plugin}-value_deserializer_class"]
