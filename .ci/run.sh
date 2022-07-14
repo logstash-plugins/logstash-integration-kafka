@@ -5,7 +5,7 @@ env
 
 set -ex
 
-export KAFKA_VERSION=2.3.0
+export KAFKA_VERSION=2.8.1
 ./kafka_test_setup.sh
 
 jruby -rbundler/setup -S rspec -fd

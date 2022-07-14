@@ -5,7 +5,7 @@ set -ex
 if [ -n "${KAFKA_VERSION+1}" ]; then
   echo "KAFKA_VERSION is $KAFKA_VERSION"
 else
-   KAFKA_VERSION=2.1.1
+   KAFKA_VERSION=2.8.1
 fi
 
 export _JAVA_OPTIONS="-Djava.net.preferIPv4Stack=true"
@@ -14,7 +14,7 @@ rm -rf build
 mkdir build
 
 echo "Downloading Kafka version $KAFKA_VERSION"
-curl -s -o build/kafka.tgz "https://archive.apache.org/dist/kafka/$KAFKA_VERSION/kafka_2.11-$KAFKA_VERSION.tgz"
+curl -s -o build/kafka.tgz "https://archive.apache.org/dist/kafka/$KAFKA_VERSION/kafka_2.12-$KAFKA_VERSION.tgz"
 mkdir build/kafka && tar xzf build/kafka.tgz -C build/kafka --strip-components 1
 
 echo "Starting ZooKeeper"
