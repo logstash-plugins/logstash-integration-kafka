@@ -17,7 +17,7 @@ logger.kafka.level=debug
 
 ## Documentation
 
-https://www.elastic.co/guide/en/logstash/current/plugins-inputs-kafka.html
+https://www.elastic.co/guide/en/logstash/current/plugins-integrations-kafka.html
 
 Logstash provides infrastructure to automatically generate documentation for this plugin. We use the asciidoc format to write documentation so any comments in the source code will be first converted into asciidoc and then into html. All plugin documentation are placed under one [central location](http://www.elastic.co/guide/en/logstash/current/).
 
