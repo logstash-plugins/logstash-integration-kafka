@@ -68,6 +68,7 @@ dependencies {
     implementation 'org.slf4j:slf4j-api:1.7.36'
     implementation 'org.lz4:lz4-java:1.7.1'
     implementation 'org.xerial.snappy:snappy-java:1.1.8.4'
+    implementation 'software.amazon.msk:aws-msk-iam-auth:1.1.0'
 }
 task generateGemJarRequiresFile {
     doLast {
