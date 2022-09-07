@@ -228,6 +228,8 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   config :jaas_path, :validate => :path
   # JAAS configuration settings. This allows JAAS config to be a part of the plugin configuration and allows for different JAAS configuration per each plugin config.
   config :sasl_jaas_config, :validate => :string
+  # SASL client callback handler class
+  config :sasl_client_callback_handler_class, :validate => :string
   # Optional path to kerberos config file. This is krb5.conf style as detailed in https://web.mit.edu/kerberos/krb5-1.12/doc/admin/conf_files/krb5_conf.html
   config :kerberos_config, :validate => :path
   # Option to add Kafka metadata like topic, message size and header key values to the event.
@@ -420,7 +422,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
       props.put(kafka::SEND_BUFFER_CONFIG, send_buffer_bytes.to_s) unless send_buffer_bytes.nil?
       props.put(kafka::SESSION_TIMEOUT_MS_CONFIG, session_timeout_ms.to_s) unless session_timeout_ms.nil?
       props.put(kafka::VALUE_DESERIALIZER_CLASS_CONFIG, value_deserializer_class)
-      props.put(kafka::CLIENT_RACK_CONFIG, client_rack) unless client_rack.nil? 
+      props.put(kafka::CLIENT_RACK_CONFIG, client_rack) unless client_rack.nil?
 
       props.put("security.protocol", security_protocol) unless security_protocol.nil?
       if schema_registry_url

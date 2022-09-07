@@ -170,6 +170,8 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   config :jaas_path, :validate => :path
   # JAAS configuration settings. This allows JAAS config to be a part of the plugin configuration and allows for different JAAS configuration per each plugin config.
   config :sasl_jaas_config, :validate => :string
+  # SASL client callback handler class
+  config :sasl_client_callback_handler_class, :validate => :string
   # Optional path to kerberos config file. This is krb5.conf style as detailed in https://web.mit.edu/kerberos/krb5-1.12/doc/admin/conf_files/krb5_conf.html
   config :kerberos_config, :validate => :path
 
