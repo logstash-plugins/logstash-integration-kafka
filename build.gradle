@@ -68,7 +68,29 @@ dependencies {
     implementation 'org.slf4j:slf4j-api:1.7.36'
     implementation 'org.lz4:lz4-java:1.7.1'
     implementation 'org.xerial.snappy:snappy-java:1.1.8.4'
-    implementation 'software.amazon.msk:aws-msk-iam-auth:1.1.0'
+
+    // AWS MSK IAM auth library and its transitive dependencies
+    implementation('com.amazonaws:aws-java-sdk-core:1.12.290')
+    implementation('com.amazonaws:aws-java-sdk-sts:1.12.290')
+    implementation('software.amazon.awssdk:annotations:2.17.267')
+    implementation('software.amazon.awssdk:apache-client:2.17.267')
+    implementation('software.amazon.awssdk:auth:2.17.267')
+    implementation('software.amazon.awssdk:aws-core:2.17.267')
+    implementation('software.amazon.awssdk:aws-json-protocol:2.17.267')
+    implementation('software.amazon.awssdk:aws-query-protocol:2.17.267')
+    implementation('software.amazon.awssdk:http-client-spi:2.17.267')
+    implementation('software.amazon.awssdk:json-utils:2.17.267')
+    implementation('software.amazon.awssdk:metrics-spi:2.17.267')
+    implementation('software.amazon.awssdk:netty-nio-client:2.17.267')
+    implementation('software.amazon.awssdk:profiles:2.17.267')
+    implementation('software.amazon.awssdk:protocol-core:2.17.267')
+    implementation('software.amazon.awssdk:regions:2.17.267')
+    implementation('software.amazon.awssdk:sdk-core:2.17.267')
+    implementation('software.amazon.awssdk:sso:2.17.267')
+    implementation('software.amazon.awssdk:sts:2.17.267')
+    implementation('software.amazon.awssdk:third-party-jackson-core:2.17.267')
+    implementation('software.amazon.awssdk:utils:2.17.267')
+    implementation('software.amazon.msk:aws-msk-iam-auth:1.1.4')
 }
 task generateGemJarRequiresFile {
     doLast {
@@ -95,5 +117,4 @@ task vendor {
         }
     }
 }
-
 vendor.dependsOn(generateGemJarRequiresFile)
