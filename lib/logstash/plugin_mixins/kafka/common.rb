@@ -39,6 +39,10 @@ module LogStash module PluginMixins module Kafka
         raise LogStash::ConfigurationError, "sasl_kerberos_service_name must be specified when SASL mechanism is GSSAPI"
       end
 
+      if sasl_mechanism == "AWS_MSK_IAM"
+        props.put("sasl.client.callback.handler.class", "software.amazon.msk.auth.iam.IAMClientCallbackHandler")
+      end
+
       props.put("sasl.kerberos.service.name", sasl_kerberos_service_name) unless sasl_kerberos_service_name.nil?
       props.put("sasl.jaas.config", sasl_jaas_config) unless sasl_jaas_config.nil?
     end
