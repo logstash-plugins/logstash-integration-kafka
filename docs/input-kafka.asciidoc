@@ -3,7 +3,7 @@
 :type: input
 :default_codec: plain
 :kafka_client: 3.3
-:kafka_client_doc: 25
+:kafka_client_doc: 33
 
 ///////////////////////////////////////////
 START - GENERATED VARIABLES, DO NOT EDIT!
