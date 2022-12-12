@@ -331,7 +331,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   def do_poll(consumer)
     records = []
     begin
-      records = consumer.poll(poll_timeout_ms)
+      records = consumer.poll(java.time.Duration.ofMillis(poll_timeout_ms))
     rescue org.apache.kafka.common.errors.WakeupException => e
       logger.debug("Wake up from poll", :kafka_error_message => e)
       raise e unless stop?
