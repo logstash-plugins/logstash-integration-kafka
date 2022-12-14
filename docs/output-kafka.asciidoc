@@ -181,6 +181,12 @@ all IP addresses returned for a hostname before failing the connection.
 If set to `resolve_canonical_bootstrap_servers_only`, each entry will be 
 resolved and expanded into a list of canonical names.
 
+[NOTE]
+====
+Starting from Kafka 3 `default` value for `client.dns.lookup` value has been removed.
+If explicitly configured it fallbacks to `use_all_dns_ips`.
+====
+
 [id="plugins-{type}s-{plugin}-client_id"]
 ===== `client_id` 
 
