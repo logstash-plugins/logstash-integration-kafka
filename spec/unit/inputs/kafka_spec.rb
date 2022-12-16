@@ -84,12 +84,10 @@ describe LogStash::Inputs::Kafka do
       expect { subject.register }.to_not raise_error
     end
 
-    context "x" do
+    context "when the deprecated `default` is specified" do
       let(:config) { common_config.merge('client_dns_lookup' => 'default') }
 
-      it 'should fallback `client_dns_lookup` to `use_all_dns_ips` when the deprecated `default` is specified' do
-        #simple_kafka_config["client_dns_lookup"] = 'default'
-        #kafka = LogStash::Outputs::Kafka.new(simple_kafka_config)
+      it 'should fallback `client_dns_lookup` to `use_all_dns_ips`' do
         subject.register
 
         expect(subject.client_dns_lookup).to eq('use_all_dns_ips')
