@@ -2,8 +2,8 @@
 :plugin: kafka
 :type: input
 :default_codec: plain
-:kafka_client: 2.8
-:kafka_client_doc: 25
+:kafka_client: 3.3
+:kafka_client_doc: 33
 
 ///////////////////////////////////////////
 START - GENERATED VARIABLES, DO NOT EDIT!
@@ -210,6 +210,12 @@ How DNS lookups should be done. If set to `use_all_dns_ips`, when the lookup ret
 IP addresses for a hostname, they will all be attempted to connect to before failing the 
 connection. If the value is `resolve_canonical_bootstrap_servers_only` each entry will be 
 resolved and expanded into a list of canonical names.
+
+[NOTE]
+====
+Starting from Kafka 3 `default` value for `client.dns.lookup` value has been removed.
+If explicitly configured it fallbacks to `use_all_dns_ips`.
+====
 
 [id="plugins-{type}s-{plugin}-client_id"]
 ===== `client_id` 

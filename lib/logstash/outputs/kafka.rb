@@ -86,7 +86,8 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   # IP addresses for a hostname, they will all be attempted to connect to before failing the 
   # connection. If the value is `resolve_canonical_bootstrap_servers_only` each entry will be 
   # resolved and expanded into a list of canonical names.
-  config :client_dns_lookup, :validate => ["default", "use_all_dns_ips", "resolve_canonical_bootstrap_servers_only"], :default => "default"
+  # Starting from Kafka 3 `default` value for `client.dns.lookup` value has been removed. If explicitly configured it fallbacks to `use_all_dns_ips`.
+  config :client_dns_lookup, :validate => ["default", "use_all_dns_ips", "resolve_canonical_bootstrap_servers_only"], :default => "use_all_dns_ips"
   # The id string to pass to the server when making requests.
   # The purpose of this is to be able to track the source of requests beyond just
   # ip/port by allowing a logical application name to be included with the request
@@ -190,6 +191,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
       logger.warn("Kafka output is configured with finite retry. This instructs Logstash to LOSE DATA after a set number of send attempts fails. If you do not want to lose data if Kafka is down, then you must remove the retry setting.", :retries => @retries)
     end
 
+    reassign_dns_lookup
 
     @producer = create_producer
     if value_serializer == 'org.apache.kafka.common.serialization.StringSerializer'

@@ -92,7 +92,8 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # IP addresses for a hostname, they will all be attempted to connect to before failing the 
   # connection. If the value is `resolve_canonical_bootstrap_servers_only` each entry will be 
   # resolved and expanded into a list of canonical names.
-  config :client_dns_lookup, :validate => ["default", "use_all_dns_ips", "resolve_canonical_bootstrap_servers_only"], :default => "default"
+  # Starting from Kafka 3 `default` value for `client.dns.lookup` value has been removed. If explicitly configured it fallbacks to `use_all_dns_ips`.
+  config :client_dns_lookup, :validate => ["default", "use_all_dns_ips", "resolve_canonical_bootstrap_servers_only"], :default => "use_all_dns_ips"
   # The id string to pass to the server when making requests. The purpose of this
   # is to be able to track the source of requests beyond just ip/port by allowing
   # a logical application name to be included.
@@ -257,6 +258,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   def register
     @runner_threads = []
     @metadata_mode = extract_metadata_level(@decorate_events)
+    reassign_dns_lookup
     @pattern ||= java.util.regex.Pattern.compile(@topics_pattern) unless @topics_pattern.nil?
     check_schema_registry_parameters
   end

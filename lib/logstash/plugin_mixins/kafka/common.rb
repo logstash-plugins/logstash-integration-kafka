@@ -43,5 +43,13 @@ module LogStash module PluginMixins module Kafka
       props.put("sasl.jaas.config", sasl_jaas_config) unless sasl_jaas_config.nil?
     end
 
+    def reassign_dns_lookup
+      if @client_dns_lookup == "default"
+        @client_dns_lookup = "use_all_dns_ips"
+        logger.warn("client_dns_lookup setting 'default' value is deprecated, forced to 'use_all_dns_ips', please update your configuration")
+        deprecation_logger.deprecated("Deprecated value `default` for `client_dns_lookup` option; use `use_all_dns_ips` instead.")
+      end
+    end
+
   end
 end end end

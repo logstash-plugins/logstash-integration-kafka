@@ -1,3 +1,8 @@
+## Unreleased
+  - Changed Kafka client to 3.3.1, requires Logstash >= 8.3.0. 
+  - Deprecated `default` value for setting `client_dns_lookup` forcing to `use_all_dns_ips` when explicitly used.
+    [#130](https://github.com/logstash-plugins/logstash-integration-kafka/pull/130)
+
 ## 10.12.0
   - bump kafka client to 2.8.1 [#115](https://github.com/logstash-plugins/logstash-integration-kafka/pull/115)
 

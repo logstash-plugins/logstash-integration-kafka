@@ -22,6 +22,14 @@ describe "outputs/kafka" do
       expect(kafka.topic_id).to eql 'test'
       expect(kafka.key_serializer).to eql 'org.apache.kafka.common.serialization.StringSerializer'
     end
+
+    it 'should fallback `client_dns_lookup` to `use_all_dns_ips` when the deprecated `default` is specified' do
+      simple_kafka_config["client_dns_lookup"] = 'default'
+      kafka = LogStash::Outputs::Kafka.new(simple_kafka_config)
+      kafka.register
+
+      expect(kafka.client_dns_lookup).to eq('use_all_dns_ips')
+    end
   end
 
   context 'when outputting messages' do
