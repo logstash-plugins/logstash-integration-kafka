@@ -187,6 +187,42 @@ describe "inputs/kafka", :integration => true do
   end
 end
 
+# return consumer Ruby Thread
+def create_consumer_and_start_consuming(static_group_id)
+  props = java.util.Properties.new
+  kafka = org.apache.kafka.clients.consumer.ConsumerConfig
+  props.put(kafka::BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+  props.put(kafka::KEY_DESERIALIZER_CLASS_CONFIG, LogStash::Inputs::Kafka::DEFAULT_DESERIALIZER_CLASS)
+  props.put(kafka::VALUE_DESERIALIZER_CLASS_CONFIG, LogStash::Inputs::Kafka::DEFAULT_DESERIALIZER_CLASS)
+  props.put(kafka::GROUP_ID_CONFIG, "logstash")
+  props.put(kafka::GROUP_INSTANCE_ID_CONFIG, static_group_id)
+  consumer = org.apache.kafka.clients.consumer.KafkaConsumer.new(props)
+
+  Thread.new do
+    LogStash::Util::set_thread_name("integration_test_simple_consumer")
+    begin
+      consumer.subscribe(["logstash_integration_topic_plain"])
+      records = consumer.poll(java.time.Duration.ofSeconds(3))
+      "consumer not killed"
+    rescue => e
+      e # return the exception reached
+    ensure
+      consumer.close
+    end
+  end
+end
+
+describe "test on static membership" do
+  it "should kill the second consumer with same static_group_id" do
+    t1 = create_consumer_and_start_consuming("test_static_group_id")
+    t2 = create_consumer_and_start_consuming("test_static_group_id")
+
+    puts "t1 #{t1.value} #{t1.value.class}"
+    puts "t2 #{t2.value} #{t2.value.class}"
+    expect([t1.value, t2.value]).to include(a_kind_of(Java::OrgApacheKafkaCommonErrors::FencedInstanceIdException))
+  end
+end
+
 private
 
 def consume_messages(config, queue: Queue.new, timeout:, event_count:)
