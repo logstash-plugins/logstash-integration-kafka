@@ -136,7 +136,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # been aborted. Non-transactional messages will be returned unconditionally in either mode.
   config :isolation_level, :validate => ["read_uncommitted", "read_committed"], :default => "read_uncommitted" # Kafka default
   # Java Class used to deserialize the record's key
-  config :key_deserializer_class, :validate => :string, :default => "org.apache.kafka.common.serialization.StringDeserializer"
+  config :key_deserializer_class, :validate => :string, :default => DEFAULT_DESERIALIZER_CLASS
   # The maximum delay between invocations of poll() when using consumer group management. This places 
   # an upper bound on the amount of time that the consumer can be idle before fetching more records. 
   # If poll() is not called before expiration of this timeout, then the consumer is considered failed and 
