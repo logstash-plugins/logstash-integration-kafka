@@ -225,7 +225,7 @@ def create_consumer_and_start_consuming(static_group_id)
   end
 end
 
-describe "Kafka static membership 'group.instance.id' setting" do
+describe "Kafka static membership 'group.instance.id' setting", :integration => true do
   let(:consumer_config) do
     {
       "topics" => ["logstash_integration_topic_plain"],

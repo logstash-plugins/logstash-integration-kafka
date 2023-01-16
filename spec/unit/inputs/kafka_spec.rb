@@ -297,7 +297,7 @@ describe LogStash::Inputs::Kafka do
           to receive(:new).with(hash_including('client.rack' => 'EU-R1')).
               and_return kafka_client = double('kafka-consumer')
 
-      expect( subject.send(:create_consumer, 'sample_client-0') ).to be kafka_client
+      expect( subject.send(:create_consumer, 'sample_client-0', 'group_instance_id') ).to be kafka_client
     end
   end
 
@@ -309,7 +309,7 @@ describe LogStash::Inputs::Kafka do
           to receive(:new).with(hash_including('session.timeout.ms' => '25000', 'max.poll.interval.ms' => '345000')).
               and_return kafka_client = double('kafka-consumer')
 
-      expect( subject.send(:create_consumer, 'sample_client-1') ).to be kafka_client
+      expect( subject.send(:create_consumer, 'sample_client-1', 'group_instance_id') ).to be kafka_client
     end
   end
 
@@ -321,7 +321,7 @@ describe LogStash::Inputs::Kafka do
           to receive(:new).with(hash_including('session.timeout.ms' => '25200', 'max.poll.interval.ms' => '123000')).
               and_return kafka_client = double('kafka-consumer')
 
-      expect( subject.send(:create_consumer, 'sample_client-2') ).to be kafka_client
+      expect( subject.send(:create_consumer, 'sample_client-2', 'group_instance_id') ).to be kafka_client
     end
   end
 
@@ -333,7 +333,7 @@ describe LogStash::Inputs::Kafka do
           to receive(:new).with(hash_including('enable.auto.commit' => 'false', 'check.crcs' => 'true')).
               and_return kafka_client = double('kafka-consumer')
 
-      expect( subject.send(:create_consumer, 'sample_client-3') ).to be kafka_client
+      expect( subject.send(:create_consumer, 'sample_client-3', 'group_instance_id') ).to be kafka_client
       expect( subject.enable_auto_commit ).to be false
     end
   end
@@ -346,7 +346,7 @@ describe LogStash::Inputs::Kafka do
           to receive(:new).with(hash_including('enable.auto.commit' => 'true', 'check.crcs' => 'false')).
               and_return kafka_client = double('kafka-consumer')
 
-      expect( subject.send(:create_consumer, 'sample_client-4') ).to be kafka_client
+      expect( subject.send(:create_consumer, 'sample_client-4', 'group_instance_id') ).to be kafka_client
       expect( subject.enable_auto_commit ).to be true
     end
   end
