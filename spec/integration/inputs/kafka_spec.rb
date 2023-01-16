@@ -225,7 +225,7 @@ def create_consumer_and_start_consuming(static_group_id)
   end
 end
 
-describe "test on static membership" do
+describe "Kafka static membership 'group.instance.id' setting" do
   let(:consumer_config) do
     {
       "topics" => ["logstash_integration_topic_plain"],
@@ -270,6 +270,29 @@ describe "test on static membership" do
       expect(saboteur_kafka_consumer.value).to eq("saboteur exited")
     ensure
       t.join(30_000)
+    end
+  end
+
+  context "when multiple consumer threads are configured" do
+    let(:multi_consumer_config) { consumer_config.merge({"consumer_threads" => 2}) }
+
+    it "the plugin should work as expected" do
+      queue = Queue.new
+      kafka_input = LogStash::Inputs::Kafka.new(multi_consumer_config)
+      kafka_input.register
+
+      expect(logger).to_not receive(:error).with("Another consumer with same group.instance.id has connected")
+
+      t = java.lang.Thread.new do
+          kafka_input.run(queue)
+      end
+      begin
+        t.start
+        wait_kafka_input_is_ready("logstash_integration_topic_plain", queue)
+      ensure
+        kafka_input.stop
+        t.join(1_000)
+      end
     end
   end
 end
