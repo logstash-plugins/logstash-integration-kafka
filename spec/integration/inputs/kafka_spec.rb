@@ -250,18 +250,9 @@ describe "Kafka static membership 'group.instance.id' setting" do
 
     expect(logger).to receive(:error).with("Another consumer with same group.instance.id has connected")
 
-    plugin_exit = nil
-
-    t = java.lang.Thread.new do
-      begin
-        kafka_input.run(queue)
-        plugin_exit = "completed execution"
-      rescue org.apache.kafka.common.errors.FencedInstanceIdException => e
-        plugin_exit = e
-      end
-    end
+    input_worker = java.lang.Thread.new { kafka_input.run(queue) }
     begin
-      t.start
+      input_worker.start
       wait_kafka_input_is_ready("logstash_integration_topic_plain", queue)
       saboteur_kafka_consumer = create_consumer_and_start_consuming("test_static_group_id")
       saboteur_kafka_consumer.run # ask to be scheduled
@@ -269,7 +260,7 @@ describe "Kafka static membership 'group.instance.id' setting" do
 
       expect(saboteur_kafka_consumer.value).to eq("saboteur exited")
     ensure
-      t.join(30_000)
+      input_worker.join(30_000)
     end
   end
 
@@ -283,15 +274,13 @@ describe "Kafka static membership 'group.instance.id' setting" do
 
       expect(logger).to_not receive(:error).with("Another consumer with same group.instance.id has connected")
 
-      t = java.lang.Thread.new do
-          kafka_input.run(queue)
-      end
+      input_worker = java.lang.Thread.new { kafka_input.run(queue) }
       begin
-        t.start
+        input_worker.start
         wait_kafka_input_is_ready("logstash_integration_topic_plain", queue)
       ensure
         kafka_input.stop
-        t.join(1_000)
+        input_worker.join(1_000)
       end
     end
   end
