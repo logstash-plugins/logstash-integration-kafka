@@ -69,18 +69,18 @@ describe "inputs/kafka", :integration => true do
     send_message(record)
   end
 
-  def send_message(record)
-    props = java.util.Properties.new
-    kafka = org.apache.kafka.clients.producer.ProducerConfig
-    props.put(kafka::BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
-    props.put(kafka::KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
-    props.put(kafka::VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
-
-    producer = org.apache.kafka.clients.producer.KafkaProducer.new(props)
-
-    producer.send(record)
-    producer.close
-  end
+#   def send_message(record)
+#     props = java.util.Properties.new
+#     kafka = org.apache.kafka.clients.producer.ProducerConfig
+#     props.put(kafka::BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+#     props.put(kafka::KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+#     props.put(kafka::VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+#
+#     producer = org.apache.kafka.clients.producer.KafkaProducer.new(props)
+#
+#     producer.send(record)
+#     producer.close
+#   end
 
   describe "#kafka-topics" do
 
@@ -187,6 +187,19 @@ describe "inputs/kafka", :integration => true do
   end
 end
 
+def send_message(record)
+  props = java.util.Properties.new
+  kafka = org.apache.kafka.clients.producer.ProducerConfig
+  props.put(kafka::BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+  props.put(kafka::KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+  props.put(kafka::VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+
+  producer = org.apache.kafka.clients.producer.KafkaProducer.new(props)
+
+  producer.send(record)
+  producer.close
+end
+
 # return consumer Ruby Thread
 def create_consumer_and_start_consuming(static_group_id)
   props = java.util.Properties.new
@@ -203,9 +216,9 @@ def create_consumer_and_start_consuming(static_group_id)
     begin
       consumer.subscribe(["logstash_integration_topic_plain"])
       records = consumer.poll(java.time.Duration.ofSeconds(3))
-      "consumer not killed"
+      "saboteur exited"
     rescue => e
-      e # return the exception reached
+      e # return the exception reached in thread.value
     ensure
       consumer.close
     end
@@ -213,17 +226,65 @@ def create_consumer_and_start_consuming(static_group_id)
 end
 
 describe "test on static membership" do
-  it "should kill the second consumer with same static_group_id" do
-    t1 = create_consumer_and_start_consuming("test_static_group_id")
-    t2 = create_consumer_and_start_consuming("test_static_group_id")
+  let(:consumer_config) do
+    {
+      "topics" => ["logstash_integration_topic_plain"],
+      "group_id" => "logstash",
+      "consumer_threads" => 1,
+      "group_instance_id" => "test_static_group_id"
+    }
+  end
 
-    puts "t1 #{t1.value} #{t1.value.class}"
-    puts "t2 #{t2.value} #{t2.value.class}"
-    expect([t1.value, t2.value]).to include(a_kind_of(Java::OrgApacheKafkaCommonErrors::FencedInstanceIdException))
+  let(:logger) { double("logger") }
+  before :each do
+    allow(LogStash::Inputs::Kafka).to receive(:logger).and_return(logger)
+    [:error, :warn, :info, :debug].each do |level|
+      allow(logger).to receive(level)
+    end
+  end
+
+  it "input plugin is terminated if second client connect with same 'group.instance.id'" do
+    queue = Queue.new
+    kafka_input = LogStash::Inputs::Kafka.new(consumer_config)
+    kafka_input.register
+
+    expect(logger).to receive(:error).with("Another consumer with same group.instance.id has connected")
+
+    plugin_exit = nil
+
+    t = java.lang.Thread.new do
+      begin
+        kafka_input.run(queue)
+        plugin_exit = "completed execution"
+      rescue org.apache.kafka.common.errors.FencedInstanceIdException => e
+        plugin_exit = e
+      end
+    end
+    begin
+      t.start
+      wait_kafka_input_is_ready("logstash_integration_topic_plain", queue)
+      saboteur_kafka_consumer = create_consumer_and_start_consuming("test_static_group_id")
+      saboteur_kafka_consumer.run # ask to be scheduled
+      saboteur_kafka_consumer.join
+
+      expect(saboteur_kafka_consumer.value).to eq("saboteur exited")
+    ensure
+      t.join(30_000)
+    end
   end
 end
 
 private
+
+def wait_kafka_input_is_ready(topic, queue)
+  # this is needed to give time to the kafka input to be up and running
+  header = org.apache.kafka.common.header.internals.RecordHeader.new("name", "Ping Up".to_java_bytes)
+  record = org.apache.kafka.clients.producer.ProducerRecord.new(topic, 0, "key", "value", [header])
+  send_message(record)
+
+  # Wait the message is processed
+  message = queue.pop
+end
 
 def consume_messages(config, queue: Queue.new, timeout:, event_count:)
   kafka_input = LogStash::Inputs::Kafka.new(config)

@@ -124,6 +124,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # that happens to be made up of multiple processors. Messages in a topic will be distributed to all
   # Logstash instances with the same `group_id`
   config :group_id, :validate => :string, :default => "logstash"
+  config :group_instance_id, :validate => :string
   # The expected time between heartbeats to the consumer coordinator. Heartbeats are used to ensure 
   # that the consumer's session stays active and to facilitate rebalancing when new
   # consumers join or leave the group. The value must be set lower than
@@ -335,6 +336,9 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
     rescue org.apache.kafka.common.errors.WakeupException => e
       logger.debug("Wake up from poll", :kafka_error_message => e)
       raise e unless stop?
+    rescue org.apache.kafka.common.errors.FencedInstanceIdException => e
+      logger.error("Another consumer with same group.instance.id has connected")
+      raise e unless stop?
     rescue => e
       logger.error("Unable to poll Kafka consumer",
                    :kafka_error_message => e,
@@ -407,6 +411,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
       props.put(kafka::FETCH_MAX_WAIT_MS_CONFIG, fetch_max_wait_ms.to_s) unless fetch_max_wait_ms.nil?
       props.put(kafka::FETCH_MIN_BYTES_CONFIG, fetch_min_bytes.to_s) unless fetch_min_bytes.nil?
       props.put(kafka::GROUP_ID_CONFIG, group_id)
+      props.put(kafka::GROUP_INSTANCE_ID_CONFIG, group_instance_id)
       props.put(kafka::HEARTBEAT_INTERVAL_MS_CONFIG, heartbeat_interval_ms.to_s) unless heartbeat_interval_ms.nil?
       props.put(kafka::ISOLATION_LEVEL_CONFIG, isolation_level)
       props.put(kafka::KEY_DESERIALIZER_CLASS_CONFIG, key_deserializer_class)
