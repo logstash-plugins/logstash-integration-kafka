@@ -113,6 +113,7 @@ See the https://kafka.apache.org/{kafka_client_doc}/documentation for more detai
 | <<plugins-{type}s-{plugin}-fetch_max_wait_ms>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-fetch_min_bytes>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-group_id>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-group_instance_id>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-heartbeat_interval_ms>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-isolation_level>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-jaas_path>> |a valid filesystem path|No
@@ -343,6 +344,25 @@ Logstash instances with the same `group_id`.
 NOTE: In cases when multiple inputs are being used in a single pipeline, reading from different topics,
 it's essential to set a different `group_id => ...` for each input. Setting a unique `client_id => ...`
 is also recommended.
+
+[id="plugins-{type}s-{plugin}-group_instance_id"]
+===== `group_instance_id`
+
+* Value type is <<string,string>>
+* Optional, there is no default value for this setting.
+
+The static membership identifier for this consumer. Static membership feature was introduced in
+https://cwiki.apache.org/confluence/display/KAFKA/KIP-345%3A+Introduce+static+membership+protocol+to+reduce+consumer+rebalances[KIP-345],
+available under Kafka property `group.instance.id` and aims to avoid rebalances in contexts where a lot of data
+has to be handed off after a consumer goes offline.
+This mitigates the cases where the service state is heavy and rebalance of one topic partition from instance
+A to B means huge amount of data transfer. Client that goes offline and online frequently, if using this settings
+avoid frequent and heavy rebalances.
+
+NOTE: In case another client connects with same `group.instance.id` value then the oldest is kicked off.
+
+NOTE: In cases when multiple threads are configured, `consumer_threads` is greater than one, a suffix is appended to
+the `group_instance_id` to avoid collisions.
 
 [id="plugins-{type}s-{plugin}-heartbeat_interval_ms"]
 ===== `heartbeat_interval_ms` 

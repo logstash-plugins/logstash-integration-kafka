@@ -124,6 +124,10 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # that happens to be made up of multiple processors. Messages in a topic will be distributed to all
   # Logstash instances with the same `group_id`
   config :group_id, :validate => :string, :default => "logstash"
+  # Set a static group instance id used in static membership feature to avoid rebalancing when a
+  # consumer goes offline. If set and `consumer_threads` is greater than 1 then for each
+  # consumer crated by each thread an artificial suffix is appended to the user provided `group_instance_id`
+  # to avoid clashing.
   config :group_instance_id, :validate => :string
   # The expected time between heartbeats to the consumer coordinator. Heartbeats are used to ensure 
   # that the consumer's session stays active and to facilitate rebalancing when new
