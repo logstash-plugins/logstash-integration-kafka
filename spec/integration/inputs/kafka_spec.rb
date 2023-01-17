@@ -214,7 +214,7 @@ def create_consumer_and_start_consuming(static_group_id)
   Thread.new do
     LogStash::Util::set_thread_name("integration_test_simple_consumer")
     begin
-      consumer.subscribe(["logstash_integration_topic_plain"])
+      consumer.subscribe(["logstash_integration_static_membership_topic"])
       records = consumer.poll(java.time.Duration.ofSeconds(3))
       "saboteur exited"
     rescue => e
@@ -228,7 +228,7 @@ end
 describe "Kafka static membership 'group.instance.id' setting", :integration => true do
   let(:consumer_config) do
     {
-      "topics" => ["logstash_integration_topic_plain"],
+      "topics" => ["logstash_integration_static_membership_topic"],
       "group_id" => "logstash",
       "consumer_threads" => 1,
       "group_instance_id" => "test_static_group_id"
@@ -253,7 +253,7 @@ describe "Kafka static membership 'group.instance.id' setting", :integration => 
     input_worker = java.lang.Thread.new { kafka_input.run(queue) }
     begin
       input_worker.start
-      wait_kafka_input_is_ready("logstash_integration_topic_plain", queue)
+      wait_kafka_input_is_ready("logstash_integration_static_membership_topic", queue)
       saboteur_kafka_consumer = create_consumer_and_start_consuming("test_static_group_id")
       saboteur_kafka_consumer.run # ask to be scheduled
       saboteur_kafka_consumer.join
@@ -277,7 +277,7 @@ describe "Kafka static membership 'group.instance.id' setting", :integration => 
       input_worker = java.lang.Thread.new { kafka_input.run(queue) }
       begin
         input_worker.start
-        wait_kafka_input_is_ready("logstash_integration_topic_plain", queue)
+        wait_kafka_input_is_ready("logstash_integration_static_membership_topic", queue)
       ensure
         kafka_input.stop
         input_worker.join(1_000)
