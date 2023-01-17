@@ -69,18 +69,18 @@ describe "inputs/kafka", :integration => true do
     send_message(record)
   end
 
-#   def send_message(record)
-#     props = java.util.Properties.new
-#     kafka = org.apache.kafka.clients.producer.ProducerConfig
-#     props.put(kafka::BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
-#     props.put(kafka::KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
-#     props.put(kafka::VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
-#
-#     producer = org.apache.kafka.clients.producer.KafkaProducer.new(props)
-#
-#     producer.send(record)
-#     producer.close
-#   end
+  def send_message(record)
+    props = java.util.Properties.new
+    kafka = org.apache.kafka.clients.producer.ProducerConfig
+    props.put(kafka::BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+    props.put(kafka::KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+    props.put(kafka::VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+
+    producer = org.apache.kafka.clients.producer.KafkaProducer.new(props)
+
+    producer.send(record)
+    producer.close
+  end
 
   describe "#kafka-topics" do
 
@@ -185,19 +185,67 @@ describe "inputs/kafka", :integration => true do
       end
     end
   end
-end
 
-def send_message(record)
-  props = java.util.Properties.new
-  kafka = org.apache.kafka.clients.producer.ProducerConfig
-  props.put(kafka::BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
-  props.put(kafka::KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
-  props.put(kafka::VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+  context "static membership 'group.instance.id' setting" do
+    let(:consumer_config) do
+      {
+        "topics" => ["logstash_integration_static_membership_topic"],
+        "group_id" => "logstash",
+        "consumer_threads" => 1,
+        "group_instance_id" => "test_static_group_id"
+      }
+    end
 
-  producer = org.apache.kafka.clients.producer.KafkaProducer.new(props)
+    let(:logger) { double("logger") }
+    before :each do
+      allow(LogStash::Inputs::Kafka).to receive(:logger).and_return(logger)
+      [:error, :warn, :info, :debug].each do |level|
+        allow(logger).to receive(level)
+      end
+    end
 
-  producer.send(record)
-  producer.close
+    it "input plugin disconnects from the broker when another client with same static membership connects" do
+      queue = Queue.new
+      kafka_input = LogStash::Inputs::Kafka.new(consumer_config)
+      kafka_input.register
+
+      expect(logger).to receive(:error).with("Another consumer with same group.instance.id has connected")
+
+      input_worker = java.lang.Thread.new { kafka_input.run(queue) }
+      begin
+        input_worker.start
+        wait_kafka_input_is_ready("logstash_integration_static_membership_topic", queue)
+        saboteur_kafka_consumer = create_consumer_and_start_consuming("test_static_group_id")
+        saboteur_kafka_consumer.run # ask to be scheduled
+        saboteur_kafka_consumer.join
+
+        expect(saboteur_kafka_consumer.value).to eq("saboteur exited")
+      ensure
+        input_worker.join(30_000)
+      end
+    end
+
+    context "when the plugin is configured with multiple consumer threads" do
+      let(:multi_consumer_config) { consumer_config.merge({"consumer_threads" => 2}) }
+
+      it "should avoid to connect with same 'group.instance.id'" do
+        queue = Queue.new
+        kafka_input = LogStash::Inputs::Kafka.new(multi_consumer_config)
+        kafka_input.register
+
+        expect(logger).to_not receive(:error).with("Another consumer with same group.instance.id has connected")
+
+        input_worker = java.lang.Thread.new { kafka_input.run(queue) }
+        begin
+          input_worker.start
+          wait_kafka_input_is_ready("logstash_integration_static_membership_topic", queue)
+        ensure
+          kafka_input.stop
+          input_worker.join(1_000)
+        end
+      end
+    end
+  end
 end
 
 # return consumer Ruby Thread
@@ -221,67 +269,6 @@ def create_consumer_and_start_consuming(static_group_id)
       e # return the exception reached in thread.value
     ensure
       consumer.close
-    end
-  end
-end
-
-describe "Kafka static membership 'group.instance.id' setting", :integration => true do
-  let(:consumer_config) do
-    {
-      "topics" => ["logstash_integration_static_membership_topic"],
-      "group_id" => "logstash",
-      "consumer_threads" => 1,
-      "group_instance_id" => "test_static_group_id"
-    }
-  end
-
-  let(:logger) { double("logger") }
-  before :each do
-    allow(LogStash::Inputs::Kafka).to receive(:logger).and_return(logger)
-    [:error, :warn, :info, :debug].each do |level|
-      allow(logger).to receive(level)
-    end
-  end
-
-  it "input plugin disconnects from the broker when another client with same static membership connects" do
-    queue = Queue.new
-    kafka_input = LogStash::Inputs::Kafka.new(consumer_config)
-    kafka_input.register
-
-    expect(logger).to receive(:error).with("Another consumer with same group.instance.id has connected")
-
-    input_worker = java.lang.Thread.new { kafka_input.run(queue) }
-    begin
-      input_worker.start
-      wait_kafka_input_is_ready("logstash_integration_static_membership_topic", queue)
-      saboteur_kafka_consumer = create_consumer_and_start_consuming("test_static_group_id")
-      saboteur_kafka_consumer.run # ask to be scheduled
-      saboteur_kafka_consumer.join
-
-      expect(saboteur_kafka_consumer.value).to eq("saboteur exited")
-    ensure
-      input_worker.join(30_000)
-    end
-  end
-
-  context "when the plugin is configured with multiple consumer threads" do
-    let(:multi_consumer_config) { consumer_config.merge({"consumer_threads" => 2}) }
-
-    it "should avoid to connect with same 'group.instance.id'" do
-      queue = Queue.new
-      kafka_input = LogStash::Inputs::Kafka.new(multi_consumer_config)
-      kafka_input.register
-
-      expect(logger).to_not receive(:error).with("Another consumer with same group.instance.id has connected")
-
-      input_worker = java.lang.Thread.new { kafka_input.run(queue) }
-      begin
-        input_worker.start
-        wait_kafka_input_is_ready("logstash_integration_static_membership_topic", queue)
-      ensure
-        kafka_input.stop
-        input_worker.join(1_000)
-      end
     end
   end
 end
