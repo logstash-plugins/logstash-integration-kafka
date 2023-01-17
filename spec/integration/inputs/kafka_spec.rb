@@ -243,7 +243,7 @@ describe "Kafka static membership 'group.instance.id' setting", :integration => 
     end
   end
 
-  it "input plugin is terminated if second client connect with same 'group.instance.id'" do
+  it "input plugin disconnects from the broker when another client with same static membership connects" do
     queue = Queue.new
     kafka_input = LogStash::Inputs::Kafka.new(consumer_config)
     kafka_input.register
@@ -264,10 +264,10 @@ describe "Kafka static membership 'group.instance.id' setting", :integration => 
     end
   end
 
-  context "when multiple consumer threads are configured" do
+  context "when the plugin is configured with multiple consumer threads" do
     let(:multi_consumer_config) { consumer_config.merge({"consumer_threads" => 2}) }
 
-    it "the plugin should work as expected" do
+    it "should avoid to connect with same 'group.instance.id'" do
       queue = Queue.new
       kafka_input = LogStash::Inputs::Kafka.new(multi_consumer_config)
       kafka_input.register
