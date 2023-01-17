@@ -205,7 +205,7 @@ describe "inputs/kafka", :integration => true do
     end
 
     it "input plugin disconnects from the broker when another client with same static membership connects" do
-      queue = Queue.new
+      queue = java.util.concurrent.ArrayBlockingQueue.new(10)
       kafka_input = LogStash::Inputs::Kafka.new(consumer_config)
       kafka_input.register
 
@@ -229,7 +229,7 @@ describe "inputs/kafka", :integration => true do
       let(:multi_consumer_config) { consumer_config.merge({"consumer_threads" => 2}) }
 
       it "should avoid to connect with same 'group.instance.id'" do
-        queue = Queue.new
+        queue = java.util.concurrent.ArrayBlockingQueue.new(10)
         kafka_input = LogStash::Inputs::Kafka.new(multi_consumer_config)
         kafka_input.register
 
@@ -282,7 +282,8 @@ def wait_kafka_input_is_ready(topic, queue)
   send_message(record)
 
   # Wait the message is processed
-  message = queue.pop
+  message = queue.poll(1, java.util.concurrent.TimeUnit::MINUTES)
+  expect(message).to_not be(nil)
 end
 
 def consume_messages(config, queue: Queue.new, timeout:, event_count:)
