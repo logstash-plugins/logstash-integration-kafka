@@ -359,7 +359,9 @@ This mitigates the cases where the service state is heavy and rebalance of one t
 A to B means huge amount of data transfer. Client that goes offline and online frequently, if using this settings
 avoid frequent and heavy rebalances.
 
-NOTE: In case another client connects with same `group.instance.id` value then the oldest is kicked off.
+NOTE: It has to be unique across all the clients connected to same topic, in case another client connects
+with same `group.instance.id` value then the oldest is kicked off.
+Generally could be something like a hostname, an IP or anything that uniquely identifies the client application.
 
 NOTE: In cases when multiple threads are configured, `consumer_threads` is greater than one, a suffix is appended to
 the `group_instance_id` to avoid collisions.
