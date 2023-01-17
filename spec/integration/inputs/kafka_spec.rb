@@ -283,7 +283,7 @@ def wait_kafka_input_is_ready(topic, queue)
 
   # Wait the message is processed
   message = queue.poll(1, java.util.concurrent.TimeUnit::MINUTES)
-  expect(message).to_not be(nil)
+  expect(message).to_not eq(nil)
 end
 
 def consume_messages(config, queue: Queue.new, timeout:, event_count:)
