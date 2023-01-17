@@ -193,6 +193,8 @@ describe "inputs/kafka", :integration => true do
         "topics" => ["logstash_integration_static_membership_topic"],
         "group_id" => "logstash",
         "consumer_threads" => 1,
+        # this is needed because the worker thread could be executed little after the producer sent the "up" message
+        "auto_offset_reset" => "earliest",
         "group_instance_id" => "test_static_group_id"
       }
     end
