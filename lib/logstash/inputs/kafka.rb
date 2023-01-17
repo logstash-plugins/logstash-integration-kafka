@@ -289,7 +289,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   public
   def run(logstash_queue)
     @runner_consumers = consumer_threads.times.map do |i|
-      thread_group_instance_id = consumer_threads > 0 && group_instance_id ? "#{group_instance_id}-#{i}" : group_instance_id
+      thread_group_instance_id = consumer_threads > 1 && group_instance_id ? "#{group_instance_id}-#{i}" : group_instance_id
       subscribe(create_consumer("#{client_id}-#{i}", thread_group_instance_id))
     end
     @runner_threads = @runner_consumers.map.with_index { |consumer, i| thread_runner(logstash_queue, consumer,
