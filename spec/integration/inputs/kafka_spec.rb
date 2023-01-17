@@ -79,6 +79,7 @@ describe "inputs/kafka", :integration => true do
     producer = org.apache.kafka.clients.producer.KafkaProducer.new(props)
 
     producer.send(record)
+    producer.flush
     producer.close
   end
 
