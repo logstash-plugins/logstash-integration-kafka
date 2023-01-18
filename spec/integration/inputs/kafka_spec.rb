@@ -188,7 +188,7 @@ describe "inputs/kafka", :integration => true do
   end
 
   context "static membership 'group.instance.id' setting" do
-    let(:consumer_config) do
+    let(:base_config) do
       {
         "topics" => ["logstash_integration_static_membership_topic"],
         "group_id" => "logstash",
@@ -198,20 +198,20 @@ describe "inputs/kafka", :integration => true do
         "group_instance_id" => "test_static_group_id"
       }
     end
-
+    let(:consumer_config) { base_config }
     let(:logger) { double("logger") }
+    let(:queue) { java.util.concurrent.ArrayBlockingQueue.new(10) }
+    let(:kafka_input) { LogStash::Inputs::Kafka.new(consumer_config) }
     before :each do
       allow(LogStash::Inputs::Kafka).to receive(:logger).and_return(logger)
       [:error, :warn, :info, :debug].each do |level|
         allow(logger).to receive(level)
       end
+
+      kafka_input.register
     end
 
     it "input plugin disconnects from the broker when another client with same static membership connects" do
-      queue = java.util.concurrent.ArrayBlockingQueue.new(10)
-      kafka_input = LogStash::Inputs::Kafka.new(consumer_config)
-      kafka_input.register
-
       expect(logger).to receive(:error).with("Another consumer with same group.instance.id has connected")
 
       input_worker = java.lang.Thread.new { kafka_input.run(queue) }
@@ -229,13 +229,9 @@ describe "inputs/kafka", :integration => true do
     end
 
     context "when the plugin is configured with multiple consumer threads" do
-      let(:multi_consumer_config) { consumer_config.merge({"consumer_threads" => 2}) }
+      let(:consumer_config) { base_config.merge({"consumer_threads" => 2}) }
 
       it "should avoid to connect with same 'group.instance.id'" do
-        queue = java.util.concurrent.ArrayBlockingQueue.new(10)
-        kafka_input = LogStash::Inputs::Kafka.new(multi_consumer_config)
-        kafka_input.register
-
         expect(logger).to_not receive(:error).with("Another consumer with same group.instance.id has connected")
 
         input_worker = java.lang.Thread.new { kafka_input.run(queue) }
