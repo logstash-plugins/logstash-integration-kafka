@@ -212,7 +212,7 @@ describe "inputs/kafka", :integration => true do
     end
 
     it "input plugin disconnects from the broker when another client with same static membership connects" do
-      expect(logger).to receive(:error).with("Another consumer with same group.instance.id has connected")
+      expect(logger).to receive(:error).with("Another consumer with same group.instance.id has connected", anything)
 
       input_worker = java.lang.Thread.new { kafka_input.run(queue) }
       begin
@@ -232,7 +232,7 @@ describe "inputs/kafka", :integration => true do
       let(:consumer_config) { base_config.merge({"consumer_threads" => 2}) }
 
       it "should avoid to connect with same 'group.instance.id'" do
-        expect(logger).to_not receive(:error).with("Another consumer with same group.instance.id has connected")
+        expect(logger).to_not receive(:error).with("Another consumer with same group.instance.id has connected", anything)
 
         input_worker = java.lang.Thread.new { kafka_input.run(queue) }
         begin

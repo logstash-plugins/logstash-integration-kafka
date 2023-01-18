@@ -344,7 +344,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
       logger.debug("Wake up from poll", :kafka_error_message => e)
       raise e unless stop?
     rescue org.apache.kafka.common.errors.FencedInstanceIdException => e
-      logger.error("Another consumer with same group.instance.id has connected")
+      logger.error("Another consumer with same group.instance.id has connected", :original_error_message => e.message)
       raise e unless stop?
     rescue => e
       logger.error("Unable to poll Kafka consumer",
