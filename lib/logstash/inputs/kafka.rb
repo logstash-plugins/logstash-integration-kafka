@@ -418,10 +418,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
       props.put(kafka::FETCH_MAX_WAIT_MS_CONFIG, fetch_max_wait_ms.to_s) unless fetch_max_wait_ms.nil?
       props.put(kafka::FETCH_MIN_BYTES_CONFIG, fetch_min_bytes.to_s) unless fetch_min_bytes.nil?
       props.put(kafka::GROUP_ID_CONFIG, group_id)
-      if group_instance_id
-        # group_instance_id in case of nil can't be set
-        props.put(kafka::GROUP_INSTANCE_ID_CONFIG, group_instance_id)
-      end
+      props.put(kafka::GROUP_INSTANCE_ID_CONFIG, group_instance_id) unless group_instance_id.nil?
       props.put(kafka::HEARTBEAT_INTERVAL_MS_CONFIG, heartbeat_interval_ms.to_s) unless heartbeat_interval_ms.nil?
       props.put(kafka::ISOLATION_LEVEL_CONFIG, isolation_level)
       props.put(kafka::KEY_DESERIALIZER_CLASS_CONFIG, key_deserializer_class)
