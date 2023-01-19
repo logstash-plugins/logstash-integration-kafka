@@ -360,8 +360,8 @@ This feature mitigates cases where the service state is heavy and the rebalance 
 A to B would cause a huge amount of data to be transferred.
 A client that goes offline/online frequently can avoid frequent and heavy rebalances by using this option.
 
-NOTE: It has to be unique across all the clients belonging to the same <<plugins-{type}s-{plugin}-group_id>>, in case another client connects
-with same `group.instance.id` value then the oldest is kicked off.
+NOTE: The `group_instance_id` setting must be unique across all the clients belonging to the same <<plugins-{type}s-{plugin}-group_id>>.
+Otherwise, another client connecting with same `group.instance.id` value would cause the oldest instance to be disconnected.
 You can set this value to use information such as a hostname, an IP, or anything that uniquely identifies the client application.
 
 NOTE: In cases when multiple threads are configured and `consumer_threads` is greater than one, a suffix is appended to
