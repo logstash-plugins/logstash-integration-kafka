@@ -349,21 +349,22 @@ is also recommended.
 ===== `group_instance_id`
 
 * Value type is <<string,string>>
-* Optional, there is no default value for this setting.
+* There is no default value for this setting.
 
-The static membership identifier for this consumer. Static membership feature was introduced in
+The static membership identifier for this Logstash Kafka consumer. Static membership feature was introduced in
 https://cwiki.apache.org/confluence/display/KAFKA/KIP-345%3A+Introduce+static+membership+protocol+to+reduce+consumer+rebalances[KIP-345],
-available under Kafka property `group.instance.id` and aims to avoid rebalances in contexts where a lot of data
-has to be handed off after a consumer goes offline.
-This mitigates the cases where the service state is heavy and rebalance of one topic partition from instance
-A to B means huge amount of data transfer. Client that goes offline and online frequently, if using this settings
-avoid frequent and heavy rebalances.
+available under Kafka property `group.instance.id`.
+Its purpose is to avoid rebalances in situations in which a lot of data
+has to be forwarded after a consumer goes offline.
+This feature mitigates cases where the service state is heavy and the rebalance of one topic partition from instance
+A to B would cause a huge amount of data to be transferred.
+A client that goes offline/online frequently can avoid frequent and heavy rebalances by using this option.
 
 NOTE: It has to be unique across all the clients belonging to the same <<plugins-{type}s-{plugin}-group_id>>, in case another client connects
 with same `group.instance.id` value then the oldest is kicked off.
-Generally could be something like a hostname, an IP or anything that uniquely identifies the client application.
+You can set this value to use information such as a hostname, an IP, or anything that uniquely identifies the client application.
 
-NOTE: In cases when multiple threads are configured, `consumer_threads` is greater than one, a suffix is appended to
+NOTE: In cases when multiple threads are configured and `consumer_threads` is greater than one, a suffix is appended to
 the `group_instance_id` to avoid collisions.
 
 [id="plugins-{type}s-{plugin}-heartbeat_interval_ms"]
