@@ -124,6 +124,11 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # that happens to be made up of multiple processors. Messages in a topic will be distributed to all
   # Logstash instances with the same `group_id`
   config :group_id, :validate => :string, :default => "logstash"
+  # Set a static group instance id used in static membership feature to avoid rebalancing when a
+  # consumer goes offline. If set and `consumer_threads` is greater than 1 then for each
+  # consumer crated by each thread an artificial suffix is appended to the user provided `group_instance_id`
+  # to avoid clashing.
+  config :group_instance_id, :validate => :string
   # The expected time between heartbeats to the consumer coordinator. Heartbeats are used to ensure 
   # that the consumer's session stays active and to facilitate rebalancing when new
   # consumers join or leave the group. The value must be set lower than
@@ -136,7 +141,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # been aborted. Non-transactional messages will be returned unconditionally in either mode.
   config :isolation_level, :validate => ["read_uncommitted", "read_committed"], :default => "read_uncommitted" # Kafka default
   # Java Class used to deserialize the record's key
-  config :key_deserializer_class, :validate => :string, :default => "org.apache.kafka.common.serialization.StringDeserializer"
+  config :key_deserializer_class, :validate => :string, :default => DEFAULT_DESERIALIZER_CLASS
   # The maximum delay between invocations of poll() when using consumer group management. This places 
   # an upper bound on the amount of time that the consumer can be idle before fetching more records. 
   # If poll() is not called before expiration of this timeout, then the consumer is considered failed and 
@@ -287,7 +292,10 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
   public
   def run(logstash_queue)
-    @runner_consumers = consumer_threads.times.map { |i| subscribe(create_consumer("#{client_id}-#{i}")) }
+    @runner_consumers = consumer_threads.times.map do |i|
+      thread_group_instance_id = consumer_threads > 1 && group_instance_id ? "#{group_instance_id}-#{i}" : group_instance_id
+      subscribe(create_consumer("#{client_id}-#{i}", thread_group_instance_id))
+    end
     @runner_threads = @runner_consumers.map.with_index { |consumer, i| thread_runner(logstash_queue, consumer,
                                                                                      "kafka-input-worker-#{client_id}-#{i}") }
     @runner_threads.each(&:start)
@@ -334,6 +342,9 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
       records = consumer.poll(java.time.Duration.ofMillis(poll_timeout_ms))
     rescue org.apache.kafka.common.errors.WakeupException => e
       logger.debug("Wake up from poll", :kafka_error_message => e)
+      raise e unless stop?
+    rescue org.apache.kafka.common.errors.FencedInstanceIdException => e
+      logger.error("Another consumer with same group.instance.id has connected", :original_error_message => e.message)
       raise e unless stop?
     rescue => e
       logger.error("Unable to poll Kafka consumer",
@@ -389,7 +400,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   end
 
   private
-  def create_consumer(client_id)
+  def create_consumer(client_id, group_instance_id)
     begin
       props = java.util.Properties.new
       kafka = org.apache.kafka.clients.consumer.ConsumerConfig
@@ -407,6 +418,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
       props.put(kafka::FETCH_MAX_WAIT_MS_CONFIG, fetch_max_wait_ms.to_s) unless fetch_max_wait_ms.nil?
       props.put(kafka::FETCH_MIN_BYTES_CONFIG, fetch_min_bytes.to_s) unless fetch_min_bytes.nil?
       props.put(kafka::GROUP_ID_CONFIG, group_id)
+      props.put(kafka::GROUP_INSTANCE_ID_CONFIG, group_instance_id) unless group_instance_id.nil?
       props.put(kafka::HEARTBEAT_INTERVAL_MS_CONFIG, heartbeat_interval_ms.to_s) unless heartbeat_interval_ms.nil?
       props.put(kafka::ISOLATION_LEVEL_CONFIG, isolation_level)
       props.put(kafka::KEY_DESERIALIZER_CLASS_CONFIG, key_deserializer_class)

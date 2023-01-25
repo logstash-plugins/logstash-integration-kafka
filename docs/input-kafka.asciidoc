@@ -113,6 +113,7 @@ See the https://kafka.apache.org/{kafka_client_doc}/documentation for more detai
 | <<plugins-{type}s-{plugin}-fetch_max_wait_ms>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-fetch_min_bytes>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-group_id>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-group_instance_id>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-heartbeat_interval_ms>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-isolation_level>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-jaas_path>> |a valid filesystem path|No
@@ -343,6 +344,28 @@ Logstash instances with the same `group_id`.
 NOTE: In cases when multiple inputs are being used in a single pipeline, reading from different topics,
 it's essential to set a different `group_id => ...` for each input. Setting a unique `client_id => ...`
 is also recommended.
+
+[id="plugins-{type}s-{plugin}-group_instance_id"]
+===== `group_instance_id`
+
+* Value type is <<string,string>>
+* There is no default value for this setting.
+
+The static membership identifier for this Logstash Kafka consumer. Static membership feature was introduced in
+https://cwiki.apache.org/confluence/display/KAFKA/KIP-345%3A+Introduce+static+membership+protocol+to+reduce+consumer+rebalances[KIP-345],
+available under Kafka property `group.instance.id`.
+Its purpose is to avoid rebalances in situations in which a lot of data
+has to be forwarded after a consumer goes offline.
+This feature mitigates cases where the service state is heavy and the rebalance of one topic partition from instance
+A to B would cause a huge amount of data to be transferred.
+A client that goes offline/online frequently can avoid frequent and heavy rebalances by using this option.
+
+NOTE: The `group_instance_id` setting must be unique across all the clients belonging to the same <<plugins-{type}s-{plugin}-group_id>>.
+Otherwise, another client connecting with same `group.instance.id` value would cause the oldest instance to be disconnected.
+You can set this value to use information such as a hostname, an IP, or anything that uniquely identifies the client application.
+
+NOTE: In cases when multiple threads are configured and `consumer_threads` is greater than one, a suffix is appended to
+the `group_instance_id` to avoid collisions.
 
 [id="plugins-{type}s-{plugin}-heartbeat_interval_ms"]
 ===== `heartbeat_interval_ms` 

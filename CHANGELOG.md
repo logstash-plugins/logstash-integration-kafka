@@ -1,3 +1,6 @@
+# 11.1.0
+ - Added config `group_instance_id` to use the Kafka's consumer static membership feature [#135](https://github.com/logstash-plugins/logstash-integration-kafka/pull/135)
+
 ## 11.0.0
   - Changed Kafka client to 3.3.1, requires Logstash >= 8.3.0. 
   - Deprecated `default` value for setting `client_dns_lookup` forcing to `use_all_dns_ips` when explicitly used [#130](https://github.com/logstash-plugins/logstash-integration-kafka/pull/130)

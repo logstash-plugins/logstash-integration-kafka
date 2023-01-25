@@ -79,6 +79,7 @@ describe "inputs/kafka", :integration => true do
     producer = org.apache.kafka.clients.producer.KafkaProducer.new(props)
 
     producer.send(record)
+    producer.flush
     producer.close
   end
 
@@ -185,9 +186,104 @@ describe "inputs/kafka", :integration => true do
       end
     end
   end
+
+  context "static membership 'group.instance.id' setting" do
+    let(:base_config) do
+      {
+        "topics" => ["logstash_integration_static_membership_topic"],
+        "group_id" => "logstash",
+        "consumer_threads" => 1,
+        # this is needed because the worker thread could be executed little after the producer sent the "up" message
+        "auto_offset_reset" => "earliest",
+        "group_instance_id" => "test_static_group_id"
+      }
+    end
+    let(:consumer_config) { base_config }
+    let(:logger) { double("logger") }
+    let(:queue) { java.util.concurrent.ArrayBlockingQueue.new(10) }
+    let(:kafka_input) { LogStash::Inputs::Kafka.new(consumer_config) }
+    before :each do
+      allow(LogStash::Inputs::Kafka).to receive(:logger).and_return(logger)
+      [:error, :warn, :info, :debug].each do |level|
+        allow(logger).to receive(level)
+      end
+
+      kafka_input.register
+    end
+
+    it "input plugin disconnects from the broker when another client with same static membership connects" do
+      expect(logger).to receive(:error).with("Another consumer with same group.instance.id has connected", anything)
+
+      input_worker = java.lang.Thread.new { kafka_input.run(queue) }
+      begin
+        input_worker.start
+        wait_kafka_input_is_ready("logstash_integration_static_membership_topic", queue)
+        saboteur_kafka_consumer = create_consumer_and_start_consuming("test_static_group_id")
+        saboteur_kafka_consumer.run # ask to be scheduled
+        saboteur_kafka_consumer.join
+
+        expect(saboteur_kafka_consumer.value).to eq("saboteur exited")
+      ensure
+        input_worker.join(30_000)
+      end
+    end
+
+    context "when the plugin is configured with multiple consumer threads" do
+      let(:consumer_config) { base_config.merge({"consumer_threads" => 2}) }
+
+      it "should avoid to connect with same 'group.instance.id'" do
+        expect(logger).to_not receive(:error).with("Another consumer with same group.instance.id has connected", anything)
+
+        input_worker = java.lang.Thread.new { kafka_input.run(queue) }
+        begin
+          input_worker.start
+          wait_kafka_input_is_ready("logstash_integration_static_membership_topic", queue)
+        ensure
+          kafka_input.stop
+          input_worker.join(1_000)
+        end
+      end
+    end
+  end
+end
+
+# return consumer Ruby Thread
+def create_consumer_and_start_consuming(static_group_id)
+  props = java.util.Properties.new
+  kafka = org.apache.kafka.clients.consumer.ConsumerConfig
+  props.put(kafka::BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+  props.put(kafka::KEY_DESERIALIZER_CLASS_CONFIG, LogStash::Inputs::Kafka::DEFAULT_DESERIALIZER_CLASS)
+  props.put(kafka::VALUE_DESERIALIZER_CLASS_CONFIG, LogStash::Inputs::Kafka::DEFAULT_DESERIALIZER_CLASS)
+  props.put(kafka::GROUP_ID_CONFIG, "logstash")
+  props.put(kafka::GROUP_INSTANCE_ID_CONFIG, static_group_id)
+  consumer = org.apache.kafka.clients.consumer.KafkaConsumer.new(props)
+
+  Thread.new do
+    LogStash::Util::set_thread_name("integration_test_simple_consumer")
+    begin
+      consumer.subscribe(["logstash_integration_static_membership_topic"])
+      records = consumer.poll(java.time.Duration.ofSeconds(3))
+      "saboteur exited"
+    rescue => e
+      e # return the exception reached in thread.value
+    ensure
+      consumer.close
+    end
+  end
 end
 
 private
+
+def wait_kafka_input_is_ready(topic, queue)
+  # this is needed to give time to the kafka input to be up and running
+  header = org.apache.kafka.common.header.internals.RecordHeader.new("name", "Ping Up".to_java_bytes)
+  record = org.apache.kafka.clients.producer.ProducerRecord.new(topic, 0, "key", "value", [header])
+  send_message(record)
+
+  # Wait the message is processed
+  message = queue.poll(1, java.util.concurrent.TimeUnit::MINUTES)
+  expect(message).to_not eq(nil)
+end
 
 def consume_messages(config, queue: Queue.new, timeout:, event_count:)
   kafka_input = LogStash::Inputs::Kafka.new(config)
