@@ -1,4 +1,4 @@
-# 11.1.0
+## 11.1.0
  - Added config `group_instance_id` to use the Kafka's consumer static membership feature [#135](https://github.com/logstash-plugins/logstash-integration-kafka/pull/135)
 
 ## 11.0.0
