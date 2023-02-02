@@ -353,10 +353,13 @@ describe "schema registry connection options" do
   end
 end
 
-def save_avro_schema_to_schema_registry(schema_file, subject_name)
+def save_avro_schema_to_schema_registry(schema_file, subject_name, proto = 'http', port = 8081, manticore_options = {})
   raw_schema = File.readlines(schema_file).map(&:chomp).join
   raw_schema_quoted = raw_schema.gsub('"', '\"')
-  response = Manticore.post("http://localhost:8081/subjects/#{subject_name}/versions",
+
+  client = Manticore::Client.new(manticore_options)
+
+  response = client.post("#{proto}://localhost:#{port}/subjects/#{subject_name}/versions",
           body: '{"schema": "' + raw_schema_quoted + '"}',
           headers: {"Content-Type" => "application/vnd.schemaregistry.v1+json"})
   response
@@ -378,8 +381,17 @@ def startup_schema_registry(schema_registry, auth=false)
   end
 end
 
-describe "Schema registry API", :integration => true do
-  schema_registry = Manticore::Client.new
+shared_examples 'it has endpoints available to' do |tls|
+  let(:port) { tls ? 8083 : 8081 }
+  let(:proto) { tls ? 'https' : 'http' }
+
+  manticore_options = {
+    :ssl => {
+      :truststore => File.join(Dir.pwd, "tls_repository/clienttruststore.jks"),
+      :truststore_password => "changeit"
+    }
+  }
+  schema_registry = Manticore::Client.new(manticore_options)
 
   before(:all) do
     startup_schema_registry(schema_registry)
@@ -391,27 +403,38 @@ describe "Schema registry API", :integration => true do
 
   context 'listing subject on clean instance' do
     it "should return an empty set" do
-      subjects = JSON.parse schema_registry.get('http://localhost:8081/subjects').body
+      subjects = JSON.parse schema_registry.get("#{proto}://localhost:#{port}/subjects").body
       expect( subjects ).to be_empty
     end
   end
 
   context 'send a schema definition' do
     it "save the definition" do
-      response = save_avro_schema_to_schema_registry(File.join(Dir.pwd, "spec", "unit", "inputs", "avro_schema_fixture_payment.asvc"), "schema_test_1")
+      response = save_avro_schema_to_schema_registry(File.join(Dir.pwd, "spec", "unit", "inputs", "avro_schema_fixture_payment.asvc"), "schema_test_1", proto, port, manticore_options)
       expect( response.code ).to be(200)
       delete_remote_schema(schema_registry, "schema_test_1")
     end
 
     it "delete the schema just added" do
-      response = save_avro_schema_to_schema_registry(File.join(Dir.pwd, "spec", "unit", "inputs", "avro_schema_fixture_payment.asvc"), "schema_test_1")
+      response = save_avro_schema_to_schema_registry(File.join(Dir.pwd, "spec", "unit", "inputs", "avro_schema_fixture_payment.asvc"), "schema_test_1", proto, port, manticore_options)
       expect( response.code ).to be(200)
 
-      expect( schema_registry.delete('http://localhost:8081/subjects/schema_test_1?permanent=false').code ).to be(200)
+      expect( schema_registry.delete("#{proto}://localhost:#{port}/subjects/schema_test_1?permanent=false").code ).to be(200)
       sleep(1)
-      subjects = JSON.parse schema_registry.get('http://localhost:8081/subjects').body
+      subjects = JSON.parse schema_registry.get("#{proto}://localhost:#{port}/subjects").body
       expect( subjects ).to be_empty
     end
+  end
+end
+
+describe "Schema registry API", :integration => true do
+
+  context "when exposed with HTTPS" do
+    it_behaves_like 'it has endpoints available to', true
+  end
+
+  context "when exposed with plain HTTP" do
+    it_behaves_like 'it has endpoints available to', false
   end
 end
 
