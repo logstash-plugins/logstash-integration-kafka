@@ -443,7 +443,13 @@ def shutdown_schema_registry
 end
 
 describe "Deserializing with the schema registry", :integration => true do
-  schema_registry = Manticore::Client.new
+  manticore_options = {
+    :ssl => {
+      :truststore => File.join(Dir.pwd, "tls_repository/clienttruststore.jks"),
+      :truststore_password => "changeit"
+    }
+  }
+  schema_registry = Manticore::Client.new(manticore_options)
 
   shared_examples 'it reads from a topic using a schema registry' do |with_auth|
 
@@ -542,26 +548,41 @@ describe "Deserializing with the schema registry", :integration => true do
     end
   end
 
-  context 'with an unauthed schema registry' do
+  shared_examples 'with an unauthed schema registry' do |tls|
+    let(:port) { tls ? 8083 : 8081 }
+    let(:proto) { tls ? 'https' : 'http' }
+
     let(:auth) { false }
     let(:avro_topic_name) { "topic_avro" }
-    let(:subject_url) { "http://localhost:8081/subjects" }
-    let(:plain_config)  { base_config.merge!({'schema_registry_url' => "http://localhost:8081"}) }
+    let(:subject_url) { "#{proto}://localhost:#{port}/subjects" }
+    let(:plain_config)  { base_config.merge!({'schema_registry_url' => "#{proto}://localhost:#{port}"}) }
 
     it_behaves_like 'it reads from a topic using a schema registry', false
   end
 
-  context 'with an authed schema registry' do
+  context 'with an unauthed schema registry' do
+    context "accessed through HTTPS" do
+      it_behaves_like 'with an unauthed schema registry', true
+    end
+
+    context "accessed through HTTPS" do
+      it_behaves_like 'with an unauthed schema registry', false
+    end
+  end
+
+  shared_examples 'with an authed schema registry' do |tls|
+    let(:port) { tls ? 8083 : 8081 }
+    let(:proto) { tls ? 'https' : 'http' }
     let(:auth) { true }
     let(:user) { "barney" }
     let(:password) { "changeme" }
     let(:avro_topic_name) { "topic_avro_auth" }
-    let(:subject_url) { "http://#{user}:#{password}@localhost:8081/subjects" }
+    let(:subject_url) { "#{proto}://#{user}:#{password}@localhost:#{port}/subjects" }
 
     context 'using schema_registry_key' do
       let(:plain_config) do
         base_config.merge!({
-          'schema_registry_url' => "http://localhost:8081",
+          'schema_registry_url' => "#{proto}://localhost:#{port}",
           'schema_registry_key' => user,
           'schema_registry_secret' => password
         })
@@ -573,11 +594,21 @@ describe "Deserializing with the schema registry", :integration => true do
     context 'using schema_registry_url' do
       let(:plain_config) do
         base_config.merge!({
-          'schema_registry_url' => "http://#{user}:#{password}@localhost:8081"
+          'schema_registry_url' => "#{proto}://#{user}:#{password}@localhost:#{port}"
         })
       end
 
       it_behaves_like 'it reads from a topic using a schema registry', true
+    end
+  end
+
+  context 'with an authed schema registry' do
+    context "accessed through HTTPS" do
+      it_behaves_like 'with an authed schema registry', true
+    end
+
+    context "accessed through HTTPS" do
+      it_behaves_like 'with an authed schema registry', false
     end
   end
 end
