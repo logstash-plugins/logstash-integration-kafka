@@ -13,8 +13,12 @@ export _JAVA_OPTIONS="-Djava.net.preferIPv4Stack=true"
 rm -rf build
 mkdir build
 
-echo "Downloading Kafka version $KAFKA_VERSION"
-curl -s -o build/kafka.tgz "https://archive.apache.org/dist/kafka/$KAFKA_VERSION/kafka_2.12-$KAFKA_VERSION.tgz"
+echo "Setup Kafka version $KAFKA_VERSION"
+if [ ! -e "kafka_2.12-$KAFKA_VERSION.tgz" ]; then
+  echo "Kafka not present locally, downloading"
+  curl -s -o "kafka_2.12-$KAFKA_VERSION.tgz" "https://archive.apache.org/dist/kafka/$KAFKA_VERSION/kafka_2.12-$KAFKA_VERSION.tgz"
+fi
+cp kafka_2.12-$KAFKA_VERSION.tgz build/kafka.tgz
 mkdir build/kafka && tar xzf build/kafka.tgz -C build/kafka --strip-components 1
 
 echo "Starting ZooKeeper"
@@ -24,8 +28,13 @@ echo "Starting Kafka broker"
 build/kafka/bin/kafka-server-start.sh -daemon build/kafka/config/server.properties --override advertised.host.name=127.0.0.1 --override log.dirs="${PWD}/build/kafka-logs"
 sleep 10
 
-echo "Downloading Confluent Platform"
-curl -s -o build/confluent_platform.tar.gz http://packages.confluent.io/archive/5.5/confluent-community-5.5.1-2.12.tar.gz
+echo "Setup Confluent Platform"
+if [ ! -e confluent-community-5.5.1-2.12.tar.gz ]; then
+  echo "Confluent Platform not present locally, downloading"
+  curl -s -o confluent-community-5.5.1-2.12.tar.gz http://packages.confluent.io/archive/5.5/confluent-community-5.5.1-2.12.tar.gz
+#curl -s -o build/confluent_platform.tar.gz http://packages.confluent.io/archive/5.5/confluent-community-5.5.1-2.12.tar.gz
+fi
+cp confluent-community-5.5.1-2.12.tar.gz build/confluent_platform.tar.gz
 mkdir build/confluent_platform && tar xzf build/confluent_platform.tar.gz -C build/confluent_platform --strip-components 1
 
 echo "Configuring TLS on Schema registry"
