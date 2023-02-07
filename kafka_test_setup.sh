@@ -32,7 +32,6 @@ echo "Setup Confluent Platform"
 if [ ! -e confluent-community-5.5.1-2.12.tar.gz ]; then
   echo "Confluent Platform not present locally, downloading"
   curl -s -o confluent-community-5.5.1-2.12.tar.gz http://packages.confluent.io/archive/5.5/confluent-community-5.5.1-2.12.tar.gz
-#curl -s -o build/confluent_platform.tar.gz http://packages.confluent.io/archive/5.5/confluent-community-5.5.1-2.12.tar.gz
 fi
 cp confluent-community-5.5.1-2.12.tar.gz build/confluent_platform.tar.gz
 mkdir build/confluent_platform && tar xzf build/confluent_platform.tar.gz -C build/confluent_platform --strip-components 1

@@ -460,6 +460,15 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
         set_trustore_keystore_config(props)
         set_sasl_config(props)
       end
+      if schema_registry_ssl_truststore_location
+        props.put('schema.registry.ssl.truststore.location', schema_registry_ssl_truststore_location)
+        props.put('schema.registry.ssl.truststore.password', schema_registry_ssl_truststore_password.value)
+      end
+
+      if schema_registry_ssl_keystore_location
+        props.put('schema.registry.ssl.keystore.location', schema_registry_ssl_keystore_location)
+        props.put('schema.registry.ssl.keystore.password', schema_registry_ssl_keystore_password.value)
+      end
 
       org.apache.kafka.clients.consumer.KafkaConsumer.new(props)
     rescue => e

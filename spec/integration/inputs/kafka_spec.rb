@@ -555,7 +555,11 @@ describe "Deserializing with the schema registry", :integration => true do
     let(:auth) { false }
     let(:avro_topic_name) { "topic_avro" }
     let(:subject_url) { "#{proto}://localhost:#{port}/subjects" }
-    let(:plain_config)  { base_config.merge!({'schema_registry_url' => "#{proto}://localhost:#{port}"}) }
+    let(:plain_config)  { base_config.merge!({
+      'schema_registry_url' => "#{proto}://localhost:#{port}",
+      'schema_registry_ssl_truststore_location' => File.join(Dir.pwd, "tls_repository/clienttruststore.jks"),
+      'schema_registry_ssl_truststore_password' => 'changeit',
+    }) }
 
     it_behaves_like 'it reads from a topic using a schema registry', false
   end
@@ -584,7 +588,9 @@ describe "Deserializing with the schema registry", :integration => true do
         base_config.merge!({
           'schema_registry_url' => "#{proto}://localhost:#{port}",
           'schema_registry_key' => user,
-          'schema_registry_secret' => password
+          'schema_registry_secret' => password,
+          'schema_registry_ssl_truststore_location' => ::File.join(Dir.pwd, "tls_repository/clienttruststore.jks"),
+          'schema_registry_ssl_truststore_password' => 'changeit',
         })
       end
 
@@ -594,7 +600,9 @@ describe "Deserializing with the schema registry", :integration => true do
     context 'using schema_registry_url' do
       let(:plain_config) do
         base_config.merge!({
-          'schema_registry_url' => "#{proto}://#{user}:#{password}@localhost:#{port}"
+          'schema_registry_url' => "#{proto}://#{user}:#{password}@localhost:#{port}",
+          'schema_registry_ssl_truststore_location' => ::File.join(Dir.pwd, "tls_repository/clienttruststore.jks"),
+          'schema_registry_ssl_truststore_password' => 'changeit',
         })
       end
 

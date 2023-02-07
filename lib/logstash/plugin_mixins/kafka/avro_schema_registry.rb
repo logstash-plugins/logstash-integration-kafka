@@ -27,6 +27,11 @@ module LogStash module PluginMixins module Kafka
       # Option to skip validating the schema registry during registration. This can be useful when using
       # certificate based auth
       config :schema_registry_validation, :validate => ['auto', 'skip'], :default => 'auto'
+
+      config :schema_registry_ssl_keystore_location, :validate => :string
+      config :schema_registry_ssl_keystore_password, :validate => :password
+      config :schema_registry_ssl_truststore_location, :validate => :string
+      config :schema_registry_ssl_truststore_password, :validate => :password
     end
 
     def check_schema_registry_parameters
@@ -68,6 +73,21 @@ module LogStash module PluginMixins module Kafka
       if schema_registry_key and !schema_registry_key.empty?
         options[:auth] = {:user => schema_registry_key, :password => schema_registry_secret.value}
       end
+      if schema_registry_ssl_truststore_location and !schema_registry_ssl_truststore_location.empty?
+        options[:ssl] = {} unless options.key?(:ssl)
+        options[:ssl].merge!({
+          :truststore => schema_registry_ssl_truststore_location,
+          :truststore_password => schema_registry_ssl_truststore_password.value
+        })
+      end
+      if schema_registry_ssl_keystore_location and !schema_registry_ssl_keystore_location.empty?
+        options[:ssl] = {} unless options.key? :ssl
+        options[:ssl].merge!({
+          :keystore => schema_registry_ssl_keystore_location,
+          :keystore_password => schema_registry_ssl_keystore_password.value
+        })
+      end
+
       client = Manticore::Client.new(options)
       begin
         response = client.get(@schema_registry_url.uri.to_s + '/subjects').body
