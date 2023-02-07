@@ -24,10 +24,6 @@ module LogStash module PluginMixins module Kafka
       # This option permits to define a proxy to be used to reach the schema registry service instance.
       config :schema_registry_proxy, :validate => :uri
 
-      # Option to skip validating the schema registry during registration. This can be useful when using
-      # certificate based auth
-      config :schema_registry_validation, :validate => ['auto', 'skip'], :default => 'auto'
-
       # If schema registry client authentication is required, this setting stores the keystore path.
       config :schema_registry_ssl_keystore_location, :validate => :string
 
@@ -37,7 +33,7 @@ module LogStash module PluginMixins module Kafka
       # The keystore type
       config :schema_registry_ssl_keystore_type, :validate => :string, :default => "JKS"
 
-      # The JKS truststore path to validate the Kafka broker's certificate.
+      # The JKS truststore path to validate the Schema Registry's certificate.
       config :schema_registry_ssl_truststore_location, :validate => :string
 
       # The truststore password.
@@ -45,6 +41,10 @@ module LogStash module PluginMixins module Kafka
 
       # The truststore type
       config :schema_registry_ssl_truststore_type, :validate => :string, :default => "JKS"
+
+      # Option to skip validating the schema registry during registration. This can be useful when using
+      # certificate based auth
+      config :schema_registry_validation, :validate => ['auto', 'skip'], :default => 'auto'
     end
 
     def check_schema_registry_parameters
