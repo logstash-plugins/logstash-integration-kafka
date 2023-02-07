@@ -582,15 +582,23 @@ describe "Deserializing with the schema registry", :integration => true do
     let(:password) { "changeme" }
     let(:avro_topic_name) { "topic_avro_auth" }
     let(:subject_url) { "#{proto}://#{user}:#{password}@localhost:#{port}/subjects" }
+    let(:tls_base_config) do
+      if tls
+        base_config.merge({
+          'schema_registry_ssl_truststore_location' => ::File.join(Dir.pwd, "tls_repository/clienttruststore.jks"),
+          'schema_registry_ssl_truststore_password' => 'changeit',
+        })
+      else
+        base_config
+      end
+    end
 
     context 'using schema_registry_key' do
       let(:plain_config) do
-        base_config.merge!({
+        tls_base_config.merge!({
           'schema_registry_url' => "#{proto}://localhost:#{port}",
           'schema_registry_key' => user,
           'schema_registry_secret' => password,
-          'schema_registry_ssl_truststore_location' => ::File.join(Dir.pwd, "tls_repository/clienttruststore.jks"),
-          'schema_registry_ssl_truststore_password' => 'changeit',
         })
       end
 
@@ -599,10 +607,8 @@ describe "Deserializing with the schema registry", :integration => true do
 
     context 'using schema_registry_url' do
       let(:plain_config) do
-        base_config.merge!({
+        tls_base_config.merge!({
           'schema_registry_url' => "#{proto}://#{user}:#{password}@localhost:#{port}",
-          'schema_registry_ssl_truststore_location' => ::File.join(Dir.pwd, "tls_repository/clienttruststore.jks"),
-          'schema_registry_ssl_truststore_password' => 'changeit',
         })
       end
 
