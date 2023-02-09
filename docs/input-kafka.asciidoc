@@ -135,10 +135,10 @@ See the https://kafka.apache.org/{kafka_client_doc}/documentation for more detai
 | <<plugins-{type}s-{plugin}-schema_registry_key>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-schema_registry_proxy>> |<<uri,uri>>|No
 | <<plugins-{type}s-{plugin}-schema_registry_secret>> |<<string,string>>|No
-| <<plugins-{type}s-{plugin}-schema_registry_ssl_keystore_location>> |a valid filesystem path|No
+| <<plugins-{type}s-{plugin}-schema_registry_ssl_keystore_path>> |a valid filesystem path|No
 | <<plugins-{type}s-{plugin}-schema_registry_ssl_keystore_password>> |<<password,password>>|No
 | <<plugins-{type}s-{plugin}-schema_registry_ssl_keystore_type>> |<<string,string>>, one of `["jks", "PKCS12"]`|No
-| <<plugins-{type}s-{plugin}-schema_registry_ssl_truststore_location>> |a valid filesystem path|No
+| <<plugins-{type}s-{plugin}-schema_registry_ssl_truststore_path>> |a valid filesystem path|No
 | <<plugins-{type}s-{plugin}-schema_registry_ssl_truststore_password>> |<<password,password>>|No
 | <<plugins-{type}s-{plugin}-schema_registry_ssl_truststore_type>> |<<string,string>>, one of `["jks", "PKCS12"]`|No
 | <<plugins-{type}s-{plugin}-schema_registry_url>> |<<uri,uri>>|No
@@ -604,8 +604,8 @@ Set the address of a forward HTTP proxy. An empty string is treated as if proxy 
 
 Set the password for basic authorization to access remote Schema Registry.
 
-[id="plugins-{type}s-{plugin}-schema_registry_ssl_keystore_location"]
-===== `schema_registry_ssl_keystore_location`
+[id="plugins-{type}s-{plugin}-schema_registry_ssl_keystore_path"]
+===== `schema_registry_ssl_keystore_path`
 
 * Value type is <<path,path>>
 * There is no default value for this setting.
@@ -628,8 +628,8 @@ If schema registry authentication is required, this setting stores the keystore 
 
 The format of the keystore file. It must be either `jks` or `PKCS12`.
 
-[id="plugins-{type}s-{plugin}-schema_registry_ssl_truststore_location"]
-===== `schema_registry_ssl_truststore_location`
+[id="plugins-{type}s-{plugin}-schema_registry_ssl_truststore_path"]
+===== `schema_registry_ssl_truststore_path`
 
 * Value type is <<path,path>>
 * There is no default value for this setting.

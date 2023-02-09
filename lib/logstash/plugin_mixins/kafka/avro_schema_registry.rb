@@ -25,7 +25,7 @@ module LogStash module PluginMixins module Kafka
       config :schema_registry_proxy, :validate => :uri
 
       # If schema registry client authentication is required, this setting stores the keystore path.
-      config :schema_registry_ssl_keystore_location, :validate => :string
+      config :schema_registry_ssl_keystore_path, :validate => :string
 
       # The keystore password.
       config :schema_registry_ssl_keystore_password, :validate => :password
@@ -34,7 +34,7 @@ module LogStash module PluginMixins module Kafka
       config :schema_registry_ssl_keystore_type, :validate => :string, :default => "JKS"
 
       # The JKS truststore path to validate the Schema Registry's certificate.
-      config :schema_registry_ssl_truststore_location, :validate => :string
+      config :schema_registry_ssl_truststore_path, :validate => :string
 
       # The truststore password.
       config :schema_registry_ssl_truststore_password, :validate => :password
@@ -86,18 +86,18 @@ module LogStash module PluginMixins module Kafka
       if schema_registry_key and !schema_registry_key.empty?
         options[:auth] = {:user => schema_registry_key, :password => schema_registry_secret.value}
       end
-      if schema_registry_ssl_truststore_location and !schema_registry_ssl_truststore_location.empty?
+      if schema_registry_ssl_truststore_path and !schema_registry_ssl_truststore_path.empty?
         options[:ssl] = {} unless options.key?(:ssl)
         options[:ssl].merge!({
-          :truststore => schema_registry_ssl_truststore_location,
+          :truststore => schema_registry_ssl_truststore_path,
           :truststore_password => schema_registry_ssl_truststore_password.value,
           :truststore_type => schema_registry_ssl_truststore_type,
         })
       end
-      if schema_registry_ssl_keystore_location and !schema_registry_ssl_keystore_location.empty?
+      if schema_registry_ssl_keystore_path and !schema_registry_ssl_keystore_path.empty?
         options[:ssl] = {} unless options.key? :ssl
         options[:ssl].merge!({
-          :keystore => schema_registry_ssl_keystore_location,
+          :keystore => schema_registry_ssl_keystore_path,
           :keystore_password => schema_registry_ssl_keystore_password.value,
           :keystore_type => schema_registry_ssl_keystore_type,
         })

@@ -557,7 +557,7 @@ describe "Deserializing with the schema registry", :integration => true do
     let(:subject_url) { "#{proto}://localhost:#{port}/subjects" }
     let(:plain_config)  { base_config.merge!({
       'schema_registry_url' => "#{proto}://localhost:#{port}",
-      'schema_registry_ssl_truststore_location' => File.join(Dir.pwd, "tls_repository/clienttruststore.jks"),
+      'schema_registry_ssl_truststore_path' => File.join(Dir.pwd, "tls_repository/clienttruststore.jks"),
       'schema_registry_ssl_truststore_password' => 'changeit',
     }) }
 
@@ -585,7 +585,7 @@ describe "Deserializing with the schema registry", :integration => true do
     let(:tls_base_config) do
       if tls
         base_config.merge({
-          'schema_registry_ssl_truststore_location' => ::File.join(Dir.pwd, "tls_repository/clienttruststore.jks"),
+          'schema_registry_ssl_truststore_path' => ::File.join(Dir.pwd, "tls_repository/clienttruststore.jks"),
           'schema_registry_ssl_truststore_password' => 'changeit',
         })
       else
