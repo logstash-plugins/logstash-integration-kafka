@@ -2,6 +2,7 @@
 # Setup Kafka and create test topics
 
 set -ex
+# check if KAFKA_VERSION env var is set
 if [ -n "${KAFKA_VERSION+1}" ]; then
   echo "KAFKA_VERSION is $KAFKA_VERSION"
 else
@@ -29,11 +30,19 @@ build/kafka/bin/kafka-server-start.sh -daemon build/kafka/config/server.properti
 sleep 10
 
 echo "Setup Confluent Platform"
-if [ ! -e confluent-community-5.5.1-2.12.tar.gz ]; then
-  echo "Confluent Platform not present locally, downloading"
-  curl -s -o confluent-community-5.5.1-2.12.tar.gz http://packages.confluent.io/archive/5.5/confluent-community-5.5.1-2.12.tar.gz
+# check if CONFLUENT_VERSION env var is set
+if [ -n "${CONFLUENT_VERSION+1}" ]; then
+  echo "CONFLUENT_VERSION is $CONFLUENT_VERSION"
+else
+   CONFLUENT_VERSION=5.5.1
 fi
-cp confluent-community-5.5.1-2.12.tar.gz build/confluent_platform.tar.gz
+if [ ! -e confluent-community-$CONFLUENT_VERSION-2.12.tar.gz ]; then
+  echo "Confluent Platform not present locally, downloading"
+  CONFLUENT_MINOR=$(echo "$CONFLUENT_VERSION" | sed -n 's/^\([[:digit:]]*\.[[:digit:]]*\)\.[[:digit:]]*$/\1/p')
+  echo "CONFLUENT_MINOR is $CONFLUENT_MINOR"
+  curl -s -o confluent-community-$CONFLUENT_VERSION-2.12.tar.gz http://packages.confluent.io/archive/$CONFLUENT_MINOR/confluent-community-$CONFLUENT_VERSION-2.12.tar.gz
+fi
+cp confluent-community-$CONFLUENT_VERSION-2.12.tar.gz build/confluent_platform.tar.gz
 mkdir build/confluent_platform && tar xzf build/confluent_platform.tar.gz -C build/confluent_platform --strip-components 1
 
 echo "Configuring TLS on Schema registry"
