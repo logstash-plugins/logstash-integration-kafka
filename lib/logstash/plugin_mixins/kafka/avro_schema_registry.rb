@@ -31,7 +31,7 @@ module LogStash module PluginMixins module Kafka
       config :schema_registry_ssl_keystore_password, :validate => :password
 
       # The keystore type
-      config :schema_registry_ssl_keystore_type, :validate => :string, :default => "jks"
+      config :schema_registry_ssl_keystore_type, :validate => ['jks', 'PKCS12'], :default => "jks"
 
       # The JKS truststore path to validate the Schema Registry's certificate.
       config :schema_registry_ssl_truststore_path, :validate => :string
@@ -40,7 +40,7 @@ module LogStash module PluginMixins module Kafka
       config :schema_registry_ssl_truststore_password, :validate => :password
 
       # The truststore type
-      config :schema_registry_ssl_truststore_type, :validate => :string, :default => "jks"
+      config :schema_registry_ssl_truststore_type, :validate => ['jks', 'PKCS12'], :default => "jks"
 
       # Option to skip validating the schema registry during registration. This can be useful when using
       # certificate based auth
