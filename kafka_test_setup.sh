@@ -41,7 +41,11 @@ rm -Rf tls_repository
 mkdir tls_repository
 ./setup_keystore_and_truststore.sh
 # configure schema-registry to handle https on 8083 port
-sed -i 's/http:\/\/0.0.0.0:8081/http:\/\/0.0.0.0:8081, https:\/\/0.0.0.0:8083/g' build/confluent_platform/etc/schema-registry/schema-registry.properties
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  sed -i '' 's/http:\/\/0.0.0.0:8081/http:\/\/0.0.0.0:8081, https:\/\/0.0.0.0:8083/g' build/confluent_platform/etc/schema-registry/schema-registry.properties
+else
+  sed -i 's/http:\/\/0.0.0.0:8081/http:\/\/0.0.0.0:8081, https:\/\/0.0.0.0:8083/g' build/confluent_platform/etc/schema-registry/schema-registry.properties
+fi
 echo "ssl.keystore.location=`pwd`/tls_repository/schema_reg.jks" >> build/confluent_platform/etc/schema-registry/schema-registry.properties
 echo "ssl.keystore.password=changeit" >> build/confluent_platform/etc/schema-registry/schema-registry.properties
 echo "ssl.key.password=changeit" >> build/confluent_platform/etc/schema-registry/schema-registry.properties
