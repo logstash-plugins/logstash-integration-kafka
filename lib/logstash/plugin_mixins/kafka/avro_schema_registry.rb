@@ -88,19 +88,15 @@ module LogStash module PluginMixins module Kafka
       end
       if schema_registry_ssl_truststore_path and !schema_registry_ssl_truststore_path.empty?
         options[:ssl] = {} unless options.key?(:ssl)
-        options[:ssl].merge!({
-          :truststore => schema_registry_ssl_truststore_path,
-          :truststore_password => schema_registry_ssl_truststore_password.value,
-          :truststore_type => schema_registry_ssl_truststore_type,
-        })
+        options[:ssl][:truststore] = schema_registry_ssl_truststore_path unless schema_registry_ssl_truststore_path.nil?
+        options[:ssl][:truststore_password] = schema_registry_ssl_truststore_password.value unless schema_registry_ssl_truststore_password.nil?
+        options[:ssl][:truststore_type] = schema_registry_ssl_truststore_type unless schema_registry_ssl_truststore_type.nil?
       end
       if schema_registry_ssl_keystore_path and !schema_registry_ssl_keystore_path.empty?
         options[:ssl] = {} unless options.key? :ssl
-        options[:ssl].merge!({
-          :keystore => schema_registry_ssl_keystore_path,
-          :keystore_password => schema_registry_ssl_keystore_password.value,
-          :keystore_type => schema_registry_ssl_keystore_type,
-        })
+        options[:ssl][:keystore] = schema_registry_ssl_keystore_path unless schema_registry_ssl_keystore_path.nil?
+        options[:ssl][:keystore_password] = schema_registry_ssl_keystore_password.value unless schema_registry_ssl_keystore_password.nil?
+        options[:ssl][:keystore_type] = schema_registry_ssl_keystore_type unless schema_registry_ssl_keystore_type.nil?
       end
 
       client = Manticore::Client.new(options)
