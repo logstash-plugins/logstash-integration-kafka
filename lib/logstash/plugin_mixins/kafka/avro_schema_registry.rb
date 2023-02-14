@@ -25,7 +25,7 @@ module LogStash module PluginMixins module Kafka
       config :schema_registry_proxy, :validate => :uri
 
       # If schema registry client authentication is required, this setting stores the keystore path.
-      config :schema_registry_ssl_keystore_path, :validate => :string
+      config :schema_registry_ssl_keystore_location, :validate => :string
 
       # The keystore password.
       config :schema_registry_ssl_keystore_password, :validate => :password
@@ -34,7 +34,7 @@ module LogStash module PluginMixins module Kafka
       config :schema_registry_ssl_keystore_type, :validate => ['jks', 'PKCS12'], :default => "jks"
 
       # The JKS truststore path to validate the Schema Registry's certificate.
-      config :schema_registry_ssl_truststore_path, :validate => :string
+      config :schema_registry_ssl_truststore_location, :validate => :string
 
       # The truststore password.
       config :schema_registry_ssl_truststore_password, :validate => :password
@@ -86,15 +86,15 @@ module LogStash module PluginMixins module Kafka
       if schema_registry_key and !schema_registry_key.empty?
         options[:auth] = {:user => schema_registry_key, :password => schema_registry_secret.value}
       end
-      if schema_registry_ssl_truststore_path and !schema_registry_ssl_truststore_path.empty?
+      if schema_registry_ssl_truststore_location and !schema_registry_ssl_truststore_location.empty?
         options[:ssl] = {} unless options.key?(:ssl)
-        options[:ssl][:truststore] = schema_registry_ssl_truststore_path unless schema_registry_ssl_truststore_path.nil?
+        options[:ssl][:truststore] = schema_registry_ssl_truststore_location unless schema_registry_ssl_truststore_location.nil?
         options[:ssl][:truststore_password] = schema_registry_ssl_truststore_password.value unless schema_registry_ssl_truststore_password.nil?
         options[:ssl][:truststore_type] = schema_registry_ssl_truststore_type unless schema_registry_ssl_truststore_type.nil?
       end
-      if schema_registry_ssl_keystore_path and !schema_registry_ssl_keystore_path.empty?
+      if schema_registry_ssl_keystore_location and !schema_registry_ssl_keystore_location.empty?
         options[:ssl] = {} unless options.key? :ssl
-        options[:ssl][:keystore] = schema_registry_ssl_keystore_path unless schema_registry_ssl_keystore_path.nil?
+        options[:ssl][:keystore] = schema_registry_ssl_keystore_location unless schema_registry_ssl_keystore_location.nil?
         options[:ssl][:keystore_password] = schema_registry_ssl_keystore_password.value unless schema_registry_ssl_keystore_password.nil?
         options[:ssl][:keystore_type] = schema_registry_ssl_keystore_type unless schema_registry_ssl_keystore_type.nil?
       end
