@@ -1,5 +1,5 @@
 ## 11.2.1
- - Fix nil exception to empty headers in metadata during event assignment
+ - Fix nil exception to empty headers of record during event metadata assignment [#140](https://github.com/logstash-plugins/logstash-integration-kafka/pull/140)
 
 ## 11.2.0
  - Added TLS truststore and keystore settings specifically to access the schema registry [#137](https://github.com/logstash-plugins/logstash-integration-kafka/pull/137)
