@@ -374,6 +374,8 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
     end
     if @metadata_mode.include?(:headers)
       record.headers.each do |header|
+        next if header.nil? || header.value.nil? || header.key.nil?
+
         s = String.from_java_bytes(header.value)
         s.force_encoding(Encoding::UTF_8)
         if s.valid_encoding?

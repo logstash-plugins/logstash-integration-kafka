@@ -287,6 +287,25 @@ describe LogStash::Inputs::Kafka do
       subject.register
       expect(subject.metadata_mode).to include(:record_props)
     end
+
+    it "guards against nil header" do
+      java_import org.apache.kafka.clients.consumer.ConsumerRecord
+      java_import org.apache.kafka.common.header.internals.RecordHeaders
+      java_import org.apache.kafka.common.record.TimestampType
+
+      subject.register
+
+      evt = LogStash::Event.new('message' => 'Hello')
+      headers = RecordHeaders.new
+      record = ConsumerRecord.new("topic".to_java, 0.to_java(java.lang.Integer),
+                                  1234567.to_java, 1676475552.to_java,
+                                  TimestampType::CREATE_TIME, 1234567.to_java,
+                                  0.to_java(java.lang.Integer), 0.to_java(java.lang.Integer),
+                                  "k".to_java(java.lang.Object), "v".to_java(java.lang.Object),
+                                  headers)
+
+      expect { subject.maybe_set_metadata(evt, record) }.not_to raise_error
+    end
   end
 
   context 'with client_rack' do
