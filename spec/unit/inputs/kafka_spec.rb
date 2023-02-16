@@ -288,19 +288,17 @@ describe LogStash::Inputs::Kafka do
       expect(subject.metadata_mode).to include(:record_props)
     end
 
-    it "guards against nil header" do
-      java_import org.apache.kafka.clients.consumer.ConsumerRecord
-      java_import org.apache.kafka.common.header.internals.RecordHeaders
-      java_import org.apache.kafka.common.record.TimestampType
+    context "guards against nil header" do
+      let(:header) { double(:value => nil, :key => "k") }
+      let(:headers) { [ header ] }
+      let(:record) { double(:headers => headers, :topic => "topic", :partition => 0,
+                            :offset => 123456789, :key => "someId", :timestamp => nil ) }
 
-      subject.register
-
-      evt = LogStash::Event.new('message' => 'Hello')
-      headers = RecordHeaders.new
-      record = ConsumerRecord.new("topic", 0, 1234567, 1676475552, TimestampType::CREATE_TIME, 1234567,
-                                  0, 0, "k", "v", headers)
-
-      expect { subject.maybe_set_metadata(evt, record) }.not_to raise_error
+      it "does not raise error when key is nil" do
+        subject.register
+        evt = LogStash::Event.new('message' => 'Hello')
+        expect { subject.maybe_set_metadata(evt, record) }.not_to raise_error
+      end
     end
   end
 
