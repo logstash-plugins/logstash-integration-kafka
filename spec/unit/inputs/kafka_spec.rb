@@ -287,6 +287,19 @@ describe LogStash::Inputs::Kafka do
       subject.register
       expect(subject.metadata_mode).to include(:record_props)
     end
+
+    context "guards against nil header" do
+      let(:header) { double(:value => nil, :key => "k") }
+      let(:headers) { [ header ] }
+      let(:record) { double(:headers => headers, :topic => "topic", :partition => 0,
+                            :offset => 123456789, :key => "someId", :timestamp => nil ) }
+
+      it "does not raise error when key is nil" do
+        subject.register
+        evt = LogStash::Event.new('message' => 'Hello')
+        expect { subject.maybe_set_metadata(evt, record) }.not_to raise_error
+      end
+    end
   end
 
   context 'with client_rack' do
