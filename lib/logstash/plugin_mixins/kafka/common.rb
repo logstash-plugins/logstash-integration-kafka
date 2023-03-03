@@ -41,6 +41,7 @@ module LogStash module PluginMixins module Kafka
 
       props.put("sasl.kerberos.service.name", sasl_kerberos_service_name) unless sasl_kerberos_service_name.nil?
       props.put("sasl.jaas.config", sasl_jaas_config) unless sasl_jaas_config.nil?
+      props.put("sasl.client.callback.handler.class", sasl_client_callback_handler_class) unless sasl_client_callback_handler_class.nil?
     end
 
     def reassign_dns_lookup
