@@ -36,13 +36,13 @@ if [ -n "${CONFLUENT_VERSION+1}" ]; then
 else
    CONFLUENT_VERSION=7.4.0
 fi
-if [ ! -e confluent-community-$CONFLUENT_VERSION-2.13.tar.gz ]; then
+if [ ! -e confluent-community-$CONFLUENT_VERSION.tar.gz ]; then
   echo "Confluent Platform not present locally, downloading"
   CONFLUENT_MINOR=$(echo "$CONFLUENT_VERSION" | sed -n 's/^\([[:digit:]]*\.[[:digit:]]*\)\.[[:digit:]]*$/\1/p')
   echo "CONFLUENT_MINOR is $CONFLUENT_MINOR"
-  curl -s -o confluent-community-$CONFLUENT_VERSION-2.13.tar.gz http://packages.confluent.io/archive/$CONFLUENT_MINOR/confluent-community-$CONFLUENT_VERSION-2.13.tar.gz
+  curl -s -o confluent-community-$CONFLUENT_VERSION.tar.gz http://packages.confluent.io/archive/$CONFLUENT_MINOR/confluent-community-$CONFLUENT_VERSION.tar.gz
 fi
-cp confluent-community-$CONFLUENT_VERSION-2.13.tar.gz build/confluent_platform.tar.gz
+cp confluent-community-$CONFLUENT_VERSION.tar.gz build/confluent_platform.tar.gz
 mkdir build/confluent_platform && tar xzf build/confluent_platform.tar.gz -C build/confluent_platform --strip-components 1
 
 echo "Configuring TLS on Schema registry"
