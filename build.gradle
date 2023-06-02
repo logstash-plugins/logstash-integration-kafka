@@ -64,13 +64,12 @@ dependencies {
         transitive = false
     }
     implementation "io.confluent:common-utils:${confluentKafkaVersion}"
-    implementation 'javax.ws.rs:javax.ws.rs-api:2.1.1'
-    implementation 'org.glassfish.jersey.core:jersey-common:2.33'
     implementation "org.apache.kafka:kafka-clients:${apacheKafkaVersion}"
-    implementation 'com.github.luben:zstd-jni:1.5.2-2'
+    implementation 'org.apache.commons:commons-compress:1.23.0'
+    implementation 'com.github.luben:zstd-jni:1.5.5-3'
     implementation 'org.slf4j:slf4j-api:1.7.36'
     implementation 'org.lz4:lz4-java:1.8.0'
-    implementation 'org.xerial.snappy:snappy-java:1.1.8.4'
+    implementation 'org.xerial.snappy:snappy-java:1.1.10.0'
 }
 task generateGemJarRequiresFile {
     doLast {
