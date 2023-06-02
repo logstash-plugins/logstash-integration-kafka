@@ -28,9 +28,9 @@ group "org.logstash.integrations"
 sourceCompatibility = JavaVersion.VERSION_1_8
 
 // given https://docs.confluent.io/current/installation/versions-interoperability.html matrix
-// Confluent Platform 7.3.x is Apache Kafka 3.3.x
-String confluentKafkaVersion = '7.3.0'
-String apacheKafkaVersion = '3.3.1'
+// Confluent Platform 7.4.x is Apache Kafka 3.4.x
+String confluentKafkaVersion = '7.4.0'
+String apacheKafkaVersion = '3.4.0'
 
 buildscript {
     repositories {
@@ -54,11 +54,11 @@ dependencies {
         exclude group: 'org.apache.kafka', module:'kafka-clients'
     }
     implementation "io.confluent:common-config:${confluentKafkaVersion}"
-    implementation 'org.apache.avro:avro:1.11.0'
+    implementation 'org.apache.avro:avro:1.11.1'
     implementation("io.confluent:kafka-schema-registry-client:${confluentKafkaVersion}") {
         exclude group: 'org.apache.kafka', module:'kafka-clients'
     }
-    implementation("org.apache.kafka:kafka_2.12:${apacheKafkaVersion}") {
+    implementation("org.apache.kafka:kafka_2.13:${apacheKafkaVersion}") {
         // contains kafka.utils.VerifiableProperties used by kafka-schema-registry-client, explicitly exclude
         // transitive dependencies
         transitive = false
