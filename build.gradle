@@ -54,24 +54,12 @@ dependencies {
     implementation("io.confluent:kafka-schema-serializer:${confluentKafkaVersion}") {
         exclude group: 'org.apache.kafka', module:'kafka-clients'
     }
-    //implementation "io.confluent:common-config:${confluentKafkaVersion}"
-    // common-config depends on common-utils
-    //implementation "io.confluent:common-utils:${confluentKafkaVersion}"
     // dependency of kafka-avro-serializer
     implementation 'org.apache.avro:avro:1.11.1'
     // dependency of kafka-avro-serializer
     implementation("io.confluent:kafka-schema-registry-client:${confluentKafkaVersion}") {
         exclude group: 'org.apache.kafka', module:'kafka-clients'
     }
-    implementation("org.apache.kafka:kafka_2.13:${apacheKafkaVersion}") {
-        // contains kafka.utils.VerifiableProperties used by kafka-schema-registry-client, explicitly exclude
-        // transitive dependencies
-        transitive = false
-    }
-    // dependency of kafka-avro-serializer
-    implementation 'org.apache.commons:commons-compress:1.23.0'
-
-    // kafka-schema-registry-client
     implementation "org.apache.kafka:kafka-clients:${apacheKafkaVersion}"
     // slf4j, zstd, lz4-java, snappy are dependencies from "kafka-clients"
     implementation 'org.slf4j:slf4j-api:1.7.36'
