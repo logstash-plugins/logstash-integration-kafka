@@ -6,7 +6,7 @@ set -ex
 if [ -n "${KAFKA_VERSION+1}" ]; then
   echo "KAFKA_VERSION is $KAFKA_VERSION"
 else
-   KAFKA_VERSION=3.3.1
+   KAFKA_VERSION=3.4.1
 fi
 
 export _JAVA_OPTIONS="-Djava.net.preferIPv4Stack=true"
@@ -15,11 +15,11 @@ rm -rf build
 mkdir build
 
 echo "Setup Kafka version $KAFKA_VERSION"
-if [ ! -e "kafka_2.12-$KAFKA_VERSION.tgz" ]; then
+if [ ! -e "kafka_2.13-$KAFKA_VERSION.tgz" ]; then
   echo "Kafka not present locally, downloading"
-  curl -s -o "kafka_2.12-$KAFKA_VERSION.tgz" "https://archive.apache.org/dist/kafka/$KAFKA_VERSION/kafka_2.12-$KAFKA_VERSION.tgz"
+  curl -s -o "kafka_2.13-$KAFKA_VERSION.tgz" "https://archive.apache.org/dist/kafka/$KAFKA_VERSION/kafka_2.13-$KAFKA_VERSION.tgz"
 fi
-cp kafka_2.12-$KAFKA_VERSION.tgz build/kafka.tgz
+cp kafka_2.13-$KAFKA_VERSION.tgz build/kafka.tgz
 mkdir build/kafka && tar xzf build/kafka.tgz -C build/kafka --strip-components 1
 
 echo "Starting ZooKeeper"
@@ -34,15 +34,15 @@ echo "Setup Confluent Platform"
 if [ -n "${CONFLUENT_VERSION+1}" ]; then
   echo "CONFLUENT_VERSION is $CONFLUENT_VERSION"
 else
-   CONFLUENT_VERSION=5.5.1
+   CONFLUENT_VERSION=7.4.0
 fi
-if [ ! -e confluent-community-$CONFLUENT_VERSION-2.12.tar.gz ]; then
+if [ ! -e confluent-community-$CONFLUENT_VERSION.tar.gz ]; then
   echo "Confluent Platform not present locally, downloading"
   CONFLUENT_MINOR=$(echo "$CONFLUENT_VERSION" | sed -n 's/^\([[:digit:]]*\.[[:digit:]]*\)\.[[:digit:]]*$/\1/p')
   echo "CONFLUENT_MINOR is $CONFLUENT_MINOR"
-  curl -s -o confluent-community-$CONFLUENT_VERSION-2.12.tar.gz http://packages.confluent.io/archive/$CONFLUENT_MINOR/confluent-community-$CONFLUENT_VERSION-2.12.tar.gz
+  curl -s -o confluent-community-$CONFLUENT_VERSION.tar.gz http://packages.confluent.io/archive/$CONFLUENT_MINOR/confluent-community-$CONFLUENT_VERSION.tar.gz
 fi
-cp confluent-community-$CONFLUENT_VERSION-2.12.tar.gz build/confluent_platform.tar.gz
+cp confluent-community-$CONFLUENT_VERSION.tar.gz build/confluent_platform.tar.gz
 mkdir build/confluent_platform && tar xzf build/confluent_platform.tar.gz -C build/confluent_platform --strip-components 1
 
 echo "Configuring TLS on Schema registry"

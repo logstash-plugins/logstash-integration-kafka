@@ -1,3 +1,6 @@
+## 11.3.0
+  - Bump kafka client to 3.4.1 [#145](https://github.com/logstash-plugins/logstash-integration-kafka/pull/145)
+
 ## 11.2.1
  - Fix nil exception to empty headers of record during event metadata assignment [#140](https://github.com/logstash-plugins/logstash-integration-kafka/pull/140)
 
