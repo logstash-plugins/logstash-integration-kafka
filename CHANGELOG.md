@@ -1,3 +1,6 @@
+## 11.3.1
+  - Fix, update library used [#148](https://github.com/logstash-plugins/logstash-integration-kafka/pull/148)
+
 ## 11.3.0
   - Bump kafka client to 3.4.1 [#145](https://github.com/logstash-plugins/logstash-integration-kafka/pull/145)
 

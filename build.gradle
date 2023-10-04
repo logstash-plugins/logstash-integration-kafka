@@ -65,7 +65,7 @@ dependencies {
     implementation 'org.slf4j:slf4j-api:1.7.36'
     implementation 'com.github.luben:zstd-jni:1.5.5-4'
     implementation 'org.lz4:lz4-java:1.8.0'
-    implementation 'org.xerial.snappy:snappy-java:1.1.10.1'
+    implementation 'org.xerial.snappy:snappy-java:1.1.10.5'
 }
 task generateGemJarRequiresFile {
     doLast {
