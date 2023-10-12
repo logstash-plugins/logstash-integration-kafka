@@ -1,3 +1,6 @@
+## 10.12.1
+  - Update Avro library [#149](https://api.github.com/repos/logstash-plugins/logstash-integration-kafka/pulls/115)
+
 ## 10.12.0
   - bump kafka client to 2.8.1 [#115](https://api.github.com/repos/logstash-plugins/logstash-integration-kafka/pulls/115)
 
