@@ -1,3 +1,6 @@
+## 11.3.2
+  - Fix: update Avro library [#150](https://api.github.com/repos/logstash-plugins/logstash-integration-kafka/pulls/150)
+
 ## 11.3.1
   - Fix: update snappy dependency [#148](https://github.com/logstash-plugins/logstash-integration-kafka/pull/148)
 
@@ -17,6 +20,9 @@
   - Changed Kafka client to 3.3.1, requires Logstash >= 8.3.0. 
   - Deprecated `default` value for setting `client_dns_lookup` forcing to `use_all_dns_ips` when explicitly used [#130](https://github.com/logstash-plugins/logstash-integration-kafka/pull/130)
   - Changed the consumer's poll from using the one that blocks on metadata retrieval to the one that doesn't [#136](https://github.com/logstash-plugins/logstash-integration-kafka/pull/133)
+
+## 10.12.1
+  - Fix: update Avro library on 10.x [#149](https://api.github.com/repos/logstash-plugins/logstash-integration-kafka/pulls/149)
 
 ## 10.12.0
   - bump kafka client to 2.8.1 [#115](https://github.com/logstash-plugins/logstash-integration-kafka/pull/115)
