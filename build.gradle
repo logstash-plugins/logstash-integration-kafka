@@ -49,7 +49,7 @@ dependencies {
         exclude group: 'org.apache.kafka', module:'kafka-clients'
     }
     implementation 'io.confluent:common-config:6.2.2'
-    implementation 'org.apache.avro:avro:1.11.0'
+    implementation 'org.apache.avro:avro:1.11.3'
     implementation('io.confluent:kafka-schema-registry-client:6.2.2') {
         exclude group: 'org.apache.kafka', module:'kafka-clients'
     }
