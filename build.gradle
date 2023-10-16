@@ -55,7 +55,7 @@ dependencies {
         exclude group: 'org.apache.kafka', module:'kafka-clients'
     }
     // dependency of kafka-avro-serializer
-    implementation 'org.apache.avro:avro:1.11.1'
+    implementation 'org.apache.avro:avro:1.11.3'
     // dependency of kafka-avro-serializer
     implementation("io.confluent:kafka-schema-registry-client:${confluentKafkaVersion}") {
         exclude group: 'org.apache.kafka', module:'kafka-clients'
