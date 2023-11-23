@@ -301,7 +301,7 @@ def consume_messages(config, queue: Queue.new, timeout:, event_count:)
 end
 
 
-describe "schema registry connection options" do
+describe "schema registry connection options", :integration => true do
   schema_registry = Manticore::Client.new
   before (:all) do
     shutdown_schema_registry
