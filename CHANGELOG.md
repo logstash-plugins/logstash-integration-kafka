@@ -1,5 +1,8 @@
+## 11.3.3
+  - Fix "Can't modify frozen string" error when record value is `nil` (tombstones) [#155](https://github.com/logstash-plugins/logstash-integration-kafka/pull/155)
+
 ## 11.3.2
-  - Fix: update Avro library [#150](https://api.github.com/repos/logstash-plugins/logstash-integration-kafka/pulls/150)
+  - Fix: update Avro library [#150](https://github.com/logstash-plugins/logstash-integration-kafka/pull/150)
 
 ## 11.3.1
   - Fix: update snappy dependency [#148](https://github.com/logstash-plugins/logstash-integration-kafka/pull/148)
