@@ -134,6 +134,21 @@ describe LogStash::Inputs::Kafka do
       it 'should set the consumer thread name' do
         expect(subject.instance_variable_get('@runner_threads').first.get_name).to eq("kafka-input-worker-test-0")
       end
+
+      context 'with records value frozen' do
+        # boolean, module name & nil .to_s are frozen by default (https://bugs.ruby-lang.org/issues/16150)
+        let(:payload) do [
+          org.apache.kafka.clients.consumer.ConsumerRecord.new("logstash", 0, 0, "nil", nil),
+          org.apache.kafka.clients.consumer.ConsumerRecord.new("logstash", 0, 0, "true", true),
+          org.apache.kafka.clients.consumer.ConsumerRecord.new("logstash", 0, 0, "false", false),
+          org.apache.kafka.clients.consumer.ConsumerRecord.new("logstash", 0, 0, "frozen", "".freeze)
+        ]
+        end
+
+        it "should process events" do
+          expect(q.size).to eq(4)
+        end
+      end
     end
 
     context 'when errors are encountered during poll' do

@@ -356,7 +356,8 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   end
 
   def handle_record(record, codec_instance, queue)
-    codec_instance.decode(record.value.to_s) do |event|
+    # use + since .to_s on nil/boolean returns a frozen string since ruby 2.7
+    codec_instance.decode(+record.value.to_s) do |event|
       decorate(event)
       maybe_set_metadata(event, record)
       queue << event
