@@ -184,7 +184,7 @@ resolved and expanded into a list of canonical names.
 [NOTE]
 ====
 Starting from Kafka 3 `default` value for `client.dns.lookup` value has been removed.
-If explicitly configured it fallbacks to `use_all_dns_ips`.
+If not explicitly configured it defaults to `use_all_dns_ips`.
 ====
 
 [id="plugins-{type}s-{plugin}-client_id"]
