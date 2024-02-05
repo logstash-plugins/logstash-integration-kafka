@@ -221,6 +221,26 @@ describe "outputs/kafka" do
         kafka.multi_receive([event])
       end
     end
+    context 'when retries is -1' do
+      let(:retries) { -1 }
+
+      it "should raise a Configuration error" do
+        kafka = LogStash::Outputs::Kafka.new(simple_kafka_config.merge("retries" => retries))
+        expect { kafka.register }.to raise_error(LogStash::ConfigurationError)
+      end
+    end
+  end
+
+  describe "value_serializer" do
+    let(:output) { LogStash::Plugin.lookup("output", "kafka").new(config) }
+
+    context "when a random string is set" do
+      let(:config) { { "topic_id" => "random", "value_serializer" => "test_string" } }
+
+      it "raises a ConfigurationError" do
+        expect { output.register }.to raise_error(LogStash::ConfigurationError)
+      end
+    end
   end
 
   context 'when ssl endpoint identification disabled' do
