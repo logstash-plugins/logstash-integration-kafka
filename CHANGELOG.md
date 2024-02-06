@@ -1,5 +1,5 @@
 ## 11.3.4
-  - fix retries and value_serializer error handling in output [#160](https://github.com/logstash-plugins/logstash-integration-kafka/pull/160)
+  - Fix "retries" and "value_serializer" error handling in output plugin (#160) [#160](https://github.com/logstash-plugins/logstash-integration-kafka/pull/160)
 
 ## 11.3.3
   - Fix "Can't modify frozen string" error when record value is `nil` (tombstones) [#155](https://github.com/logstash-plugins/logstash-integration-kafka/pull/155)
