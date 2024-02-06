@@ -185,7 +185,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
 
     if !@retries.nil? 
       if @retries < 0
-        raise ConfigurationError, "A negative retry count (#{@retries}) is not valid. Must be a value >= 0"
+        raise LogStash::ConfigurationError, "A negative retry count (#{@retries}) is not valid. Must be a value >= 0"
       end
 
       logger.warn("Kafka output is configured with finite retry. This instructs Logstash to LOSE DATA after a set number of send attempts fails. If you do not want to lose data if Kafka is down, then you must remove the retry setting.", :retries => @retries)
@@ -193,7 +193,6 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
 
     reassign_dns_lookup
 
-    @producer = create_producer
     if value_serializer == 'org.apache.kafka.common.serialization.StringSerializer'
       @codec.on_event do |event, data|
         write_to_kafka(event, data)
@@ -203,8 +202,9 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
         write_to_kafka(event, data.to_java_bytes)
       end
     else
-      raise ConfigurationError, "'value_serializer' only supports org.apache.kafka.common.serialization.ByteArraySerializer and org.apache.kafka.common.serialization.StringSerializer" 
+      raise LogStash::ConfigurationError, "'value_serializer' only supports org.apache.kafka.common.serialization.ByteArraySerializer and org.apache.kafka.common.serialization.StringSerializer"
     end
+    @producer = create_producer
   end
 
   def prepare(record)
