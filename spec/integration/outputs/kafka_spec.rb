@@ -191,6 +191,25 @@ describe "outputs/kafka", :integration => true do
     end
   end
 
+  context 'when setting message_headers' do
+    let(:num_events) { 10 }
+    let(:test_topic) { 'logstash_integration_topic4' }
+
+    before :each do
+      config = base_config.merge({"topic_id" => test_topic, "message_headers" => {"k1" => "v1"}})
+      load_kafka_data(config)
+    end
+
+    it 'messages should contain headers' do
+      messages = fetch_messages(test_topic)
+
+      expect(messages.size).to eq(num_events)
+      messages.each do |m|
+        expect(m.headers).to eq({"k1" => "v1"})
+      end
+    end
+  end
+
   context 'setting partitioner' do
     let(:test_topic) { 'logstash_integration_partitioner_topic' }
     let(:partitioner) { nil }
