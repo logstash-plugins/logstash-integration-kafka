@@ -106,6 +106,8 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   config :max_request_size, :validate => :number, :default => 1_048_576 # (1MB) Kafka default
   # The key for the message
   config :message_key, :validate => :string
+  # Headers added to kafka message in the form of key-value pairs
+  config :message_headers, :validate => :hash, :default => {}
   # the timeout setting for initial metadata request to fetch topic metadata.
   config :metadata_fetch_timeout_ms, :validate => :number, :default => 60_000
   # Partitioner to use - can be `default`, `uniform_sticky`, `round_robin` or a fully qualified class name of a custom partitioner.
@@ -203,6 +205,11 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
       end
     else
       raise LogStash::ConfigurationError, "'value_serializer' only supports org.apache.kafka.common.serialization.ByteArraySerializer and org.apache.kafka.common.serialization.StringSerializer"
+    end
+    @message_headers.each do |key, value|
+      if !key.is_a? String
+        raise LogStash::ConfigurationError, "'message_headers' contains a key that is not a string!"
+      end
     end
     @producer = create_producer
   end
@@ -314,6 +321,9 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
       record = ProducerRecord.new(event.sprintf(@topic_id), serialized_data)
     else
       record = ProducerRecord.new(event.sprintf(@topic_id), event.sprintf(@message_key), serialized_data)
+    end
+    @message_headers.each do |key, value|
+      record.headers().add(key, event.sprintf(value).to_java_bytes)
     end
     prepare(record)
   rescue LogStash::ShutdownSignal
