@@ -1,3 +1,6 @@
+## 11.4.0
+  - Add support for setting Kafka message headers in output plugin
+
 ## 11.3.4
   - Fix "retries" and "value_serializer" error handling in output plugin (#160) [#160](https://github.com/logstash-plugins/logstash-integration-kafka/pull/160)
 
@@ -23,7 +26,7 @@
  - Added config `group_instance_id` to use the Kafka's consumer static membership feature [#135](https://github.com/logstash-plugins/logstash-integration-kafka/pull/135)
 
 ## 11.0.0
-  - Changed Kafka client to 3.3.1, requires Logstash >= 8.3.0. 
+  - Changed Kafka client to 3.3.1, requires Logstash >= 8.3.0.
   - Deprecated `default` value for setting `client_dns_lookup` forcing to `use_all_dns_ips` when explicitly used [#130](https://github.com/logstash-plugins/logstash-integration-kafka/pull/130)
   - Changed the consumer's poll from using the one that blocks on metadata retrieval to the one that doesn't [#136](https://github.com/logstash-plugins/logstash-integration-kafka/pull/133)
 
@@ -45,7 +48,7 @@
 
 ## 10.9.0
   - Refactor: leverage codec when using schema registry [#106](https://github.com/logstash-plugins/logstash-integration-kafka/pull/106)
-    Previously using `schema_registry_url` parsed the payload as JSON even if `codec => 'plain'` was set, this is no longer the case.  
+    Previously using `schema_registry_url` parsed the payload as JSON even if `codec => 'plain'` was set, this is no longer the case.
 
 ## 10.8.2
   - [DOC] Updates description of `enable_auto_commit=false` to clarify that the commit happens after data is fetched AND written to the queue [#90](https://github.com/logstash-plugins/logstash-integration-kafka/pull/90)
@@ -82,18 +85,18 @@
 
 ## 10.7.1
   - Fix: dropped usage of SHUTDOWN event deprecated since Logstash 5.0 [#71](https://github.com/logstash-plugins/logstash-integration-kafka/pull/71)
-  
+
 ## 10.7.0
-  - Switched use from Faraday to Manticore as HTTP client library to access Schema Registry service 
-    to fix issue [#63](https://github.com/logstash-plugins/logstash-integration-kafka/pull/63) 
+  - Switched use from Faraday to Manticore as HTTP client library to access Schema Registry service
+    to fix issue [#63](https://github.com/logstash-plugins/logstash-integration-kafka/pull/63)
 
 ## 10.6.0
   - Added functionality to Kafka input to use Avro deserializer in retrieving data from Kafka. The schema is retrieved
     from an instance of Confluent's Schema Registry service [#51](https://github.com/logstash-plugins/logstash-integration-kafka/pull/51)
-     
+
 ## 10.5.3
   - Fix: set (optional) truststore when endpoint id check disabled [#60](https://github.com/logstash-plugins/logstash-integration-kafka/pull/60).
-    Since **10.1.0** disabling server host-name verification (`ssl_endpoint_identification_algorithm => ""`) did not allow 
+    Since **10.1.0** disabling server host-name verification (`ssl_endpoint_identification_algorithm => ""`) did not allow
     the (output) plugin to set `ssl_truststore_location => "..."`.
 
 ## 10.5.2
@@ -102,7 +105,7 @@
 ## 10.5.1
   - [DOC]Replaced plugin_header file with plugin_header-integration file. [#46](https://github.com/logstash-plugins/logstash-integration-kafka/pull/46)
   - [DOC]Update kafka client version across kafka integration docs [#47](https://github.com/logstash-plugins/logstash-integration-kafka/pull/47)
-  - [DOC]Replace hard-coded kafka client and doc path version numbers with attributes to simplify doc maintenance [#48](https://github.com/logstash-plugins/logstash-integration-kafka/pull/48)  
+  - [DOC]Replace hard-coded kafka client and doc path version numbers with attributes to simplify doc maintenance [#48](https://github.com/logstash-plugins/logstash-integration-kafka/pull/48)
 
 ## 10.5.0
   - Changed: retry sending messages only for retriable exceptions [#27](https://github.com/logstash-plugins/logstash-integration-kafka/pull/29)
