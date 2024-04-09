@@ -60,6 +60,16 @@ describe "outputs/kafka" do
       kafka.multi_receive([event])
     end
 
+    it 'should support field referenced message_headers' do
+      expect(org.apache.kafka.clients.producer.ProducerRecord).to receive(:new).
+          with("test", event.to_s).and_call_original
+      expect_any_instance_of(org.apache.kafka.clients.producer.KafkaProducer).to receive(:send)
+      expect_any_instance_of(org.apache.kafka.common.header.internals.RecordHeaders).to receive(:add).with("host","172.0.0.1".to_java_bytes).and_call_original
+      kafka = LogStash::Outputs::Kafka.new(simple_kafka_config.merge({"message_headers" => { "host" => "%{host}"}}))
+      kafka.register
+      kafka.multi_receive([event])
+    end
+
     it 'should not raise config error when truststore location is not set and ssl is enabled' do
       kafka = LogStash::Outputs::Kafka.new(simple_kafka_config.merge("security_protocol" => "SSL"))
       expect(org.apache.kafka.clients.producer.KafkaProducer).to receive(:new)
