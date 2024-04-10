@@ -1,3 +1,6 @@
+## 11.4.1
+  - [DOC] Match anchor ID and references for `message_headers` [#164](https://github.com/logstash-plugins/logstash-integration-kafka/pull/164)
+
 ## 11.4.0
   - Add support for setting Kafka message headers in output plugin [#162](https://github.com/logstash-plugins/logstash-integration-kafka/pull/162)
 
