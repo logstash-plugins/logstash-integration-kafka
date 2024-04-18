@@ -92,6 +92,11 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   # The purpose of this is to be able to track the source of requests beyond just
   # ip/port by allowing a logical application name to be included with the request
   config :client_id, :validate => :string
+  # When set to ‘true’, the producer will ensure that exactly one copy of each message is written in the stream.
+  # If ‘false’, producer retries due to broker failures, etc., may write duplicates of the retried message in the stream. 
+  # Note that enabling idempotence requires max.in.flight.requests.per.connection to be less than or equal to 5 
+  # (with message ordering preserved for any allowable value), retries to be greater than 0, and acks must be ‘all’.
+  config :enable_idempotence, :validate => :boolean
   # Serializer class for the key of the message
   config :key_serializer, :validate => :string, :default => 'org.apache.kafka.common.serialization.StringSerializer'
   # The producer groups together any records that arrive in between request
@@ -102,6 +107,8 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   # rather than immediately sending out a record the producer will wait for up to the given delay
   # to allow other records to be sent so that the sends can be batched together.
   config :linger_ms, :validate => :number, :default => 0 # Kafka default
+  # The maximum number of unacknowledged requests the client will send on a single connection before blocking.
+  config :max_in_flight_requests_per_connection, :validate => :number, :default => 5 # Kafka default
   # The maximum size of a request
   config :max_request_size, :validate => :number, :default => 1_048_576 # (1MB) Kafka default
   # The key for the message
@@ -344,8 +351,10 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
       props.put(kafka::COMPRESSION_TYPE_CONFIG, compression_type)
       props.put(kafka::CLIENT_DNS_LOOKUP_CONFIG, client_dns_lookup)
       props.put(kafka::CLIENT_ID_CONFIG, client_id) unless client_id.nil?
+      props.put(kafka::ENABLE_IDEMPOTENCE_CONFIG, enable_idempotence.to_s) unless enable_idempotence.nil?
       props.put(kafka::KEY_SERIALIZER_CLASS_CONFIG, key_serializer)
       props.put(kafka::LINGER_MS_CONFIG, linger_ms.to_s)
+      props.put(kafka::MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, max_in_flight_requests_per_connection.to_s)
       props.put(kafka::MAX_REQUEST_SIZE_CONFIG, max_request_size.to_s)
       props.put(kafka::METADATA_MAX_AGE_CONFIG, metadata_max_age_ms.to_s) unless metadata_max_age_ms.nil?
       unless partitioner.nil?

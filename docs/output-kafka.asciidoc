@@ -84,12 +84,14 @@ See the https://kafka.apache.org/{kafka_client_doc}/documentation for more detai
 | <<plugins-{type}s-{plugin}-buffer_memory>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-client_dns_lookup>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-client_id>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-enable_idempotence>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-compression_type>> |<<string,string>>, one of `["none", "gzip", "snappy", "lz4", "zstd"]`|No
 | <<plugins-{type}s-{plugin}-connections_max_idle_ms>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-jaas_path>> |a valid filesystem path|No
 | <<plugins-{type}s-{plugin}-kerberos_config>> |a valid filesystem path|No
 | <<plugins-{type}s-{plugin}-key_serializer>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-linger_ms>> |<<number,number>>|No
+| <<plugins-{type}s-{plugin}-max_in_flight_requests_per_connection>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-max_request_size>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-message_headers>> |<<hash,hash>>|No
 | <<plugins-{type}s-{plugin}-message_key>> |<<string,string>>|No
@@ -198,6 +200,22 @@ The id string to pass to the server when making requests.
 The purpose of this is to be able to track the source of requests beyond just
 ip/port by allowing a logical application name to be included with the request
 
+[id="plugins-{type}s-{plugin}-enable_idempotence"]
+===== `enable_idempotence` 
+
+  * Value type is <<boolean,boolean>>
+  * There is no default value for this setting.
+
+When set to 'true', the producer will ensure that exactly one copy of each message is written in the stream. 
+If 'false', producer retries due to broker failures, etc., may write duplicates of the retried message in the stream.
+Note that enabling idempotence requires `max.in.flight.requests.per.connection` to be less than or equal to 5 
+(with message ordering preserved for any allowable value), `retries` to be greater than 0, and `acks` must be 'all'.
+
+Idempotence is enabled by default if no conflicting configurations are set. 
+If conflicting configurations are set and idempotence is not explicitly enabled, idempotence is disabled. 
+If idempotence is explicitly enabled and conflicting configurations are set, 
+a https://kafka.apache.org/{kafka_client_doc}/javadoc/org/apache/kafka/common/config/ConfigException.html[ConfigException] is thrown.
+
 [id="plugins-{type}s-{plugin}-compression_type"]
 ===== `compression_type` 
 
@@ -267,6 +285,19 @@ the client may want to reduce the number of requests even under moderate load.
 This setting accomplishes this by adding a small amount of artificial delay—that is,
 rather than immediately sending out a record the producer will wait for up to the given delay
 to allow other records to be sent so that the sends can be batched together.
+
+[id="plugins-{type}s-{plugin}-max_in_flight_requests_per_connection"]
+===== `max_in_flight_requests_per_connection` 
+
+  * Value type is <<number,number>>
+  * Default value is `5`.
+
+The maximum number of unacknowledged requests the client will send on a single connection before blocking. 
+Note that if this configuration is set to be greater than 1 and `enable.idempotence` is set to false, 
+there is a risk of message reordering after a failed send due to retries (i.e., if retries are enabled); 
+if retries are disabled or if `enable.idempotence` is set to true, ordering will be preserved. 
+Additionally, enabling idempotence requires the value of this configuration to be less than or equal to 5. 
+If conflicting configurations are set and idempotence is not explicitly enabled, idempotence is disabled.
 
 [id="plugins-{type}s-{plugin}-max_request_size"]
 ===== `max_request_size` 
