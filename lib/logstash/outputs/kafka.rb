@@ -369,6 +369,9 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
       elsif security_protocol == "SASL_SSL"
         set_trustore_keystore_config(props)
         set_sasl_config(props)
+        if props.get("sasl.mechanism") == "AWS_MSK_IAM"
+          props.put("sasl.client.callback.handler.class","software.amazon.msk.auth.iam.IAMClientCallbackHandler")
+        end
       end
 
       org.apache.kafka.clients.producer.KafkaProducer.new(props)

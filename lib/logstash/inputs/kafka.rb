@@ -462,6 +462,9 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
       elsif security_protocol == "SASL_SSL"
         set_trustore_keystore_config(props)
         set_sasl_config(props)
+        if props.get("sasl.mechanism") == "AWS_MSK_IAM"
+          props.put("sasl.client.callback.handler.class","software.amazon.msk.auth.iam.IAMClientCallbackHandler")
+        end
       end
       if schema_registry_ssl_truststore_location
         props.put('schema.registry.ssl.truststore.location', schema_registry_ssl_truststore_location)
