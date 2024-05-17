@@ -1,3 +1,6 @@
+## 11.3.4
+  - Add default client_id of logstash to kafka output [#169](https://github.com/logstash-plugins/logstash-integration-kafka/pull/169)
+
 ## 11.4.1
   - [DOC] Match anchor ID and references for `message_headers` [#164](https://github.com/logstash-plugins/logstash-integration-kafka/pull/164)
 
