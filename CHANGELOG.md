@@ -1,4 +1,4 @@
-## 11.3.4
+## 11.4.2
   - Add default client_id of logstash to kafka output [#169](https://github.com/logstash-plugins/logstash-integration-kafka/pull/169)
 
 ## 11.4.1
