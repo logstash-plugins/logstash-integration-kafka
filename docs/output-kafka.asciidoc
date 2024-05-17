@@ -192,7 +192,7 @@ If not explicitly configured it defaults to `use_all_dns_ips`.
 ===== `client_id` 
 
   * Value type is <<string,string>>
-  * There is no default value for this setting.
+  * Default value is `"logstash"`
 
 The id string to pass to the server when making requests.
 The purpose of this is to be able to track the source of requests beyond just
