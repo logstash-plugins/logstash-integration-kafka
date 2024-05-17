@@ -91,7 +91,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   # The id string to pass to the server when making requests.
   # The purpose of this is to be able to track the source of requests beyond just
   # ip/port by allowing a logical application name to be included with the request
-  config :client_id, :validate => :string
+  config :client_id, :validate => :string, :default => "logstash" 
   # Serializer class for the key of the message
   config :key_serializer, :validate => :string, :default => 'org.apache.kafka.common.serialization.StringSerializer'
   # The producer groups together any records that arrive in between request
