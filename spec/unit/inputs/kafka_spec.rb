@@ -287,6 +287,22 @@ describe LogStash::Inputs::Kafka do
         end
       end
     end
+    context "when schema_registry_proxy is enabled" do
+      let(:schema_registry_proxy_url) { "http://myproxy:3333" }
+      let(:config) { base_config.merge('schema_registry_proxy' => schema_registry_proxy_url) }
+
+      it "doesn't raise error on register" do
+        expect(subject).to receive(:check_for_schema_registry_connectivity_and_subjects)
+        expect { subject.register }.to_not raise_error
+      end
+
+      it "extracts the correct proxy host and port" do
+        expect(subject).to receive(:check_for_schema_registry_connectivity_and_subjects)
+        subject.register
+        expect(subject.instance_variable_get('@schema_registry_proxy_host')).to eq('myproxy')
+        expect(subject.instance_variable_get('@schema_registry_proxy_port')).to eq(3333)
+      end
+    end
   end
 
   context "decorate_events" do

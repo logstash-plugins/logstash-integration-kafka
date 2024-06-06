@@ -22,7 +22,7 @@ module LogStash module PluginMixins module Kafka
 
       # Option to set the proxy of the Schema Registry.
       # This option permits to define a proxy to be used to reach the schema registry service instance.
-      config :schema_registry_proxy, :validate => :uri
+      config :schema_registry_proxy, :validate => :string
 
       # If schema registry client authentication is required, this setting stores the keystore path.
       config :schema_registry_ssl_keystore_location, :validate => :string
@@ -80,8 +80,8 @@ module LogStash module PluginMixins module Kafka
     private
     def check_for_schema_registry_connectivity_and_subjects
       options = {}
-      if schema_registry_proxy && !schema_registry_proxy.empty?
-        options[:proxy] = schema_registry_proxy.to_s
+      if @schema_registry_proxy_host
+        options[:proxy] = { host: @schema_registry_proxy_host, port: @schema_registry_proxy_port }
       end
       if schema_registry_key and !schema_registry_key.empty?
         options[:auth] = {:user => schema_registry_key, :password => schema_registry_secret.value}
@@ -99,13 +99,7 @@ module LogStash module PluginMixins module Kafka
         options[:ssl][:keystore_type] = schema_registry_ssl_keystore_type unless schema_registry_ssl_keystore_type.nil?
       end
 
-      client = Manticore::Client.new(options)
-      begin
-        response = client.get(@schema_registry_url.uri.to_s + '/subjects').body
-      rescue Manticore::ManticoreException => e
-        raise LogStash::ConfigurationError.new("Schema registry service doesn't respond, error: #{e.message}")
-      end
-      registered_subjects = JSON.parse response
+      registered_subjects = retrieve_subjects
       expected_subjects = @topics.map { |t| "#{t}-value"}
       if (expected_subjects & registered_subjects).size != expected_subjects.size
         undefined_topic_subjects = expected_subjects - registered_subjects
@@ -113,18 +107,23 @@ module LogStash module PluginMixins module Kafka
       end
     end
 
+    def retrieve_subjects
+      client = Manticore::Client.new(options)
+      response = client.get(@schema_registry_url.uri.to_s + '/subjects').body
+      JSON.parse response
+    rescue Manticore::ManticoreException => e
+      raise LogStash::ConfigurationError.new("Schema registry service doesn't respond, error: #{e.message}")
+    end
+
     def split_proxy_into_host_and_port(proxy_uri)
       return nil unless proxy_uri && !proxy_uri.empty?
 
+      proxy_uri = LogStash::Util::SafeURI.new(proxy_uri)
+
       port = proxy_uri.port
+      host = proxy_uri.host
 
-      host_spec = ""
-      host_spec << proxy_uri.scheme || "http"
-      host_spec << "://"
-      host_spec << "#{proxy_uri.userinfo}@" if proxy_uri.userinfo
-      host_spec << proxy_uri.host
-
-      [host_spec, port]
+      [host, port]
     end
 
     def check_for_key_and_secret
