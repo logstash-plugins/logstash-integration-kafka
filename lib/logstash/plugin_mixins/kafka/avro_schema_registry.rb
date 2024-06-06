@@ -99,7 +99,7 @@ module LogStash module PluginMixins module Kafka
         options[:ssl][:keystore_type] = schema_registry_ssl_keystore_type unless schema_registry_ssl_keystore_type.nil?
       end
 
-      registered_subjects = retrieve_subjects
+      registered_subjects = retrieve_subjects(options)
       expected_subjects = @topics.map { |t| "#{t}-value"}
       if (expected_subjects & registered_subjects).size != expected_subjects.size
         undefined_topic_subjects = expected_subjects - registered_subjects
@@ -107,7 +107,7 @@ module LogStash module PluginMixins module Kafka
       end
     end
 
-    def retrieve_subjects
+    def retrieve_subjects(options)
       client = Manticore::Client.new(options)
       response = client.get(@schema_registry_url.uri.to_s + '/subjects').body
       JSON.parse response
