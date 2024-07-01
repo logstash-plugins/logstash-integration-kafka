@@ -290,7 +290,7 @@ This will add a field named `kafka` to the logstash event containing the followi
 ===== `auto_create_topics` 
 
   * Value type is <<boolean,boolean>>
-  * Default value is `true`
+  * Default value is `true`
 
 Controls whether the topic is automatically created when subscribing to a non-existent topic.
 A topic will be auto-created only if this configuration is set to `true` and auto-topic creation is enabled on the broker using `auto.create.topics.enable`;
