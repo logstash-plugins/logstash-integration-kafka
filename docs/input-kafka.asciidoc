@@ -1,4 +1,4 @@
-:integration: kafka
+:uto_cintegration: kafka
 :plugin: kafka
 :type: input
 :default_codec: plain
@@ -295,7 +295,6 @@ This will add a field named `kafka` to the logstash event containing the followi
 Controls whether the topic is automatically created when subscribing to a non-existent topic.
 A topic will be auto-created only if this configuration is set to `true` and auto-topic creation is enabled on the broker using `auto.create.topics.enable`;
 otherwise auto-topic creation is not permitted. 
-This configuration must be set to `true` when using brokers older than 0.11.
 
 [id="plugins-{type}s-{plugin}-enable_auto_commit"]
 ===== `enable_auto_commit` 
@@ -800,16 +799,6 @@ Filtering by a regular expression is done by retrieving the full list of topic n
 
 NOTE:  When the broker has some topics configured with ACL rules and they miss the DESCRIBE permission, then the subscription
 happens but on the broker side it is logged that the subscription of some topics was denied to the configured user.
-
-[id="plugins-{type}s-{plugin}-auto_create_topics"]
- ===== `auto_create_topics`
-
-  * Value type is <<boolean,boolean>>
-  * Default value is `true`
-
-Controls whether the topic is automatically created when subscribing to a non-existent topic.
-A topic will be auto-created only if this configuration is set to `true` and auto-topic creation is enabled on the broker using `auto.create.topics.enable`;
-otherwise auto-topic creation is not permitted.
 
 [id="plugins-{type}s-{plugin}-value_deserializer_class"]
 ===== `value_deserializer_class` 
