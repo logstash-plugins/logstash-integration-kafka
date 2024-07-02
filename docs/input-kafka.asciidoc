@@ -98,6 +98,7 @@ See the https://kafka.apache.org/{kafka_client_doc}/documentation for more detai
 |=======================================================================
 |Setting |Input type|Required
 | <<plugins-{type}s-{plugin}-auto_commit_interval_ms>> |<<number,number>>|No
+| <<plugins-{type}s-{plugin}-auto_create_topics>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-auto_offset_reset>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-bootstrap_servers>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-check_crcs>> |<<boolean,boolean>>|No
