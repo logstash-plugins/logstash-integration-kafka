@@ -246,6 +246,12 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   #   `timestamp`: The timestamp of this message
   # While with `extended` it adds also all the key values present in the Kafka header if the key is valid UTF-8 else
   # silently skip it.
+  #
+  # Controls whether a kafka topic is automatically created when subscribing to a non-existent topic.
+  # A topic will be auto-created only if this configuration is set to `true` and auto-topic creation is enabled on the broker using `auto.create.topics.enable`; 
+  # otherwise auto-topic creation is not permitted.
+  config :auto_create_topics, :validate => :boolean, :default => true
+
   config :decorate_events, :validate => %w(none basic extended false true), :default => "none"
 
   attr_reader :metadata_mode
@@ -410,6 +416,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
       props.put(kafka::AUTO_COMMIT_INTERVAL_MS_CONFIG, auto_commit_interval_ms.to_s) unless auto_commit_interval_ms.nil?
       props.put(kafka::AUTO_OFFSET_RESET_CONFIG, auto_offset_reset) unless auto_offset_reset.nil?
+      props.put(kafka::ALLOW_AUTO_CREATE_TOPICS_CONFIG, auto_create_topics) unless auto_create_topics.nil?
       props.put(kafka::BOOTSTRAP_SERVERS_CONFIG, bootstrap_servers)
       props.put(kafka::CHECK_CRCS_CONFIG, check_crcs.to_s) unless check_crcs.nil?
       props.put(kafka::CLIENT_DNS_LOOKUP_CONFIG, client_dns_lookup)

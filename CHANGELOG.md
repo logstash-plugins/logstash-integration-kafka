@@ -1,3 +1,6 @@
+## 11.5.0
+  - Add "auto_create_topics" option to allow disabling of topic auto creation [#172](https://github.com/logstash-plugins/logstash-integration-kafka/pull/172)
+
 ## 11.4.2
   - Add default client_id of logstash to kafka output [#169](https://github.com/logstash-plugins/logstash-integration-kafka/pull/169)
 
