@@ -416,7 +416,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
       props.put(kafka::AUTO_COMMIT_INTERVAL_MS_CONFIG, auto_commit_interval_ms.to_s) unless auto_commit_interval_ms.nil?
       props.put(kafka::AUTO_OFFSET_RESET_CONFIG, auto_offset_reset) unless auto_offset_reset.nil?
-      props.put(kafka::AUTO_CREATE_TOPICS, auto_create_topics) unless auto_create_topics.nil?
+      props.put(kafka::ALLOW_AUTO_CREATE_TOPICS, auto_create_topics) unless auto_create_topics.nil?
       props.put(kafka::BOOTSTRAP_SERVERS_CONFIG, bootstrap_servers)
       props.put(kafka::CHECK_CRCS_CONFIG, check_crcs.to_s) unless check_crcs.nil?
       props.put(kafka::CLIENT_DNS_LOOKUP_CONFIG, client_dns_lookup)
