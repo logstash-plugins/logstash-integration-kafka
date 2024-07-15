@@ -286,7 +286,7 @@ This will add a field named `kafka` to the logstash event containing the followi
 * `offset`: The offset from the partition this message is associated with
 * `key`: A ByteBuffer containing the message key
 
-NOTE: When adding headers, only headers whose values are valid UTF-8 byte sequences are included.
+NOTE: Only headers whose values are valid UTF-8 byte sequences are included.
       If an event has multiple headers with the same key, at most one will be included.
 
 [id="plugins-{type}s-{plugin}-auto_create_topics"]
