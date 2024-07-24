@@ -40,7 +40,7 @@
   - Changed the consumer's poll from using the one that blocks on metadata retrieval to the one that doesn't [#136](https://github.com/logstash-plugins/logstash-integration-kafka/pull/133)
 
 ## 10.12.1
-  - Fix: update Avro library on 10.x [#149](https://api.github.com/repos/logstash-plugins/logstash-integration-kafka/pulls/149)
+  - Fix: update Avro library on 10.x [#149](https://github.com/logstash-plugins/logstash-integration-kafka/pull/149)
 
 ## 10.12.0
   - bump kafka client to 2.8.1 [#115](https://github.com/logstash-plugins/logstash-integration-kafka/pull/115)
@@ -50,7 +50,7 @@
   - Refactor: mixins to follow shared mixin module naming
 
 ## 10.10.1
-  - Update CHANGELOG.md [#114](https://api.github.com/repos/logstash-plugins/logstash-integration-kafka/pulls/114)
+  - Update CHANGELOG.md [#114](https://github.com/logstash-plugins/logstash-integration-kafka/pull/114)
 
 ## 10.10.0
   - Added config setting to enable 'zstd' compression in the Kafka output [#112](https://github.com/logstash-plugins/logstash-integration-kafka/pull/112)
