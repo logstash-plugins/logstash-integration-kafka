@@ -1,5 +1,5 @@
 ## 11.3.4
-  - Update input-kafka.asciidoc [#174](https://github.com/logstash-plugins/logstash-integration-kafka/pull/174)
+  - Specify that only headers with UTF-8 encoded values are supported in extended decoration [#174](https://github.com/logstash-plugins/logstash-integration-kafka/pull/174)
 
 ## 11.5.0
   - Add "auto_create_topics" option to allow disabling of topic auto creation [#172](https://github.com/logstash-plugins/logstash-integration-kafka/pull/172)
