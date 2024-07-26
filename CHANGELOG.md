@@ -1,4 +1,4 @@
-## 11.3.4
+## 11.5.1
   - Specify that only headers with UTF-8 encoded values are supported in extended decoration [#174](https://github.com/logstash-plugins/logstash-integration-kafka/pull/174)
 
 ## 11.5.0
