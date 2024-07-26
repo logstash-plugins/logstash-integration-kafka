@@ -272,7 +272,7 @@ balance — more threads than partitions means that some threads will be idl
   * Accepted values are:
     - `none`: no metadata is added
     - `basic`: record's attributes are added
-    - `extended`: record's attributes, headers are added
+    - `extended`: record's attributes, headers are added (limited to headers with values using UTF-8 encoding)
     - `false`: deprecated alias for `none`
     - `true`: deprecated alias for `basic`
   * Default value is `none`
