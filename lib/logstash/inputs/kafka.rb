@@ -208,6 +208,8 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   config :ssl_endpoint_identification_algorithm, :validate => :string, :default => 'https'
   # Security protocol to use, which can be either of PLAINTEXT,SSL,SASL_PLAINTEXT,SASL_SSL
   config :security_protocol, :validate => ["PLAINTEXT", "SSL", "SASL_PLAINTEXT", "SASL_SSL"], :default => "PLAINTEXT"
+  # SASL client callback handler class
+  config :sasl_client_callback_handler_class, :validate => :string
   # http://kafka.apache.org/documentation.html#security_sasl[SASL mechanism] used for client connections. 
   # This may be any mechanism for which a security provider is available.
   # GSSAPI is the default mechanism.
