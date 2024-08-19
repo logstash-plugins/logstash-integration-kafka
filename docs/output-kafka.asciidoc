@@ -66,6 +66,19 @@ https://kafka.apache.org/{kafka_client_doc}/documentation.html#producerconfigs
 
 NOTE:  This plugin does not support using a proxy when communicating to the Kafka broker.
 
+==== AWS MSK IAM authentication
+If you use AWS MSK, the AWS MSK IAM access control enables you to handle both authentication and authorization for your MSK cluster with AWS IAM.
+For more information on this AWS MSK feature see the https://docs.aws.amazon.com/msk/latest/developerguide/iam-access-control.html[AWS documentation].
+
+To use this Kafka input with AWS MSK IAM authentication, set the following configuration:
+```
+security_protocol => "SASL_SSL"
+sasl_mechanism => "AWS_MSK_IAM"
+sasl_jaas_config => "software.amazon.msk.auth.iam.IAMLoginModule required;"
+sasl_client_callback_handler_class => "software.amazon.msk.auth.iam.IAMClientCallbackHandler"
+```
+For more IAM authentication configurations, see the https://github.com/aws/aws-msk-iam-auth[AWS MSK IAM authentication library documentation].
+
 [id="plugins-{type}s-{plugin}-options"]
 ==== Kafka Output Configuration Options
 
@@ -490,6 +503,7 @@ This can be defined either in Kafka's JAAS config or in Kafka's config.
 
 http://kafka.apache.org/documentation.html#security_sasl[SASL mechanism] used for client connections. 
 This may be any mechanism for which a security provider is available.
+For AWS MSK IAM authentication use `AWS_MSK_IAM`.
 GSSAPI is the default mechanism.
 
 [id="plugins-{type}s-{plugin}-security_protocol"]
