@@ -451,6 +451,9 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
         props.put(kafka::VALUE_DESERIALIZER_CLASS_CONFIG, Java::io.confluent.kafka.serializers.KafkaAvroDeserializer.java_class)
         serdes_config = Java::io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig
         props.put(serdes_config::SCHEMA_REGISTRY_URL_CONFIG, schema_registry_url.uri.to_s)
+        if schema_registry_api_key
+          props.put("request.header.x-api-key", schema_registry_api_key.to_s)
+        end
         if schema_registry_proxy && !schema_registry_proxy.empty?
           props.put(serdes_config::PROXY_HOST, @schema_registry_proxy_host)
           props.put(serdes_config::PROXY_PORT, @schema_registry_proxy_port)
