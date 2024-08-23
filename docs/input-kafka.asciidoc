@@ -678,6 +678,15 @@ The schemas must follow a naming convention with the pattern <topic name>-value.
 Use either the Schema Registry config option or the
 <<plugins-{type}s-{plugin}-value_deserializer_class>> config option, but not both.
 
+[id="plugins-{type}s-{plugin}-schema_registry_api_key"]
+===== `schema_registry_api_key`
+
+* Value type is <<string,string>>
+* There is no default value for this setting.
+
+If schema registry is configured to validate client api key, this setting will send 
+the api key in all requests to the schema registry
+
 [id="plugins-{type}s-{plugin}-schema_registry_validation"]
 ===== `schema_registry_validation`
 
