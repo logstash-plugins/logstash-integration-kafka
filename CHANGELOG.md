@@ -1,3 +1,7 @@
+## 11.5.2
+  - Expose the SASL client callback class setting to the Logstash configuration [#177](https://github.com/logstash-plugins/logstash-integration-kafka/pull/177)
+  - Bundles all libraries to use AWS IAM authentication as SASL client [#178](https://github.com/logstash-plugins/logstash-integration-kafka/pull/178)
+
 ## 11.5.1
   - Specify that only headers with UTF-8 encoded values are supported in extended decoration [#174](https://github.com/logstash-plugins/logstash-integration-kafka/pull/174)
 
