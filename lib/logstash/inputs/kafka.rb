@@ -210,6 +210,8 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   config :security_protocol, :validate => ["PLAINTEXT", "SSL", "SASL_PLAINTEXT", "SASL_SSL"], :default => "PLAINTEXT"
   # SASL client callback handler class
   config :sasl_client_callback_handler_class, :validate => :string
+  # The URL where the Kafka client requests OAuth 2.0 tokens from an authorization server.
+  config :sasl_oauthbearer_token_endpoint_url, :validate => :string
   # http://kafka.apache.org/documentation.html#security_sasl[SASL mechanism] used for client connections. 
   # This may be any mechanism for which a security provider is available.
   # GSSAPI is the default mechanism.
