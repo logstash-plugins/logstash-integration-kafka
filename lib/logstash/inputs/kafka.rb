@@ -214,6 +214,8 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   config :sasl_oauthbearer_token_endpoint_url, :validate => :string
   # (optional) The override name of the scope claim.
   config :sasl_oauthbearer_scope_claim_name, :validate => :string, :default => 'scope'
+  # SASL login callback handler class
+  config :sasl_login_callback_handler_class, :validate => :string
   # (optional) The duration, in milliseconds, for HTTPS connect timeout
   config :sasl_login_connect_timeout_ms, :validate => :number, :default => 10000
   # (optional) The duration, in milliseconds, for HTTPS read timeout.

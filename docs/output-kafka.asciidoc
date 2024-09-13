@@ -104,6 +104,7 @@ See the https://kafka.apache.org/{kafka_client_doc}/documentation for more detai
 | <<plugins-{type}s-{plugin}-sasl_client_callback_handler_class>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-sasl_oauthbearer_token_endpoint_url>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-sasl_oauthbearer_scope_claim_name>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-sasl_login_callback_handler_class>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-sasl_login_connect_timeout_ms>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-sasl_login_read_timeout_ms>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-sasl_login_retry_backoff_ms>> |<<number,number>>|No
@@ -418,6 +419,13 @@ The URL for the OAuth 2.0 issuer token endpoint.
   * Default value is `"scope"`
 
 (optional) The override name of the scope claim.
+
+[id="plugins-{type}s-{plugin}-sasl_login_callback_handler_class"]
+===== `sasl_login_callback_handler_class`
+  * Value type is <<string,string>>
+  * There is no default value for this setting.
+
+The SASL login callback handler class the specified SASL mechanism should use.
 
 [id="plugins-{type}s-{plugin}-sasl_login_connect_timeout_ms"]
 ===== `sasl_login_connect_timeout_ms`
