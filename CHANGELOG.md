@@ -1,3 +1,6 @@
+## 11.3.4
+  - updated to avro 1.11.4 and confluent kafka 7.4.7 [#184](https://github.com/logstash-plugins/logstash-integration-kafka/pull/184)
+
 ## 11.5.1
   - Specify that only headers with UTF-8 encoded values are supported in extended decoration [#174](https://github.com/logstash-plugins/logstash-integration-kafka/pull/174)
 
