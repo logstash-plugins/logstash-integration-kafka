@@ -1,3 +1,6 @@
+## 11.5.3
+  - Update kafka client to 3.7.1 and transitive dependencies [#186](https://github.com/logstash-plugins/logstash-integration-kafka/pull/186)
+
 ## 11.5.2
   - Update avro to 1.11.4 and confluent kafka to 7.4.7 [#184](https://github.com/logstash-plugins/logstash-integration-kafka/pull/184)
 
