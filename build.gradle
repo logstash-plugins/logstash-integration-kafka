@@ -38,9 +38,9 @@ java {
 }
 
 // given https://docs.confluent.io/current/installation/versions-interoperability.html matrix
-// Confluent Platform 7.4.x is Apache Kafka 3.4.x
-String confluentKafkaVersion = '7.4.7'
-String apacheKafkaVersion = '3.4.1'
+// Confluent Platform 7.7.x is Apache Kafka 3.7.x
+String confluentKafkaVersion = '7.7.1'
+String apacheKafkaVersion = '3.7.1'
 
 repositories {
     mavenCentral()
@@ -67,9 +67,9 @@ dependencies {
     implementation "org.apache.kafka:kafka-clients:${apacheKafkaVersion}"
     // slf4j, zstd, lz4-java, snappy are dependencies from "kafka-clients"
     implementation 'org.slf4j:slf4j-api:1.7.36'
-    implementation 'com.github.luben:zstd-jni:1.5.5-4'
+    implementation 'com.github.luben:zstd-jni:1.5.6-8'
     implementation 'org.lz4:lz4-java:1.8.0'
-    implementation 'org.xerial.snappy:snappy-java:1.1.10.5'
+    implementation 'org.xerial.snappy:snappy-java:1.1.10.7'
 }
 task generateGemJarRequiresFile {
     doLast {
