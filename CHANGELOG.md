@@ -1,5 +1,6 @@
-## Unreleased
- - Removed Jar Dependencies dependency [#187](https://github.com/logstash-plugins/logstash-integration-kafka/pull/187)
+## 11.5.4
+  - Update kafka client to 3.8.1 and transitive dependencies [#188](https://github.com/logstash-plugins/logstash-integration-kafka/pull/188)
+  - Removed Jar Dependencies dependency [#187](https://github.com/logstash-plugins/logstash-integration-kafka/pull/187)
 
 ## 11.5.3
   - Update kafka client to 3.7.1 and transitive dependencies [#186](https://github.com/logstash-plugins/logstash-integration-kafka/pull/186)
