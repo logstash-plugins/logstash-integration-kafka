@@ -131,6 +131,8 @@ See the https://kafka.apache.org/{kafka_client_doc}/documentation for more detai
 | <<plugins-{type}s-{plugin}-request_timeout_ms>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-retry_backoff_ms>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-sasl_client_callback_handler_class>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-sasl_login_callback_handler_class>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-sasl_oauthbearer_token_endpoint_url>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-sasl_jaas_config>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-sasl_kerberos_service_name>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-sasl_mechanism>> |<<string,string>>|No
@@ -562,6 +564,20 @@ to a given topic partition. This avoids repeated fetching-and-failing in a tight
 * There is no default value for this setting.
 
 The SASL client callback handler class the specified SASL mechanism should use.
+
+[id="plugins-{type}s-{plugin}-sasl_login_callback_handler_class""]
+===== `sasl_login_callback_handler_class`
+* Value type is <<string,string>>
+* There is no default value for this setting.
+
+The SASL login callback handler class the specified SASL mechanism should use.
+
+[id="plugins-{type}s-{plugin}-sasl_oauthbearer_token_endpoint_url""]
+===== `sasl_oauthbearer_token_endpoint_url`
+* Value type is <<string,string>>
+* There is no default value for this setting.
+
+The URL where the Kafka client requests OAuth 2.0 tokens from an authorization server for integration with OAuth 2.0 identity providers.
 
 [id="plugins-{type}s-{plugin}-sasl_jaas_config"]
 ===== `sasl_jaas_config` 
