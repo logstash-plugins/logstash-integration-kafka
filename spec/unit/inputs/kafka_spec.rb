@@ -218,6 +218,54 @@ describe LogStash::Inputs::Kafka do
 
   end
 
+  context 'when oauth is configured' do
+    let(:config) { super().merge(
+      'security_protocol' => 'SASL_PLAINTEXT',
+      'sasl_mechanism' => 'OAUTHBEARER',
+      'sasl_oauthbearer_token_endpoint_url' => 'https://auth.example.com/token',
+      'sasl_oauthbearer_scope_claim_name' => 'custom_scope'
+    )}
+
+    it "sets oauth properties" do
+      expect(org.apache.kafka.clients.consumer.KafkaConsumer).
+        to receive(:new).with(hash_including(
+          'security.protocol' => 'SASL_PLAINTEXT',
+          'sasl.mechanism' => 'OAUTHBEARER',
+          'sasl.oauthbearer.token.endpoint.url' => 'https://auth.example.com/token',
+          'sasl.oauthbearer.scope.claim.name' => 'custom_scope'
+        )).and_return(kafka_client = double('kafka-consumer'))
+
+      expect(subject.send(:create_consumer, 'test-client-1', 'group_instance_id')).to be kafka_client
+    end
+  end
+
+  context 'when sasl is configured' do
+    let(:config) { super().merge(
+      'security_protocol' => 'SASL_PLAINTEXT',
+      'sasl_mechanism' => 'OAUTHBEARER',
+      'sasl_login_connect_timeout_ms' => 15000,
+      'sasl_login_read_timeout_ms' => 5000,
+      'sasl_login_retry_backoff_ms' => 200,
+      'sasl_login_retry_backoff_max_ms' => 15000,
+      'sasl_login_callback_handler_class' => 'org.example.CustomLoginHandler'
+    )}
+
+    it "sets sasl login properties" do
+      expect(org.apache.kafka.clients.consumer.KafkaConsumer).
+        to receive(:new).with(hash_including(
+          'security.protocol' => 'SASL_PLAINTEXT',
+          'sasl.mechanism' => 'OAUTHBEARER',
+          'sasl.login.connect.timeout.ms' => '15000',
+          'sasl.login.read.timeout.ms' => '5000',
+          'sasl.login.retry.backoff.ms' => '200',
+          'sasl.login.retry.backoff.max.ms' => '15000',
+          'sasl.login.callback.handler.class' => 'org.example.CustomLoginHandler'
+        )).and_return(kafka_client = double('kafka-consumer'))
+
+      expect(subject.send(:create_consumer, 'test-client-2', 'group_instance_id')).to be kafka_client
+    end
+  end
+
   describe "schema registry" do
     let(:base_config) do {
           'schema_registry_url' => 'http://localhost:8081',

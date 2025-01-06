@@ -9,6 +9,7 @@ describe "outputs/kafka" do
                                       '@timestamp' => LogStash::Timestamp.now}) }
 
   let(:future) { double('kafka producer future') }
+  subject { LogStash::Outputs::Kafka.new(config) }
 
   context 'when initializing' do
     it "should register" do
@@ -267,8 +268,6 @@ describe "outputs/kafka" do
       File.join(File.dirname(__FILE__), '../../fixtures/trust-store_stub.jks')
     end
 
-    subject { LogStash::Outputs::Kafka.new(config) }
-
     it 'sets empty ssl.endpoint.identification.algorithm' do
       expect(org.apache.kafka.clients.producer.KafkaProducer).
           to receive(:new).with(hash_including('ssl.endpoint.identification.algorithm' => ''))
@@ -283,4 +282,53 @@ describe "outputs/kafka" do
 
   end
 
+  context 'when oauth is configured' do
+    let(:config) {
+      simple_kafka_config.merge(
+        'security_protocol' => 'SASL_PLAINTEXT',
+        'sasl_mechanism' => 'OAUTHBEARER',
+        'sasl_oauthbearer_token_endpoint_url' => 'https://auth.example.com/token',
+        'sasl_oauthbearer_scope_claim_name' => 'custom_scope'
+      )
+    }
+
+    it "sets oauth properties" do
+      expect(org.apache.kafka.clients.producer.KafkaProducer).
+        to receive(:new).with(hash_including(
+          'security.protocol' => 'SASL_PLAINTEXT',
+          'sasl.mechanism' => 'OAUTHBEARER',
+          'sasl.oauthbearer.token.endpoint.url' => 'https://auth.example.com/token',
+          'sasl.oauthbearer.scope.claim.name' => 'custom_scope'
+        ))
+      subject.register
+    end
+  end
+
+  context 'when sasl is configured' do
+    let(:config) {
+      simple_kafka_config.merge(
+        'security_protocol' => 'SASL_PLAINTEXT',
+        'sasl_mechanism' => 'OAUTHBEARER',
+        'sasl_login_connect_timeout_ms' => 15000,
+        'sasl_login_read_timeout_ms' => 5000,
+        'sasl_login_retry_backoff_ms' => 200,
+        'sasl_login_retry_backoff_max_ms' => 15000,
+        'sasl_login_callback_handler_class' => 'org.example.CustomLoginHandler'
+      )
+    }
+
+    it "sets sasl login properties" do
+      expect(org.apache.kafka.clients.producer.KafkaProducer).
+        to receive(:new).with(hash_including(
+          'security.protocol' => 'SASL_PLAINTEXT',
+          'sasl.mechanism' => 'OAUTHBEARER',
+          'sasl.login.connect.timeout.ms' => '15000',
+          'sasl.login.read.timeout.ms' => '5000',
+          'sasl.login.retry.backoff.ms' => '200',
+          'sasl.login.retry.backoff.max.ms' => '15000',
+          'sasl.login.callback.handler.class' => 'org.example.CustomLoginHandler'
+        ))
+      subject.register
+    end
+  end
 end
