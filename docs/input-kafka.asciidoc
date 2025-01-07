@@ -600,6 +600,7 @@ The SASL login callback handler class the specified SASL mechanism should use.
 [id="plugins-{type}s-{plugin}-sasl_login_read_timeout_ms"]
 ===== `sasl_login_read_timeout_ms`
   * Value type is <<number,number>>
+  * There is no default value for this setting.
 
 (optional) The duration, in milliseconds, for HTTPS read timeout.
 
