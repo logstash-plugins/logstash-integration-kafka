@@ -42,15 +42,15 @@ repositories {
 }
 
 dependencies {
-    implementation('io.confluent:kafka-avro-serializer:6.2.2') {
+    implementation('io.confluent:kafka-avro-serializer:6.2.15') {
         exclude group: 'org.apache.kafka', module:'kafka-clients'
     }
-    implementation('io.confluent:kafka-schema-serializer:6.2.2') {
+    implementation('io.confluent:kafka-schema-serializer:6.2.15') {
         exclude group: 'org.apache.kafka', module:'kafka-clients'
     }
-    implementation 'io.confluent:common-config:6.2.2'
-    implementation 'org.apache.avro:avro:1.11.3'
-    implementation('io.confluent:kafka-schema-registry-client:6.2.2') {
+    implementation 'io.confluent:common-config:6.2.15'
+    implementation 'org.apache.avro:avro:1.11.4'
+    implementation('io.confluent:kafka-schema-registry-client:6.2.15') {
         exclude group: 'org.apache.kafka', module:'kafka-clients'
     }
     implementation('org.apache.kafka:kafka_2.12:2.8.1') {
@@ -58,16 +58,14 @@ dependencies {
         // transitive dependencies
         transitive = false
     }
-    implementation 'io.confluent:common-utils:6.2.2'
-    implementation 'javax.ws.rs:javax.ws.rs-api:2.1.1'
-    implementation 'org.glassfish.jersey.core:jersey-common:2.33'
+    implementation 'io.confluent:common-utils:6.2.15'
     // given https://docs.confluent.io/current/installation/versions-interoperability.html matrix
     // Confluent Platform 6.2.x is Apache Kafka 2.8.x
     implementation 'org.apache.kafka:kafka-clients:2.8.1'
     implementation 'com.github.luben:zstd-jni:1.5.2-2'
     implementation 'org.slf4j:slf4j-api:1.7.36'
     implementation 'org.lz4:lz4-java:1.7.1'
-    implementation 'org.xerial.snappy:snappy-java:1.1.8.4'
+    implementation 'org.xerial.snappy:snappy-java:1.1.10.4'
 }
 task generateGemJarRequiresFile {
     doLast {
