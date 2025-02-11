@@ -25,26 +25,6 @@ java {
 tasks.named('shadowJar', com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
     archiveBaseName = 'aws-msk-iam-auth'
     archiveClassifier = 'uber'
-//    archiveVersion = ''
-
-//    enableRelocation = true
-//    relocationPrefix = 'org.logstash'
-
-//    relocate('software.amazon', 'org.logstash.software.amazon') {
-//        // these are classes explicitly referred into the Kafka plugin configuration, so need to keep
-//        // original name
-//        exclude 'software.amazon.msk.auth.iam.IAMLoginModule'
-//        exclude 'software.amazon.msk.auth.iam.IAMClientCallbackHandler'
-//
-//        // This provider is used during KafkaConsumer creation
-//        exclude 'software.amazon.awssdk.auth.credentials.AwsCredentialsProvider'
-//        exclude 'software.amazon.awssdk.core.exception.SdkException'
-//        exclude 'software.amazon.awssdk.core.exception.SdkException$Builder'
-//        exclude 'software.amazon.awssdk.core.exception.SdkException$BuilderImpl'
-//        exclude 'software.amazon.awssdk.core.exception.SdkClientException'
-//        exclude 'software.amazon.awssdk.core.exception.SdkClientException$Builder'
-//        exclude 'software.amazon.awssdk.core.exception.SdkClientException$BuilderImpl'
-//    }
 
     relocate('org.apache.http', 'org.logstash.org.apache.http')
     relocate('com.fasterxml.jackson', 'org.logstash.com.fasterxml.jackson')
