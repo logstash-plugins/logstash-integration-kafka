@@ -93,6 +93,7 @@ task vendor {
             File newJarFile = file("${vendorPathPrefix}/${groupPath}/${dep.name}/${dep.version}/${dep.name}-${dep.version}.jar")
             newJarFile.mkdirs()
             Files.copy(f.toPath(), newJarFile.toPath(), REPLACE_EXISTING)
+            println "Copying ${f} to ${newJarFile}"
         }
     }
 }
