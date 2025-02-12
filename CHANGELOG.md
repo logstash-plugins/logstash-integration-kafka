@@ -1,3 +1,6 @@
+## 10.12.2
+  - Upgrade avro to 1.11.4 and snappy-java to 1.1.10.4 and removed javax.ws.rs-api and jersey-common [#190](https://github.com/logstash-plugins/logstash-integration-kafka/pull/190)
+
 ## 10.12.1
   - Fix: update Avro library on 10.x [#149](https://api.github.com/repos/logstash-plugins/logstash-integration-kafka/pulls/149)
 
