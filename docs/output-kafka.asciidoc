@@ -74,6 +74,7 @@ To use this Kafka input with AWS MSK IAM authentication, set the following confi
 ```
 security_protocol => "SASL_SSL"
 sasl_mechanism => "AWS_MSK_IAM"
+sasl_iam_jar_paths => ["/pth/to/aws_iam_uber.jar"]
 sasl_jaas_config => "software.amazon.msk.auth.iam.IAMLoginModule required;"
 sasl_client_callback_handler_class => "software.amazon.msk.auth.iam.IAMClientCallbackHandler"
 ```

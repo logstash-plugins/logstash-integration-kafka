@@ -36,5 +36,5 @@ tasks.named('shadowJar', com.github.jengelman.gradle.plugins.shadow.tasks.Shadow
 
     // insert in the uber jar but not relocate packages that are pretty stable across Logstash code base:
     // - io.netty
-    // - org/slf4j
+    // - org.slf4j
 }

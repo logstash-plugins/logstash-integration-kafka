@@ -149,6 +149,8 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   config :security_protocol, :validate => ["PLAINTEXT", "SSL", "SASL_PLAINTEXT", "SASL_SSL"], :default => "PLAINTEXT"
   # SASL client callback handler class
   config :sasl_client_callback_handler_class, :validate => :string
+  # Path to the jar containing client and all dependencies for SASL IAM authentication of specific cloud vendor
+  config :sasl_iam_jar_paths, :validate => :array
   # The URL for the OAuth 2.0 issuer token endpoint.
   config :sasl_oauthbearer_token_endpoint_url, :validate => :string
   # (optional) The override name of the scope claim.
