@@ -49,6 +49,11 @@ module LogStash module PluginMixins module Kafka
       props.put("sasl.login.read.timeout.ms", sasl_login_read_timeout_ms.to_s) unless sasl_login_read_timeout_ms.nil?
       props.put("sasl.login.retry.backoff.ms", sasl_login_retry_backoff_ms.to_s) unless sasl_login_retry_backoff_ms.nil?
       props.put("sasl.login.retry.backoff.max.ms", sasl_login_retry_backoff_max_ms.to_s) unless sasl_login_retry_backoff_max_ms.nil?
+      if !sasl_iam_jar_paths.nil? && !sasl_iam_jar_paths.empty?
+        sasl_iam_jar_paths.each do |jar_path|
+          require jar_path
+        end
+      end
     end
 
     def reassign_dns_lookup

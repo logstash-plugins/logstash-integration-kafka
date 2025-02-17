@@ -216,6 +216,8 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   config :sasl_oauthbearer_scope_claim_name, :validate => :string, :default => 'scope' # Kafka default
   # SASL login callback handler class
   config :sasl_login_callback_handler_class, :validate => :string
+  # Path to the jar containing client and all dependencies for SASL IAM authentication of specific cloud vendor
+  config :sasl_iam_jar_paths, :validate => :array
   # (optional) The duration, in milliseconds, for HTTPS connect timeout
   config :sasl_login_connect_timeout_ms, :validate => :number
   # (optional) The duration, in milliseconds, for HTTPS read timeout.
@@ -224,7 +226,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   config :sasl_login_retry_backoff_ms, :validate => :number, :default => 100 # Kafka default
   # (optional) The maximum duration, in milliseconds, for HTTPS call attempts.
   config :sasl_login_retry_backoff_max_ms, :validate => :number, :default => 10000 # Kafka default
-  # http://kafka.apache.org/documentation.html#security_sasl[SASL mechanism] used for client connections. 
+  # http://kafka.apache.org/documentation.html#security_sasl[SASL mechanism] used for client connections.
   # This may be any mechanism for which a security provider is available.
   # GSSAPI is the default mechanism.
   config :sasl_mechanism, :validate => :string, :default => "GSSAPI"
