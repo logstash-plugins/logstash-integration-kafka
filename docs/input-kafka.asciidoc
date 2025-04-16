@@ -70,7 +70,7 @@ If you use AWS MSK, the AWS MSK IAM access control enables you to handle both au
 For more information on this AWS MSK feature see the https://docs.aws.amazon.com/msk/latest/developerguide/iam-access-control.html[AWS documentation].
 
 To use this Kafka input with AWS MSK IAM authentication, download the uber jar which contains the client library for
-this specific cloud vendor and all the transitive dependencies from this https://to.do/[repository].
+this specific cloud vendor and all the transitive dependencies from this https://github.com/elastic/logstash-kafka-iams-packages/releases[repository].
 Configure the following setting:
 ```
 security_protocol => "SASL_SSL"
