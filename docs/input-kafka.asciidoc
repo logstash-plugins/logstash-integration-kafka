@@ -65,6 +65,7 @@ For more information see https://kafka.apache.org/{kafka_client_doc}/documentati
 
 Kafka consumer configuration: https://kafka.apache.org/{kafka_client_doc}/documentation.html#consumerconfigs
 
+[id="plugins-{type}s-{plugin}-aws_msk_iam_auth"]
 ==== AWS MSK IAM authentication
 If you use AWS MSK, the AWS MSK IAM access control enables you to handle both authentication and authorization for your MSK cluster with AWS IAM.
 For more information on this AWS MSK feature see the https://docs.aws.amazon.com/msk/latest/developerguide/iam-access-control.html[AWS documentation].

@@ -66,6 +66,7 @@ https://kafka.apache.org/{kafka_client_doc}/documentation.html#producerconfigs
 
 NOTE:  This plugin does not support using a proxy when communicating to the Kafka broker.
 
+[id="plugins-{type}s-{plugin}-aws_msk_iam_auth"]
 ==== AWS MSK IAM authentication
 If you use AWS MSK, the AWS MSK IAM access control enables you to handle both authentication and authorization for your MSK cluster with AWS IAM.
 For more information on this AWS MSK feature see the https://docs.aws.amazon.com/msk/latest/developerguide/iam-access-control.html[AWS documentation].
