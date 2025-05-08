@@ -150,6 +150,7 @@ See the https://kafka.apache.org/{kafka_client_doc}/documentation for more detai
 | <<plugins-{type}s-{plugin}-sasl_client_callback_handler_class>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-sasl_oauthbearer_token_endpoint_url>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-sasl_oauthbearer_scope_claim_name>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-sasl_iam_jar_paths>> |<<array,array>>|No
 | <<plugins-{type}s-{plugin}-sasl_login_callback_handler_class>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-sasl_login_connect_timeout_ms>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-sasl_login_read_timeout_ms>> |<<number,number>>|No
@@ -600,6 +601,14 @@ The URL for the OAuth 2.0 issuer token endpoint.
   * Default value is `"scope"`
 
 (optional) The override name of the scope claim.
+
+[id="plugins-{type}s-{plugin}-sasl_iam_jar_paths"]
+===== `sasl_iam_jar_paths`
+* Value type is <<arrays,array>>
+* There is no default value for this setting.
+
+Contains the list of paths to jar libraries that contains cloud providers MSK IAM's clients.
+There is one jar per provider and can be retrieved as described in <<"plugins-{type}s-{plugin}-aws_msk_iam_auth">>.
 
 [id="plugins-{type}s-{plugin}-sasl_login_callback_handler_class"]
 ===== `sasl_login_callback_handler_class`
