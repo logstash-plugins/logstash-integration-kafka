@@ -2,8 +2,8 @@
 :plugin: kafka
 :type: input
 :default_codec: plain
-:kafka_client: 3.8.1
-:kafka_client_doc: 38
+:kafka_client: 3.9.1
+:kafka_client_doc: 39
 
 ///////////////////////////////////////////
 START - GENERATED VARIABLES, DO NOT EDIT!
