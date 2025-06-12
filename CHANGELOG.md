@@ -1,3 +1,6 @@
+## 11.6.3
+  - Update kafka client to 3.9.1 and transitive dependencies [#193](https://github.com/logstash-plugins/logstash-integration-kafka/pull/193)
+
 ## 11.6.2
   - Docs: fixed setting type reference for `sasl_iam_jar_paths` [#192](https://github.com/logstash-plugins/logstash-integration-kafka/pull/192)   
 

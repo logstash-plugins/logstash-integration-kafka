@@ -38,9 +38,9 @@ java {
 }
 
 // given https://docs.confluent.io/current/installation/versions-interoperability.html matrix
-// Confluent Platform 7.8.x is Apache Kafka 3.8.x
-String confluentKafkaVersion = '7.8.0'
-String apacheKafkaVersion = '3.8.1'
+// Confluent Platform 7.9.x is Apache Kafka 3.9.x
+String confluentKafkaVersion = '7.9.1'
+String apacheKafkaVersion = '3.9.1'
 
 repositories {
     mavenCentral()
