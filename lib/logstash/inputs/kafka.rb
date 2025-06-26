@@ -270,6 +270,11 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # otherwise auto-topic creation is not permitted.
   config :auto_create_topics, :validate => :boolean, :default => true
 
+  # controls consumer behaviour on shutdown
+  #  - abandon: close consumer without unsubscribing
+  #  - release: unsubscribe before closing consumer
+  config :on_shutdown, :validate => %w(release abandon), :default => 'abandon'
+
   config :decorate_events, :validate => %w(none basic extended false true), :default => "none"
 
   attr_reader :metadata_mode
@@ -355,6 +360,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
           end
         end
       ensure
+        consumer.unsubscribe if @on_shutdown == 'release'
         consumer.close
       end
     end

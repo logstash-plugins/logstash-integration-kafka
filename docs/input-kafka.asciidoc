@@ -141,6 +141,7 @@ See the https://kafka.apache.org/{kafka_client_doc}/documentation for more detai
 | <<plugins-{type}s-{plugin}-max_poll_interval_ms>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-max_poll_records>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-metadata_max_age_ms>> |<<number,number>>|No
+| <<plugins-{type}s-{plugin}-on_shutdown>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-partition_assignment_strategy>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-poll_timeout_ms>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-receive_buffer_bytes>> |<<number,number>>|No
@@ -512,6 +513,15 @@ The maximum number of records returned in a single call to poll().
 
 The period of time in milliseconds after which we force a refresh of metadata even if
 we haven't seen any partition leadership changes to proactively discover any new brokers or partitions
+
+[id="plugins-{type}s-{plugin}-on_shutdown"]
+===== `on_shutdown`
+
+* Value type is <<string,string>>
+* Accepted values are:
+- `release`: releases assigned partitions to make them immediately available to other consumers in the group
+- `abandon`: avoid explicitly releasing assigned partitions, allowing sticky-type <<plugins-{type}s-{plugin}-partition_assignment_strategy>> to retain partition assignments across process or pipeline restarts.
+* The default value is `abandon`
 
 [id="plugins-{type}s-{plugin}-partition_assignment_strategy"]
 ===== `partition_assignment_strategy` 

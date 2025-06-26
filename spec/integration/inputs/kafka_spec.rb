@@ -187,6 +187,42 @@ describe "inputs/kafka", :integration => true do
     end
   end
 
+  context 'on_shutdown' do
+    let(:config) { plain_config.merge('group_id' => rand(36**8).to_s(36), 'consumer_threads' => 2) }
+    subject(:registered_kafka_input) { LogStash::Inputs::Kafka.new(config).tap(&:register) }
+
+    before(:each) do
+      # setup a spy for `KafkaConsumer#unsubscribe` on each consumer that is created by the plugin
+      allow(registered_kafka_input).to receive(:create_consumer).and_wrap_original do |m, *args|
+        m.call(*args).tap do |kafka_consumer|
+          kafka_consumer.class.__persistent__ = true # allow mocking on KafkaConsumer java proxy
+          allow(kafka_consumer).to receive(:unsubscribe).and_call_original
+        end
+      end
+    end
+
+    context 'release' do
+      let(:config) { super().merge('on_shutdown' => 'release') }
+
+      it 'unsubscribes' do
+        run_input(registered_kafka_input, timeout: timeout_seconds, event_count: num_events)
+
+        expect(registered_kafka_input.kafka_consumers).to all(have_received(:unsubscribe))
+      end
+    end
+
+    context 'abandon' do
+      define_negated_matcher :not_have_received, :have_received
+      let(:config) { super().merge('on_shutdown' => 'abandon') }
+
+      it 'does not unsubscribe' do
+        run_input(registered_kafka_input, timeout: timeout_seconds, event_count: num_events)
+
+        expect(registered_kafka_input.kafka_consumers).to all(not_have_received(:unsubscribe))
+      end
+    end
+  end
+
   context "static membership 'group.instance.id' setting" do
     let(:base_config) do
       {
@@ -285,9 +321,13 @@ def wait_kafka_input_is_ready(topic, queue)
   expect(message).to_not eq(nil)
 end
 
-def consume_messages(config, queue: Queue.new, timeout:, event_count:)
+def consume_messages(config, queue: Queue.new, timeout:, event_count:, &block)
   kafka_input = LogStash::Inputs::Kafka.new(config)
   kafka_input.register
+  run_input(kafka_input, queue: queue, timeout: timeout, event_count: event_count, &block)
+end
+
+def run_input(kafka_input, queue: Queue.new, timeout:, event_count:)
   t = Thread.new { kafka_input.run(queue) }
   begin
     t.run
@@ -295,8 +335,8 @@ def consume_messages(config, queue: Queue.new, timeout:, event_count:)
     block_given? ? yield(queue, kafka_input) : queue
   ensure
     kafka_input.do_stop
-    t.kill
     t.join(30)
+    t.kill
   end
 end
 
