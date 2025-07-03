@@ -5,7 +5,8 @@ env
 
 set -ex
 
-export KAFKA_VERSION=3.3.1
+# Extract apacheKafkaVersion from gradle.properties
+export KAFKA_VERSION=$(grep "^apacheKafkaVersion" gradle.properties | cut -d'=' -f2)
 ./kafka_test_setup.sh
 
 bundle exec rspec -fd

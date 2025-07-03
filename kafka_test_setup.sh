@@ -10,6 +10,7 @@ else
 fi
 
 export _JAVA_OPTIONS="-Djava.net.preferIPv4Stack=true"
+export CURL_OPTS="--fail --show-error --no-progress-meter --location --retry 3 --retry-delay 5"
 
 rm -rf build
 mkdir build
@@ -17,7 +18,7 @@ mkdir build
 echo "Setup Kafka version $KAFKA_VERSION"
 if [ ! -e "kafka_2.13-$KAFKA_VERSION.tgz" ]; then
   echo "Kafka not present locally, downloading"
-  curl -s -o "kafka_2.13-$KAFKA_VERSION.tgz" "https://archive.apache.org/dist/kafka/$KAFKA_VERSION/kafka_2.13-$KAFKA_VERSION.tgz"
+  curl $CURL_OPTS -o "kafka_2.13-$KAFKA_VERSION.tgz" "https://dlcdn.apache.org/kafka/$KAFKA_VERSION/kafka_2.13-$KAFKA_VERSION.tgz"
 fi
 cp kafka_2.13-$KAFKA_VERSION.tgz build/kafka.tgz
 mkdir build/kafka && tar xzf build/kafka.tgz -C build/kafka --strip-components 1
@@ -40,7 +41,7 @@ if [ ! -e confluent-community-$CONFLUENT_VERSION.tar.gz ]; then
   echo "Confluent Platform not present locally, downloading"
   CONFLUENT_MINOR=$(echo "$CONFLUENT_VERSION" | sed -n 's/^\([[:digit:]]*\.[[:digit:]]*\)\.[[:digit:]]*$/\1/p')
   echo "CONFLUENT_MINOR is $CONFLUENT_MINOR"
-  curl -s -o confluent-community-$CONFLUENT_VERSION.tar.gz http://packages.confluent.io/archive/$CONFLUENT_MINOR/confluent-community-$CONFLUENT_VERSION.tar.gz
+  curl $CURL_OPTS -o confluent-community-$CONFLUENT_VERSION.tar.gz http://packages.confluent.io/archive/$CONFLUENT_MINOR/confluent-community-$CONFLUENT_VERSION.tar.gz
 fi
 cp confluent-community-$CONFLUENT_VERSION.tar.gz build/confluent_platform.tar.gz
 mkdir build/confluent_platform && tar xzf build/confluent_platform.tar.gz -C build/confluent_platform --strip-components 1
@@ -81,7 +82,7 @@ build/kafka/bin/kafka-topics.sh --create --partitions 1 --replication-factor 1 -
 build/kafka/bin/kafka-topics.sh --create --partitions 1 --replication-factor 1 --topic logstash_integration_zstd_topic --bootstrap-server localhost:9092
 build/kafka/bin/kafka-topics.sh --create --partitions 3 --replication-factor 1 --topic logstash_integration_partitioner_topic --bootstrap-server localhost:9092
 build/kafka/bin/kafka-topics.sh --create --partitions 3 --replication-factor 1 --topic logstash_integration_static_membership_topic --bootstrap-server localhost:9092
-curl -s -o build/apache_logs.txt https://s3.amazonaws.com/data.elasticsearch.org/apache_logs/apache_logs.txt
+curl $CURL_OPTS -o build/apache_logs.txt https://s3.amazonaws.com/data.elasticsearch.org/apache_logs/apache_logs.txt
 cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_integration_topic_plain --broker-list localhost:9092
 cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_integration_topic_snappy --broker-list localhost:9092 --compression-codec snappy
 cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_integration_topic_lz4 --broker-list localhost:9092 --compression-codec lz4
