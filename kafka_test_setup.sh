@@ -18,7 +18,7 @@ mkdir build
 echo "Setup Kafka version $KAFKA_VERSION"
 if [ ! -e "kafka_2.13-$KAFKA_VERSION.tgz" ]; then
   echo "Kafka not present locally, downloading"
-  curl $CURL_OPTS -o "kafka_2.13-$KAFKA_VERSION.tgz" "https://archive.apache.org/dist/kafka/$KAFKA_VERSION/kafka_2.13-$KAFKA_VERSION.tgz"
+  curl $CURL_OPTS -o "kafka_2.13-$KAFKA_VERSION.tgz" "https://dlcdn.apache.org/kafka/$KAFKA_VERSION/kafka_2.13-$KAFKA_VERSION.tgz"
 fi
 cp kafka_2.13-$KAFKA_VERSION.tgz build/kafka.tgz
 mkdir build/kafka && tar xzf build/kafka.tgz -C build/kafka --strip-components 1
