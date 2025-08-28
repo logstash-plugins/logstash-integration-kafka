@@ -1,3 +1,6 @@
+## 11.6.4
+  - Display exception chain comes from kafka client [#200](https://github.com/logstash-plugins/logstash-integration-kafka/pull/200)
+
 ## 11.6.3
   - Update kafka client to 3.9.1 and transitive dependencies [#193](https://github.com/logstash-plugins/logstash-integration-kafka/pull/193)
 
