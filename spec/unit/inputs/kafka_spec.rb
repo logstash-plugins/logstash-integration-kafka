@@ -93,6 +93,15 @@ describe LogStash::Inputs::Kafka do
         expect(subject.client_dns_lookup).to eq('use_all_dns_ips')
       end
     end
+
+    context '#on_shutdown' do
+      let(:registered_kafka_input) { subject.tap(&:register) }
+      it 'defaults to `abandon`' do
+        # BACKWARD-COMPATIBILITY: defaulting to a value other than `abandon` has
+        # side-effects for sticky partition strategies and static partition assignments
+        expect(registered_kafka_input.on_shutdown).to eq('abandon')
+      end
+    end
   end
 
   describe '#running' do
