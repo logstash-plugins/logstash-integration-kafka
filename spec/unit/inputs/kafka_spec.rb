@@ -378,11 +378,15 @@ describe LogStash::Inputs::Kafka do
   end
 
   context 'string integer config' do
-    let(:config) { super().merge('session_timeout_ms' => '25000', 'max_poll_interval_ms' => '345000') }
+    let(:config) { super().merge('session_timeout_ms' => '25000',
+                                 'max_poll_interval_ms' => '345000',
+                                 'reconnect_backoff_max_ms' => '1500') }
 
     it "sets integer values" do
       expect(org.apache.kafka.clients.consumer.KafkaConsumer).
-          to receive(:new).with(hash_including('session.timeout.ms' => '25000', 'max.poll.interval.ms' => '345000')).
+          to receive(:new).with(hash_including('session.timeout.ms' => '25000',
+                                               'max.poll.interval.ms' => '345000',
+                                               'reconnect.backoff.max.ms' => '1500')).
               and_return kafka_client = double('kafka-consumer')
 
       expect( subject.send(:create_consumer, 'sample_client-1', 'group_instance_id') ).to be kafka_client
@@ -390,11 +394,15 @@ describe LogStash::Inputs::Kafka do
   end
 
   context 'integer config' do
-    let(:config) { super().merge('session_timeout_ms' => 25200, 'max_poll_interval_ms' => 123_000) }
+    let(:config) { super().merge('session_timeout_ms' => 25200,
+                                 'max_poll_interval_ms' => 123_000,
+                                 'reconnect_backoff_max_ms' => 1500) }
 
     it "sets integer values" do
       expect(org.apache.kafka.clients.consumer.KafkaConsumer).
-          to receive(:new).with(hash_including('session.timeout.ms' => '25200', 'max.poll.interval.ms' => '123000')).
+          to receive(:new).with(hash_including('session.timeout.ms' => '25200',
+                                               'max.poll.interval.ms' => '123000',
+                                               'reconnect.backoff.max.ms' => '1500')).
               and_return kafka_client = double('kafka-consumer')
 
       expect( subject.send(:create_consumer, 'sample_client-2', 'group_instance_id') ).to be kafka_client

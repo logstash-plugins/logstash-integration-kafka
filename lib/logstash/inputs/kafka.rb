@@ -167,6 +167,9 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # This avoids repeatedly connecting to a host in a tight loop.
   # This backoff applies to all connection attempts by the client to a broker.
   config :reconnect_backoff_ms, :validate => :number, :default => 50 # Kafka default
+  # The maximum amount of time in milliseconds to wait when reconnecting to a broker that has repeatedly failed to connect.
+  # If provided, the backoff per host will increase exponentially for each consecutive connection failure, up to this maximum.
+  config :reconnect_backoff_max_ms, :validate => :number, :default => 1000 # Kafka default
   # The amount of time to wait before attempting to retry a failed fetch request
   # to a given topic partition. This avoids repeated fetching-and-failing in a tight loop.
   config :retry_backoff_ms, :validate => :number, :default => 100 # Kafka default
@@ -457,6 +460,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
       props.put(kafka::PARTITION_ASSIGNMENT_STRATEGY_CONFIG, partition_assignment_strategy_class) unless partition_assignment_strategy.nil?
       props.put(kafka::RECEIVE_BUFFER_CONFIG, receive_buffer_bytes.to_s) unless receive_buffer_bytes.nil?
       props.put(kafka::RECONNECT_BACKOFF_MS_CONFIG, reconnect_backoff_ms.to_s) unless reconnect_backoff_ms.nil?
+      props.put(kafka::RECONNECT_BACKOFF_MAX_MS_CONFIG, reconnect_backoff_max_ms.to_s) unless reconnect_backoff_max_ms.nil?
       props.put(kafka::REQUEST_TIMEOUT_MS_CONFIG, request_timeout_ms.to_s) unless request_timeout_ms.nil?
       props.put(kafka::RETRY_BACKOFF_MS_CONFIG, retry_backoff_ms.to_s) unless retry_backoff_ms.nil?
       props.put(kafka::SEND_BUFFER_CONFIG, send_buffer_bytes.to_s) unless send_buffer_bytes.nil?

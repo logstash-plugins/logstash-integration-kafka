@@ -116,6 +116,9 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   config :receive_buffer_bytes, :validate => :number, :default => 32_768 # (32KB) Kafka default
   # The amount of time to wait before attempting to reconnect to a given host when a connection fails.
   config :reconnect_backoff_ms, :validate => :number, :default => 50 # Kafka default
+  # The maximum amount of time in milliseconds to wait when reconnecting to a broker that has repeatedly failed to connect.
+  # If provided, the backoff per host will increase exponentially for each consecutive connection failure, up to this maximum.
+  config :reconnect_backoff_max_ms, :validate => :number, :default => 1000 # Kafka default
   # The default retry behavior is to retry until successful. To prevent data loss,
   # the use of this setting is discouraged.
   #
@@ -372,6 +375,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
       end
       props.put(kafka::RECEIVE_BUFFER_CONFIG, receive_buffer_bytes.to_s) unless receive_buffer_bytes.nil?
       props.put(kafka::RECONNECT_BACKOFF_MS_CONFIG, reconnect_backoff_ms.to_s) unless reconnect_backoff_ms.nil?
+      props.put(kafka::RECONNECT_BACKOFF_MAX_MS_CONFIG, reconnect_backoff_max_ms.to_s) unless reconnect_backoff_max_ms.nil?
       props.put(kafka::REQUEST_TIMEOUT_MS_CONFIG, request_timeout_ms.to_s) unless request_timeout_ms.nil?
       props.put(kafka::RETRIES_CONFIG, retries.to_s) unless retries.nil?
       props.put(kafka::RETRY_BACKOFF_MS_CONFIG, retry_backoff_ms.to_s) 
