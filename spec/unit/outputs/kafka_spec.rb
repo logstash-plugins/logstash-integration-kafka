@@ -114,7 +114,7 @@ describe "outputs/kafka" do
   end
 
   context "when KafkaProducer#send() raises a non-retriable exception" do
-    let(:failcount) { (rand * 10).to_i }
+    let(:failcount) { 3 }
 
     let(:exception_classes) { [
         org.apache.kafka.common.errors.SerializationException,
