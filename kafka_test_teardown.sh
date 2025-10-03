@@ -8,8 +8,11 @@ build/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --delete --top
 
 echo "Stopping Kafka broker"
 build/kafka/bin/kafka-server-stop.sh
-echo "Stopping zookeeper"
-build/kafka/bin/zookeeper-server-stop.sh
+
+if [ -f "build/kafka/bin/zookeeper-server-stop.sh" ]; then
+  echo "Stopping ZooKeeper"
+  build/kafka/bin/zookeeper-server-stop.sh
+fi
 
 echo "Clean TLS folder"
 rm -Rf tls_repository
