@@ -115,6 +115,7 @@ See the https://kafka.apache.org/{kafka_client_doc}/documentation for more detai
 | <<plugins-{type}s-{plugin}-partitioner>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-receive_buffer_bytes>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-reconnect_backoff_ms>> |<<number,number>>|No
+| <<plugins-{type}s-{plugin}-reconnect_backoff_max_ms>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-request_timeout_ms>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-retries>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-retry_backoff_ms>> |<<number,number>>|No
@@ -372,6 +373,15 @@ The size of the TCP receive buffer to use when reading data
   * Default value is `50`.
 
 The amount of time to wait before attempting to reconnect to a given host when a connection fails.
+
+[id="plugins-{type}s-{plugin}-reconnect_backoff_max_ms"]
+===== `reconnect_backoff_max_ms`
+
+* Value type is <<number,number>>
+* Default value is `1000`.
+
+The maximum amount of time in milliseconds to wait when reconnecting to a broker that has repeatedly failed to connect.
+If provided, the backoff per host will increase exponentially for each consecutive connection failure, up to this maximum.
 
 [id="plugins-{type}s-{plugin}-request_timeout_ms"]
 ===== `request_timeout_ms` 
