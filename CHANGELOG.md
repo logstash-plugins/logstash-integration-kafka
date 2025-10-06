@@ -1,3 +1,9 @@
+## 12.0.0
+  - Update kafka client to 4.1.0 and transitive dependencies [#205](https://github.com/logstash-plugins/logstash-integration-kafka/pull/205)
+    - `partitioner => "default"` option is removed
+  - Add `group_protocols` options for configuring Kafka consumer rebalance protocol
+    - Setting `group_protocols => consumer` opts in to the new consumer group protocol
+
 ## 11.7.0
   - Add `reconnect_backoff_max_ms` option for configuring kafka client [#204](https://github.com/logstash-plugins/logstash-integration-kafka/pull/204)
 
