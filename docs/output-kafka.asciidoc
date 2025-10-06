@@ -2,8 +2,8 @@
 :plugin: kafka
 :type: output
 :default_codec: plain
-:kafka_client: 3.9.1
-:kafka_client_doc: 39
+:kafka_client: 4.1.0
+:kafka_client_doc: 41
 
 ///////////////////////////////////////////
 START - GENERATED VARIABLES, DO NOT EDIT!
@@ -349,12 +349,13 @@ The max time in milliseconds before a metadata refresh is forced.
 * Value type is <<string,string>>
 * There is no default value for this setting.
 
-The default behavior is to hash the `message_key` of an event to get the partition.
-When no message key is present, the plugin picks a partition in a round-robin fashion.
+By not setting this value, the plugin uses the default behavior of the Kafka client, which is `uniform_sticky`.
+If a record explicitly specifies a partition, that partition is always used.
+Otherwise, the producer selects a sticky partition, which remains the same for the duration of a batch and changes once the batch is full or flushed.
 
 Available options for choosing a partitioning strategy are as follows:
 
-* `default` use the default partitioner as described above
+* `default` is an alias for `uniform_sticky`
 * `round_robin` distributes writes to all partitions equally, regardless of `message_key`
 * `uniform_sticky` sticks to a partition for the duration of a batch than randomly picks a new one
 

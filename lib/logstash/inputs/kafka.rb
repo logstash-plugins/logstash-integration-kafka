@@ -471,7 +471,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
       props.put("security.protocol", security_protocol) unless security_protocol.nil?
       if schema_registry_url
         props.put(kafka::VALUE_DESERIALIZER_CLASS_CONFIG, Java::io.confluent.kafka.serializers.KafkaAvroDeserializer.java_class)
-        serdes_config = Java::io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig
+        serdes_config = Java::io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig
         props.put(serdes_config::SCHEMA_REGISTRY_URL_CONFIG, schema_registry_url.uri.to_s)
         if schema_registry_proxy && !schema_registry_proxy.empty?
           props.put(serdes_config::PROXY_HOST, @schema_registry_proxy_host)

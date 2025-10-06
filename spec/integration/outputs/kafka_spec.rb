@@ -164,7 +164,7 @@ describe "outputs/kafka", :integration => true do
     let(:test_topic) { 'logstash_integration_topic3' }
 
     before :each do
-      config = base_config.merge("topic_id" => test_topic, "partitioner" => 'org.apache.kafka.clients.producer.UniformStickyPartitioner')
+      config = base_config.merge("topic_id" => test_topic, "partitioner" => 'org.apache.kafka.clients.producer.RoundRobinPartitioner')
       load_kafka_data(config) do # let's have a bit more (diverse) dataset
         num_events.times.collect do
           LogStash::Event.new.tap do |e|

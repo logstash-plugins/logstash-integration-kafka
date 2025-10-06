@@ -486,7 +486,7 @@ describe "Deserializing with the schema registry", :integration => true do
     def delete_topic_if_exists(topic_name, user = nil, password = nil)
       props = java.util.Properties.new
       props.put(Java::org.apache.kafka.clients.admin.AdminClientConfig::BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
-      serdes_config = Java::io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig
+      serdes_config = Java::io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig
       unless user.nil?
         props.put(serdes_config::BASIC_AUTH_CREDENTIALS_SOURCE, 'USER_INFO')
         props.put(serdes_config::USER_INFO_CONFIG,  "#{user}:#{password}")
@@ -495,7 +495,7 @@ describe "Deserializing with the schema registry", :integration => true do
       topics_list = admin_client.listTopics().names().get()
       if topics_list.contains(topic_name)
         result = admin_client.deleteTopics([topic_name])
-        result.values.get(topic_name).get()
+        result.topicNameValues().get(topic_name).get()
       end
     end
 
@@ -503,7 +503,7 @@ describe "Deserializing with the schema registry", :integration => true do
       props = java.util.Properties.new
       config = org.apache.kafka.clients.producer.ProducerConfig
 
-      serdes_config = Java::io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig
+      serdes_config = Java::io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig
       props.put(serdes_config::SCHEMA_REGISTRY_URL_CONFIG, "http://localhost:8081")
 
       props.put(config::BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")

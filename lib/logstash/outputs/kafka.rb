@@ -369,8 +369,8 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
       props.put(kafka::LINGER_MS_CONFIG, linger_ms.to_s)
       props.put(kafka::MAX_REQUEST_SIZE_CONFIG, max_request_size.to_s)
       props.put(kafka::METADATA_MAX_AGE_CONFIG, metadata_max_age_ms.to_s) unless metadata_max_age_ms.nil?
-      unless partitioner.nil?
-        props.put(kafka::PARTITIONER_CLASS_CONFIG, partitioner = partitioner_class)
+      partitioner_class&.tap do |partitioner|
+        props.put(kafka::PARTITIONER_CLASS_CONFIG, partitioner)
         logger.debug('producer configured using partitioner', :partitioner_class => partitioner)
       end
       props.put(kafka::RECEIVE_BUFFER_CONFIG, receive_buffer_bytes.to_s) unless receive_buffer_bytes.nil?
@@ -405,13 +405,16 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   end
 
   def partitioner_class
+    return nil if partitioner.nil?
+
     case partitioner
     when 'round_robin'
       'org.apache.kafka.clients.producer.RoundRobinPartitioner'
     when 'uniform_sticky'
-      'org.apache.kafka.clients.producer.UniformStickyPartitioner'
+      nil
     when 'default'
-      'org.apache.kafka.clients.producer.internals.DefaultPartitioner'
+      # The default is `uniform_sticky` since Kafka client 3.0
+      nil
     else
       unless partitioner.index('.')
         raise LogStash::ConfigurationError, "unsupported partitioner: #{partitioner.inspect}"
