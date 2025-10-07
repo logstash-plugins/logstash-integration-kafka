@@ -129,6 +129,12 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # consumer crated by each thread an artificial suffix is appended to the user provided `group_instance_id`
   # to avoid clashing.
   config :group_instance_id, :validate => :string
+  # `classic` is the "stop-the-world" rebalances.
+  #   Any consumer restart or failure triggers a full-group rebalance, pausing processing for all consumers.
+  # `consumer` is an incremental rebalance protocol that avoids global sync barriers,
+  #   pausing only the partitions that are reassigned.
+  #   It cannot set along with `partition_assignment_strategy`, `heartbeat_interval_ms` and `session_timeout_ms`
+  config :group_protocol, :validate => ["classic", "consumer"], :default => "classic"
   # The expected time between heartbeats to the consumer coordinator. Heartbeats are used to ensure 
   # that the consumer's session stays active and to facilitate rebalancing when new
   # consumers join or leave the group. The value must be set lower than
@@ -293,6 +299,8 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
     reassign_dns_lookup
     @pattern ||= java.util.regex.Pattern.compile(@topics_pattern) unless @topics_pattern.nil?
     check_schema_registry_parameters
+
+    set_group_protocol!
   end
 
   METADATA_NONE     = Set[].freeze
@@ -450,6 +458,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
       props.put(kafka::FETCH_MIN_BYTES_CONFIG, fetch_min_bytes.to_s) unless fetch_min_bytes.nil?
       props.put(kafka::GROUP_ID_CONFIG, group_id)
       props.put(kafka::GROUP_INSTANCE_ID_CONFIG, group_instance_id) unless group_instance_id.nil?
+      props.put(kafka::GROUP_PROTOCOL_CONFIG, group_protocol)
       props.put(kafka::HEARTBEAT_INTERVAL_MS_CONFIG, heartbeat_interval_ms.to_s) unless heartbeat_interval_ms.nil?
       props.put(kafka::ISOLATION_LEVEL_CONFIG, isolation_level)
       props.put(kafka::KEY_DESERIALIZER_CLASS_CONFIG, key_deserializer_class)
@@ -511,6 +520,25 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
                    :cause => e.respond_to?(:getCause) ? e.getCause() : nil)
       raise e
     end
+  end
+
+  # In order to use group_protocol => consumer, heartbeat_interval_ms, session_timeout_ms and partition_assignment_strategy need to be unset
+  # If any of these are not using the default value of the plugin, we raise a configuration error
+  def set_group_protocol!
+    return unless group_protocol == "consumer"
+
+    heartbeat_overridden = heartbeat_interval_ms != self.class.get_config.dig("heartbeat_interval_ms", :default)
+    session_overridden   = session_timeout_ms != self.class.get_config.dig("session_timeout_ms", :default)
+    strategy_defined     = !partition_assignment_strategy.nil?
+
+    if strategy_defined || heartbeat_overridden || session_overridden
+      raise LogStash::ConfigurationError, "group_protocol cannot be set to 'consumer' "\
+        "when any of partition_assignment_strategy, heartbeat_interval_ms or session_timeout_ms is set"
+    end
+
+    @heartbeat_interval_ms = nil
+    @session_timeout_ms = nil
+    logger.debug("Reset `heartbeat_interval_ms` and `session_timeout_ms` for the consumer `group_protocol`")
   end
 
   def partition_assignment_strategy_class
