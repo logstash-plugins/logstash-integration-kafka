@@ -349,15 +349,12 @@ The max time in milliseconds before a metadata refresh is forced.
 * Value type is <<string,string>>
 * There is no default value for this setting.
 
-By not setting this value, the plugin uses the default behavior of the Kafka client, which is `uniform_sticky`.
-If a record explicitly specifies a partition, that partition is always used.
-Otherwise, the producer selects a sticky partition, which remains the same for the duration of a batch and changes once the batch is full or flushed.
+By not setting this value, the plugin uses the default strategy provided by the Kafka client.
 
-Available options for choosing a partitioning strategy are as follows:
+Available options are as follows:
 
-* `default` is an alias for `uniform_sticky`
 * `round_robin` distributes writes to all partitions equally, regardless of `message_key`
-* `uniform_sticky` sticks to a partition for the duration of a batch than randomly picks a new one
+* `uniform_sticky` switches to a new partition after every batch.size bytes are produced, ensuring uniform distribution across partitions. This is the default strategy of Kafka client.
 
 [id="plugins-{type}s-{plugin}-receive_buffer_bytes"]
 ===== `receive_buffer_bytes` 
