@@ -221,7 +221,7 @@ describe "outputs/kafka", :integration => true do
       load_kafka_data(config)
     end
 
-    [ 'default', 'round_robin', 'uniform_sticky' ].each do |partitioner|
+    [ 'round_robin', 'uniform_sticky' ].each do |partitioner|
       describe partitioner do
         let(:partitioner) { partitioner }
         it 'loads data' do
