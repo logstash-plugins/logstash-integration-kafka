@@ -1,3 +1,6 @@
+## 11.8.0
+  - Deprecate `partitioner => default` option [#206](https://github.com/logstash-plugins/logstash-integration-kafka/pull/206)
+
 ## 11.7.0
   - Add `reconnect_backoff_max_ms` option for configuring kafka client [#204](https://github.com/logstash-plugins/logstash-integration-kafka/pull/204)
 
