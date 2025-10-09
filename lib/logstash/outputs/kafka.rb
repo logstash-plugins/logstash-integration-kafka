@@ -411,6 +411,9 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
     when 'uniform_sticky'
       'org.apache.kafka.clients.producer.UniformStickyPartitioner'
     when 'default'
+      logger.warn('Producer `partitioner` is configured with the deprecated option `default`. ' \
+                    'DefaultPartitioner is removed in kafka-client 4.0 and the `default` option will be removed in v12.0.0. ' \
+                    'Please update your configuration to use `uniform_sticky` or `round_robin`. ')
       'org.apache.kafka.clients.producer.internals.DefaultPartitioner'
     else
       unless partitioner.index('.')

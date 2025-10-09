@@ -349,14 +349,15 @@ The max time in milliseconds before a metadata refresh is forced.
 * Value type is <<string,string>>
 * There is no default value for this setting.
 
-The default behavior is to hash the `message_key` of an event to get the partition.
-When no message key is present, the plugin picks a partition in a round-robin fashion.
+By not setting this value, the plugin uses the default strategy provided by the Kafka client.
 
-Available options for choosing a partitioning strategy are as follows:
+Available options are as follows:
 
-* `default` use the default partitioner as described above
+* `default` hashes the `message_key` of an event to get the partition. When no message key is present, the plugin picks a partition in a round-robin fashion.
 * `round_robin` distributes writes to all partitions equally, regardless of `message_key`
-* `uniform_sticky` sticks to a partition for the duration of a batch than randomly picks a new one
+* `uniform_sticky` hashes the `message_key` of an event to get the partition. When no message key is present, the plugin sticks to a partition for the duration of a batch than randomly picks a new one.
+
+NOTE: `default` is deprecated and will be removed in v12.0.0.
 
 [id="plugins-{type}s-{plugin}-receive_buffer_bytes"]
 ===== `receive_buffer_bytes` 
