@@ -405,19 +405,12 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   end
 
   def partitioner_class
-    return nil if partitioner.nil?
+    return nil if partitioner.nil? || partitioner == 'uniform_sticky'
+    return 'org.apache.kafka.clients.producer.RoundRobinPartitioner' if partitioner == 'round_robin'
 
-    case partitioner
-    when 'round_robin'
-      'org.apache.kafka.clients.producer.RoundRobinPartitioner'
-    when 'uniform_sticky'
-      nil
-    else
-      unless partitioner.index('.')
-        raise LogStash::ConfigurationError, "unsupported partitioner: #{partitioner.inspect}"
-      end
-      partitioner # assume a fully qualified class-name
-    end
+    raise LogStash::ConfigurationError, "unsupported partitioner: #{partitioner.inspect}" unless partitioner.include?('.')
+
+    partitioner
   end
 
 end #class LogStash::Outputs::Kafka
