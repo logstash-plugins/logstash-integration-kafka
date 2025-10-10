@@ -101,7 +101,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   # This setting accomplishes this by adding a small amount of artificial delay—that is,
   # rather than immediately sending out a record the producer will wait for up to the given delay
   # to allow other records to be sent so that the sends can be batched together.
-  config :linger_ms, :validate => :number, :default => 0 # Kafka default
+  config :linger_ms, :validate => :number, :default => 5 # Kafka default
   # The maximum size of a request
   config :max_request_size, :validate => :number, :default => 1_048_576 # (1MB) Kafka default
   # The key for the message

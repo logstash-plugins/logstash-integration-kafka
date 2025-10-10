@@ -285,7 +285,7 @@ Serializer class for the key of the message
 ===== `linger_ms` 
 
   * Value type is <<number,number>>
-  * Default value is `0`
+  * Default value is `5`
 
 The producer groups together any records that arrive in between request
 transmissions into a single batched request. Normally this occurs only under
