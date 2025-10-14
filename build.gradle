@@ -37,10 +37,9 @@ java {
   sourceCompatibility = JavaVersion.VERSION_1_8
 }
 
-// given https://docs.confluent.io/current/installation/versions-interoperability.html matrix
-// Confluent Platform 7.9.x is Apache Kafka 3.9.x
-String confluentKafkaVersion = '7.9.1'
-String apacheKafkaVersion = '3.9.1'
+// Versions are defined in gradle.properties
+String confluentKafkaVersion = project.property('confluentKafkaVersion')
+String apacheKafkaVersion = project.property('apacheKafkaVersion')
 
 repositories {
     mavenCentral()
