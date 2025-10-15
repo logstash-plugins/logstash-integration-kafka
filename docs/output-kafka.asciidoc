@@ -357,7 +357,7 @@ Available options are as follows:
 * `round_robin` distributes writes to all partitions equally, regardless of `message_key`
 * `uniform_sticky` hashes the `message_key` of an event to get the partition. When no message key is present, the plugin sticks to a partition for the duration of a batch than randomly picks a new one.
 
-NOTE: `default` is deprecated and will be removed in v12.0.0.
+NOTE: `default` and `uniform_sticky` are deprecated and will be removed in `12.0.0`.
 
 [id="plugins-{type}s-{plugin}-receive_buffer_bytes"]
 ===== `receive_buffer_bytes` 

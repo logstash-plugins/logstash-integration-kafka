@@ -1,5 +1,6 @@
 ## 11.8.0
-  - Deprecate `partitioner => default` option [#206](https://github.com/logstash-plugins/logstash-integration-kafka/pull/206)
+  - Deprecate partitioner `default` and `uniform_sticky` options [#206](https://github.com/logstash-plugins/logstash-integration-kafka/pull/206)
+      Both options are deprecated in Kafka client 3 and will be removed in the plugin 12.0.0.
 
 ## 11.7.0
   - Add `reconnect_backoff_max_ms` option for configuring kafka client [#204](https://github.com/logstash-plugins/logstash-integration-kafka/pull/204)
