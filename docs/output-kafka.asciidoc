@@ -353,7 +353,7 @@ By not setting this value, the plugin uses the built-in partitioning strategy pr
 
 Available options are as follows:
 
-* `default` hashes the `message_key` of an event to get the partition. When no message key is present, the plugin picks a partition in a round-robin fashion.
+* `default` hashes the `message_key` of an event to get the partition. When no message key is present, the plugin picks a partition in a round-robin fashion. Please note that this is a different strategy than the one used when `partitioner` is left unset.
 * `round_robin` distributes writes to all partitions equally, regardless of `message_key`
 * `uniform_sticky` hashes the `message_key` of an event to get the partition. When no message key is present, the plugin sticks to a partition for the duration of a batch than randomly picks a new one.
 
