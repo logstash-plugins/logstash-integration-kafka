@@ -65,11 +65,12 @@ dependencies {
         exclude group: 'org.apache.kafka', module:'kafka-clients'
     }
     implementation "org.apache.kafka:kafka-clients:${apacheKafkaVersion}"
-    // slf4j, zstd, lz4-java, snappy, jackson-datatype-jdk8 are dependencies from "kafka-clients"
+    // slf4j, zstd, lz4-java, and snappy are dependencies from "kafka-clients"
     implementation 'org.slf4j:slf4j-api:1.7.36'
     implementation 'com.github.luben:zstd-jni:1.5.6-10'
     implementation 'org.lz4:lz4-java:1.8.0'
     implementation 'org.xerial.snappy:snappy-java:1.1.10.7'
+    // jackson-datatype-jdk8 is a dependency of kafka-avro-serializer
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.20.0'
 }
 task generateGemJarRequiresFile {
