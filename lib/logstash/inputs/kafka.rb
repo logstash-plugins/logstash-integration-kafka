@@ -538,7 +538,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
     @heartbeat_interval_ms = nil
     @session_timeout_ms = nil
-    logger.debug("Reset `heartbeat_interval_ms` and `session_timeout_ms` for the consumer `group_protocol`")
+    logger.debug("Settings 'heartbeat_interval_ms' and 'session_timeout_ms' have been reset since 'group_protocol' is configured as 'consumer'")
   end
 
   def partition_assignment_strategy_class
