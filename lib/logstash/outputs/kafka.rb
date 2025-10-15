@@ -110,7 +110,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   config :message_headers, :validate => :hash, :default => {}
   # the timeout setting for initial metadata request to fetch topic metadata.
   config :metadata_fetch_timeout_ms, :validate => :number, :default => 60_000
-  # Partitioner to use - can be `uniform_sticky`, `round_robin` or a fully qualified class name of a custom partitioner.
+  # Partitioner to use - can be `round_robin` or a fully qualified class name of a custom partitioner.
   config :partitioner, :validate => :string
   # The size of the TCP receive buffer to use when reading data
   config :receive_buffer_bytes, :validate => :number, :default => 32_768 # (32KB) Kafka default
@@ -405,7 +405,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   end
 
   def partitioner_class
-    return nil if partitioner.nil? || partitioner == 'uniform_sticky'
+    return nil if partitioner.nil?
     return 'org.apache.kafka.clients.producer.RoundRobinPartitioner' if partitioner == 'round_robin'
 
     raise LogStash::ConfigurationError, "unsupported partitioner: #{partitioner.inspect}" unless partitioner.include?('.')
