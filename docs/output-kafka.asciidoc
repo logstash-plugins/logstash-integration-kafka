@@ -349,7 +349,7 @@ The max time in milliseconds before a metadata refresh is forced.
 * Value type is <<string,string>>
 * There is no default value for this setting.
 
-By not setting this value, the plugin uses the default strategy provided by the Kafka client.
+By not setting this value, the plugin uses the built-in partitioning strategy provided by the Kafka client. Read more about the "partitioner.class" on the Kafka documentation.
 
 Available options are as follows:
 
