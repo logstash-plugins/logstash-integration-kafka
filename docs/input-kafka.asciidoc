@@ -423,7 +423,7 @@ Specifies the consumer group rebalance protocol used by the Kafka client.
 
 `classic` is the default protocol. During a rebalance, all consumer instances pause message processing until partition assignments are complete.
 
-`consumer` An incremental rebalance protocol introduced in Kafka 4. It avoids global synchronization barriers by only pausing partitions that are reassigned.
+`consumer` is an incremental rebalance protocol introduced in Kafka 4. It avoids global synchronization barriers by only pausing partitions that are reassigned.
 When using `consumer`, the following settings **cannot be configured**:
 `partition_assignment_strategy`, `heartbeat_interval_ms`, and `session_timeout_ms`.
 
