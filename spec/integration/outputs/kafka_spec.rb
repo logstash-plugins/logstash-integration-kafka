@@ -164,7 +164,7 @@ describe "outputs/kafka", :integration => true do
     let(:test_topic) { 'logstash_integration_topic3' }
 
     before :each do
-      config = base_config.merge("topic_id" => test_topic, "partitioner" => 'org.apache.kafka.clients.producer.UniformStickyPartitioner')
+      config = base_config.merge("topic_id" => test_topic, "partitioner" => 'org.apache.kafka.clients.producer.RoundRobinPartitioner')
       load_kafka_data(config) do # let's have a bit more (diverse) dataset
         num_events.times.collect do
           LogStash::Event.new.tap do |e|
@@ -212,7 +212,7 @@ describe "outputs/kafka", :integration => true do
 
   context 'setting partitioner' do
     let(:test_topic) { 'logstash_integration_partitioner_topic' }
-    let(:partitioner) { nil }
+    let(:partitioner) { 'round_robin' }
 
     before :each do
       @messages_offset = fetch_messages_from_all_partitions
@@ -221,13 +221,8 @@ describe "outputs/kafka", :integration => true do
       load_kafka_data(config)
     end
 
-    [ 'default', 'round_robin', 'uniform_sticky' ].each do |partitioner|
-      describe partitioner do
-        let(:partitioner) { partitioner }
-        it 'loads data' do
-          expect(fetch_messages_from_all_partitions - @messages_offset).to eql num_events
-        end
-      end
+    it 'loads data' do
+      expect(fetch_messages_from_all_partitions - @messages_offset).to eql num_events
     end
 
     def fetch_messages_from_all_partitions

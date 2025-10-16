@@ -5,10 +5,27 @@ env
 
 set -ex
 
-export KAFKA_VERSION=3.3.1
-./kafka_test_setup.sh
+# Define the Kafka:Confluent version pairs
+VERSIONS=(
+# "3.9.1:7.4.0"
+  "4.1.0:8.0.0"
+)
 
-bundle exec rspec -fd
-bundle exec rspec -fd --tag integration
+for pair in "${VERSIONS[@]}"; do
+  KAFKA_VERSION="${pair%%:*}"
+  CONFLUENT_VERSION="${pair##*:}"
 
-./kafka_test_teardown.sh
+  echo "=================================================="
+  echo " Testing with Kafka $KAFKA_VERSION / Confluent $CONFLUENT_VERSION"
+  echo "=================================================="
+
+  export KAFKA_VERSION
+  export CONFLUENT_VERSION
+
+  ./kafka_test_setup.sh
+
+  bundle exec rspec -fd
+  bundle exec rspec -fd --tag integration
+
+  ./kafka_test_teardown.sh
+done

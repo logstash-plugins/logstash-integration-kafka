@@ -101,7 +101,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   # This setting accomplishes this by adding a small amount of artificial delay—that is,
   # rather than immediately sending out a record the producer will wait for up to the given delay
   # to allow other records to be sent so that the sends can be batched together.
-  config :linger_ms, :validate => :number, :default => 0 # Kafka default
+  config :linger_ms, :validate => :number, :default => 5 # Kafka default
   # The maximum size of a request
   config :max_request_size, :validate => :number, :default => 1_048_576 # (1MB) Kafka default
   # The key for the message
@@ -110,7 +110,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   config :message_headers, :validate => :hash, :default => {}
   # the timeout setting for initial metadata request to fetch topic metadata.
   config :metadata_fetch_timeout_ms, :validate => :number, :default => 60_000
-  # Partitioner to use - can be `default`, `uniform_sticky`, `round_robin` or a fully qualified class name of a custom partitioner.
+  # Partitioner to use - can be `round_robin` or a fully qualified class name of a custom partitioner.
   config :partitioner, :validate => :string
   # The size of the TCP receive buffer to use when reading data
   config :receive_buffer_bytes, :validate => :number, :default => 32_768 # (32KB) Kafka default
@@ -369,8 +369,8 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
       props.put(kafka::LINGER_MS_CONFIG, linger_ms.to_s)
       props.put(kafka::MAX_REQUEST_SIZE_CONFIG, max_request_size.to_s)
       props.put(kafka::METADATA_MAX_AGE_CONFIG, metadata_max_age_ms.to_s) unless metadata_max_age_ms.nil?
-      unless partitioner.nil?
-        props.put(kafka::PARTITIONER_CLASS_CONFIG, partitioner = partitioner_class)
+      partitioner_class&.tap do |partitioner|
+        props.put(kafka::PARTITIONER_CLASS_CONFIG, partitioner)
         logger.debug('producer configured using partitioner', :partitioner_class => partitioner)
       end
       props.put(kafka::RECEIVE_BUFFER_CONFIG, receive_buffer_bytes.to_s) unless receive_buffer_bytes.nil?
@@ -405,19 +405,12 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   end
 
   def partitioner_class
-    case partitioner
-    when 'round_robin'
-      'org.apache.kafka.clients.producer.RoundRobinPartitioner'
-    when 'uniform_sticky'
-      'org.apache.kafka.clients.producer.UniformStickyPartitioner'
-    when 'default'
-      'org.apache.kafka.clients.producer.internals.DefaultPartitioner'
-    else
-      unless partitioner.index('.')
-        raise LogStash::ConfigurationError, "unsupported partitioner: #{partitioner.inspect}"
-      end
-      partitioner # assume a fully qualified class-name
-    end
+    return nil if partitioner.nil?
+    return 'org.apache.kafka.clients.producer.RoundRobinPartitioner' if partitioner == 'round_robin'
+
+    raise LogStash::ConfigurationError, "unsupported partitioner: #{partitioner.inspect}" unless partitioner.include?('.')
+
+    partitioner
   end
 
 end #class LogStash::Outputs::Kafka

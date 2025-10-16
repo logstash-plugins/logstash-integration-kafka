@@ -2,8 +2,8 @@
 :plugin: kafka
 :type: output
 :default_codec: plain
-:kafka_client: 3.9.1
-:kafka_client_doc: 39
+:kafka_client: 4.1.0
+:kafka_client_doc: 41
 
 ///////////////////////////////////////////
 START - GENERATED VARIABLES, DO NOT EDIT!
@@ -285,7 +285,7 @@ Serializer class for the key of the message
 ===== `linger_ms` 
 
   * Value type is <<number,number>>
-  * Default value is `0`
+  * Default value is `5`
 
 The producer groups together any records that arrive in between request
 transmissions into a single batched request. Normally this occurs only under
@@ -349,14 +349,11 @@ The max time in milliseconds before a metadata refresh is forced.
 * Value type is <<string,string>>
 * There is no default value for this setting.
 
-The default behavior is to hash the `message_key` of an event to get the partition.
-When no message key is present, the plugin picks a partition in a round-robin fashion.
+By not setting this value, the plugin uses the built-in partitioning strategy provided by the Kafka client. Read more about the "partitioner.class" on the Kafka documentation.
 
-Available options for choosing a partitioning strategy are as follows:
+Available option is as follows:
 
-* `default` use the default partitioner as described above
 * `round_robin` distributes writes to all partitions equally, regardless of `message_key`
-* `uniform_sticky` sticks to a partition for the duration of a batch than randomly picks a new one
 
 [id="plugins-{type}s-{plugin}-receive_buffer_bytes"]
 ===== `receive_buffer_bytes` 

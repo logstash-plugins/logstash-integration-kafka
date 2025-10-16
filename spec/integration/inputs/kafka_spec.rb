@@ -187,6 +187,83 @@ describe "inputs/kafka", :integration => true do
     end
   end
 
+  context 'setting group_protocol' do
+    let(:test_topic) { 'logstash_integration_partitioner_topic' }
+    let(:consumer_config) do
+      plain_config.merge(
+        "topics" => [test_topic],
+        'group_protocol' => group_protocol,
+        "partition_assignment_strategy" => partition_assignment_strategy,
+        "heartbeat_interval_ms" => heartbeat_interval_ms,
+        "session_timeout_ms" => session_timeout_ms
+      )
+    end
+    let(:group_protocol) { nil }
+    let(:partition_assignment_strategy) { nil }
+    let(:heartbeat_interval_ms) { LogStash::Inputs::Kafka.get_config().dig("heartbeat_interval_ms", :default) }
+    let(:session_timeout_ms) { LogStash::Inputs::Kafka.get_config().dig("session_timeout_ms", :default) }
+
+    describe "group_protocol = classic" do
+      let(:group_protocol) { 'classic' }
+
+      it 'passes register check' do
+        kafka_input = LogStash::Inputs::Kafka.new(consumer_config)
+        expect {
+          kafka_input.register
+        }.to_not raise_error
+
+        expect( kafka_input.instance_variable_get(:@heartbeat_interval_ms)).eql?(heartbeat_interval_ms)
+        expect( kafka_input.instance_variable_get(:@session_timeout_ms)).eql?(session_timeout_ms)
+      end
+    end
+
+    describe "group_protocol = consumer" do
+      let(:group_protocol) { 'consumer' }
+
+      describe "passes register check with supported config" do
+        it 'reset unsupported config to nil' do
+          kafka_input = LogStash::Inputs::Kafka.new(consumer_config)
+          expect {
+            kafka_input.register
+          }.to_not raise_error
+
+          expect( kafka_input.instance_variable_get(:@heartbeat_interval_ms)).to be_nil
+          expect( kafka_input.instance_variable_get(:@session_timeout_ms)).to be_nil
+        end
+      end
+
+      {
+        partition_assignment_strategy: 'range',
+        heartbeat_interval_ms: 2000,
+        session_timeout_ms: 6000
+      }.each do |config_key, config_value|
+        context "with unsupported config #{config_key}" do
+          let(config_key) { config_value }
+
+          it 'raises LogStash::ConfigurationError' do
+            kafka_input = LogStash::Inputs::Kafka.new(consumer_config)
+            expect {
+              kafka_input.register
+            }.to raise_error(LogStash::ConfigurationError, /group_protocol cannot be set to.*consumer.*/)
+          end
+        end
+      end
+
+      context "with valid config" do
+        let(:test_topic) { 'logstash_integration_topic_plain' }
+        let(:manual_commit_config) do
+          consumer_config.merge(
+            'enable_auto_commit' => 'false'
+          )
+        end
+        it 'consume data' do
+          queue = consume_messages(manual_commit_config, timeout: timeout_seconds, event_count: num_events)
+          expect(queue.length).to eq(num_events)
+        end
+      end
+    end
+  end
+
   context "static membership 'group.instance.id' setting" do
     let(:base_config) do
       {
@@ -486,7 +563,7 @@ describe "Deserializing with the schema registry", :integration => true do
     def delete_topic_if_exists(topic_name, user = nil, password = nil)
       props = java.util.Properties.new
       props.put(Java::org.apache.kafka.clients.admin.AdminClientConfig::BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
-      serdes_config = Java::io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig
+      serdes_config = Java::io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig
       unless user.nil?
         props.put(serdes_config::BASIC_AUTH_CREDENTIALS_SOURCE, 'USER_INFO')
         props.put(serdes_config::USER_INFO_CONFIG,  "#{user}:#{password}")
@@ -495,7 +572,7 @@ describe "Deserializing with the schema registry", :integration => true do
       topics_list = admin_client.listTopics().names().get()
       if topics_list.contains(topic_name)
         result = admin_client.deleteTopics([topic_name])
-        result.values.get(topic_name).get()
+        result.topicNameValues().get(topic_name).get()
       end
     end
 
@@ -503,7 +580,7 @@ describe "Deserializing with the schema registry", :integration => true do
       props = java.util.Properties.new
       config = org.apache.kafka.clients.producer.ProducerConfig
 
-      serdes_config = Java::io.confluent.kafka.serializers.AbstractKafkaAvroSerDeConfig
+      serdes_config = Java::io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig
       props.put(serdes_config::SCHEMA_REGISTRY_URL_CONFIG, "http://localhost:8081")
 
       props.put(config::BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
