@@ -6,7 +6,7 @@ set -ex
 if [ -n "${KAFKA_VERSION+1}" ]; then
   echo "KAFKA_VERSION is $KAFKA_VERSION"
 else
-   KAFKA_VERSION=3.4.1
+   KAFKA_VERSION=3.9.1
 fi
 
 export _JAVA_OPTIONS="-Djava.net.preferIPv4Stack=true"
@@ -17,7 +17,7 @@ mkdir build
 echo "Setup Kafka version $KAFKA_VERSION"
 if [ ! -e "kafka_2.13-$KAFKA_VERSION.tgz" ]; then
   echo "Kafka not present locally, downloading"
-  curl -s -o "kafka_2.13-$KAFKA_VERSION.tgz" "https://archive.apache.org/dist/kafka/$KAFKA_VERSION/kafka_2.13-$KAFKA_VERSION.tgz"
+  curl -s -o "kafka_2.13-$KAFKA_VERSION.tgz" "https://downloads.apache.org/kafka/$KAFKA_VERSION/kafka_2.13-$KAFKA_VERSION.tgz"
 fi
 cp kafka_2.13-$KAFKA_VERSION.tgz build/kafka.tgz
 mkdir build/kafka && tar xzf build/kafka.tgz -C build/kafka --strip-components 1

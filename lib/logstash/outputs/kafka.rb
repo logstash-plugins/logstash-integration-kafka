@@ -409,8 +409,10 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
     when 'round_robin'
       'org.apache.kafka.clients.producer.RoundRobinPartitioner'
     when 'uniform_sticky'
+      log_partitioner_warning(partitioner, 'UniformStickyPartitioner')
       'org.apache.kafka.clients.producer.UniformStickyPartitioner'
     when 'default'
+      log_partitioner_warning(partitioner, 'DefaultPartitioner')
       'org.apache.kafka.clients.producer.internals.DefaultPartitioner'
     else
       unless partitioner.index('.')
@@ -418,6 +420,12 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
       end
       partitioner # assume a fully qualified class-name
     end
+  end
+
+  def log_partitioner_warning(partitioner, class_name)
+    deprecation_logger.deprecated("Producer `partitioner` is configured with the deprecated option `#{partitioner}`. " \
+                  "#{class_name} is removed in kafka-client 4.0 and the `#{partitioner}` option will be removed in the plugin 12.0.0. "\
+                  'Please update your configuration to use `round_robin` or unset the option to use the build-in partitioning strategy. ')
   end
 
 end #class LogStash::Outputs::Kafka
