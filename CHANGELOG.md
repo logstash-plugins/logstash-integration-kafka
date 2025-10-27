@@ -1,3 +1,6 @@
+## 12.0.1
+  - Remove duplicated deprecation log entry [#208](https://github.com/logstash-plugins/logstash-integration-kafka/pull/208)
+
 ## 12.0.0
   - Update kafka client to 4.1.0 and transitive dependencies [#205](https://github.com/logstash-plugins/logstash-integration-kafka/pull/205)
     - Breaking Change: partitioner options `default` and `uniform_sticky` are removed

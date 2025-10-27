@@ -55,8 +55,7 @@ module LogStash module PluginMixins module Kafka
     def reassign_dns_lookup
       if @client_dns_lookup == "default"
         @client_dns_lookup = "use_all_dns_ips"
-        logger.warn("client_dns_lookup setting 'default' value is deprecated, forced to 'use_all_dns_ips', please update your configuration")
-        deprecation_logger.deprecated("Deprecated value `default` for `client_dns_lookup` option; use `use_all_dns_ips` instead.")
+        deprecation_logger.deprecated("Deprecated value `default` for `client_dns_lookup` option; please update your configuration to use `use_all_dns_ips` instead.")
       end
     end
 
