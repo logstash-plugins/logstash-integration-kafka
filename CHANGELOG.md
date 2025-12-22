@@ -1,3 +1,6 @@
+## 12.0.2
+  - Upgrade lz4 dependency [#212](https://github.com/logstash-plugins/logstash-integration-kafka/pull/212)
+
 ## 12.0.1
   - Remove duplicated deprecation log entry [#208](https://github.com/logstash-plugins/logstash-integration-kafka/pull/208)
 
