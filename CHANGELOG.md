@@ -1,3 +1,6 @@
+## 11.8.1
+  - Upgrade lz4 dependency [#213](https://github.com/logstash-plugins/logstash-integration-kafka/pull/213)
+
 ## 11.8.0
   - Deprecate partitioner `default` and `uniform_sticky` options [#206](https://github.com/logstash-plugins/logstash-integration-kafka/pull/206)
       Both options are deprecated in Kafka client 3 and will be removed in the plugin 12.0.0.

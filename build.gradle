@@ -42,6 +42,16 @@ java {
 String confluentKafkaVersion = '7.9.1'
 String apacheKafkaVersion = '3.9.1'
 
+configurations.configureEach {
+    resolutionStrategy {
+        capabilitiesResolution {
+            withCapability("org.lz4:lz4-java") {
+                select(candidates.find { ((ModuleComponentIdentifier) it.id).group == "at.yawk.lz4" })
+            }
+        }
+    }
+}
+
 repositories {
     mavenCentral()
     maven {
@@ -68,7 +78,7 @@ dependencies {
     // slf4j, zstd, lz4-java, snappy are dependencies from "kafka-clients"
     implementation 'org.slf4j:slf4j-api:1.7.36'
     implementation 'com.github.luben:zstd-jni:1.5.6-8'
-    implementation 'org.lz4:lz4-java:1.8.0'
+    implementation 'at.yawk.lz4:lz4-java:1.10.1'
     implementation 'org.xerial.snappy:snappy-java:1.1.10.7'
 }
 task generateGemJarRequiresFile {
