@@ -39,7 +39,7 @@ java {
 
 // given https://docs.confluent.io/current/installation/versions-interoperability.html matrix
 // Confluent Platform 7.9.x is Apache Kafka 3.9.x
-String confluentKafkaVersion = '8.0.0'
+String confluentKafkaVersion = '8.1.1'
 String apacheKafkaVersion = '4.1.0'
 
 configurations.configureEach {
@@ -69,17 +69,17 @@ dependencies {
         exclude group: 'org.apache.kafka', module:'kafka-clients'
     }
     // dependency of kafka-avro-serializer
-    implementation 'org.apache.avro:avro:1.11.4'
+    implementation 'org.apache.avro:avro:1.12.1'
     // dependency of kafka-avro-serializer
     implementation("io.confluent:kafka-schema-registry-client:${confluentKafkaVersion}") {
         exclude group: 'org.apache.kafka', module:'kafka-clients'
     }
     // dependency of kafka-avro-serializer. jackson-datatype-jdk8 is a dependency of kafka-schema-registry-client
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.16.0'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.20.0'
 
     implementation "org.apache.kafka:kafka-clients:${apacheKafkaVersion}"
     // slf4j, zstd, lz4-java, and snappy are dependencies from "kafka-clients"
-    implementation 'org.slf4j:slf4j-api:1.7.36'
+    implementation 'org.slf4j:slf4j-api:2.0.17'
     implementation 'com.github.luben:zstd-jni:1.5.6-10'
     implementation 'at.yawk.lz4:lz4-java:1.10.1'
     implementation 'org.xerial.snappy:snappy-java:1.1.10.7'
