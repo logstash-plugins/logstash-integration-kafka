@@ -1,5 +1,6 @@
 import java.nio.file.Files
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 /*
  * Licensed to Elasticsearch under one or more contributor
  * license agreements. See the NOTICE file distributed with
@@ -39,7 +40,7 @@ java {
 
 // given https://docs.confluent.io/current/installation/versions-interoperability.html matrix
 // Confluent Platform 7.9.x is Apache Kafka 3.9.x
-String confluentKafkaVersion = '8.0.0'
+String confluentKafkaVersion = '8.1.1'
 String apacheKafkaVersion = '4.1.0'
 
 configurations.configureEach {
@@ -100,12 +101,14 @@ task generateGemJarRequiresFile {
 task vendor {
     doLast {
         String vendorPathPrefix = "vendor/jar-dependencies"
-        configurations.runtimeClasspath.allDependencies.each { dep ->
-            File f = configurations.runtimeClasspath.filter { it.absolutePath.contains("${dep.group}/${dep.name}/${dep.version}") }.singleFile
-            String groupPath = dep.group.replaceAll('\\.', '/')
-            File newJarFile = file("${vendorPathPrefix}/${groupPath}/${dep.name}/${dep.version}/${dep.name}-${dep.version}.jar")
-            newJarFile.mkdirs()
-            Files.copy(f.toPath(), newJarFile.toPath(), REPLACE_EXISTING)
+        configurations.runtimeClasspath.incoming.artifacts.each { artifact ->
+            def componentId = artifact.id.componentIdentifier
+            if (componentId instanceof ModuleComponentIdentifier) {
+                String groupPath = componentId.group.replaceAll('\\.', '/')
+                File newJarFile = file("${vendorPathPrefix}/${groupPath}/${componentId.module}/${componentId.version}/${componentId.module}-${componentId.version}.jar")
+                newJarFile.mkdirs()
+                Files.copy(artifact.file.toPath(), newJarFile.toPath(), REPLACE_EXISTING)
+            }
         }
     }
 }
