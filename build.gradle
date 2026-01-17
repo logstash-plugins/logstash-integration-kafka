@@ -74,8 +74,10 @@ dependencies {
     implementation("io.confluent:kafka-schema-registry-client:${confluentKafkaVersion}") {
         exclude group: 'org.apache.kafka', module:'kafka-clients'
     }
-    // dependency of kafka-avro-serializer. jackson-datatype-jdk8 is a dependency of kafka-schema-registry-client
+    // dependency of kafka-avro-serializer. jackson-datatype-jdk8, httpclient5 and core5 are dependencies of kafka-schema-registry-client
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.20.0'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.5'
+    implementation 'org.apache.httpcomponents.core5:httpcore5:5.3.4'
 
     implementation "org.apache.kafka:kafka-clients:${apacheKafkaVersion}"
     // slf4j, zstd, lz4-java, and snappy are dependencies from "kafka-clients"
