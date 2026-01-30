@@ -1,3 +1,6 @@
+## 12.0.4
+  - Re-packaging the plugin [#221](https://github.com/logstash-plugins/logstash-integration-kafka/pull/221)
+
 ## 12.0.3
   - Upgrade `kafka-avro-serializer` dependency [#215](https://github.com/logstash-plugins/logstash-integration-kafka/pull/215)
 
