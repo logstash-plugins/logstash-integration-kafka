@@ -12,3 +12,4 @@ build/
 vendor
 *.jar
 tls_repository/
+lib/logstash-integration-kafka_jars.rb
