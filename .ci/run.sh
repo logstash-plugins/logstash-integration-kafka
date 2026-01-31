@@ -5,11 +5,8 @@ env
 
 set -ex
 
-# Define the Kafka:Confluent version pairs
-VERSIONS=(
-# "3.9.1:7.4.0"
-  "4.1.0:8.1.1"
-)
+export KAFKA_VERSION=3.9.1
+./kafka_test_setup.sh
 
 bundle exec rspec -fd
 bundle exec rspec -fd --tag integration
