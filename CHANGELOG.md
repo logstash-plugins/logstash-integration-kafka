@@ -1,3 +1,6 @@
+## 11.8.3
+  - Re-packaging the plugin [#223](https://github.com/logstash-plugins/logstash-integration-kafka/pull/223)
+
 ## 11.8.2
   - Upgrade transitive `org.apache.commons:commons-lang3` dependency [#217](https://github.com/logstash-plugins/logstash-integration-kafka/pull/217)
 
