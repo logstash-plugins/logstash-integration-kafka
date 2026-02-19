@@ -41,7 +41,7 @@ java {
 
 // given https://docs.confluent.io/current/installation/versions-interoperability.html matrix
 // Confluent Platform 7.9.x is Apache Kafka 3.9.x
-String confluentKafkaVersion = '7.9.1'
+String confluentKafkaVersion = '7.9.3'
 String apacheKafkaVersion = '3.9.1'
 
 configurations.configureEach {
