@@ -264,6 +264,22 @@ describe LogStash::Inputs::Kafka do
 
       expect(subject.send(:create_consumer, 'test-client-2', 'group_instance_id')).to be kafka_client
     end
+
+    context 'with sasl_jaas_config' do
+      let(:jaas_config_value) { 'username="user" password="secret";' }
+      let(:config) { super().merge('sasl_jaas_config' => jaas_config_value) }
+
+      it "sasl_jaas_config.value returns the original string" do
+        subject.register
+        expect(subject.sasl_jaas_config.value).to eq(jaas_config_value)
+      end
+
+      it "sasl_jaas_config.inspect does not expose the password" do
+        subject.register
+        expect(subject.sasl_jaas_config.inspect).not_to include('secret')
+        expect(subject.sasl_jaas_config.inspect).to include('<password>')
+      end
+    end
   end
 
   describe "schema registry" do
