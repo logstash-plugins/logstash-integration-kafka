@@ -277,7 +277,7 @@ describe LogStash::Inputs::Kafka do
       it "sasl_jaas_config.inspect does not expose the password" do
         subject.register
         expect(subject.sasl_jaas_config.inspect).not_to include('secret')
-        expect(subject.sasl_jaas_config.inspect).to include('<password>')
+        expect(subject.sasl_jaas_config.inspect).to eq('<password>')
       end
     end
   end
