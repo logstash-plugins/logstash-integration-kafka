@@ -266,26 +266,39 @@ describe LogStash::Inputs::Kafka do
     end
 
     context 'with sasl_jaas_config' do
-      let(:jaas_config_value) {
-        <<~JAAS
-          listener.name.sasl_ssl.plain.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required
-            username="admin"
-            password="admin-secret"
-            user_admin="admin-secret"
-            user_alice="alice-secret";
-        JAAS
-      }
-      let(:config) { super().merge('sasl_jaas_config' => jaas_config_value) }
+      shared_examples 'sasl_jaas_config password handling' do
+        it "sasl_jaas_config.value returns the original string" do
+          subject.register
+          expect(subject.sasl_jaas_config.value).to eq(jaas_config_value)
+        end
 
-      it "sasl_jaas_config.value returns the original string" do
-        subject.register
-        expect(subject.sasl_jaas_config.value).to eq(jaas_config_value)
+        it "sasl_jaas_config.inspect does not expose the password" do
+          subject.register
+          expect(subject.sasl_jaas_config.inspect).not_to include('admin-secret')
+          expect(subject.sasl_jaas_config.inspect).to eq('<password>')
+        end
       end
 
-      it "sasl_jaas_config.inspect does not expose the password" do
-        subject.register
-        expect(subject.sasl_jaas_config.inspect).not_to include('admin-secret')
-        expect(subject.sasl_jaas_config.inspect).to eq('<password>')
+      context 'with single-line config' do
+        let(:jaas_config_value) { 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret";' }
+        let(:config) { super().merge('sasl_jaas_config' => jaas_config_value) }
+
+        include_examples 'sasl_jaas_config password handling'
+      end
+
+      context 'with multiline config' do
+        let(:jaas_config_value) {
+          <<~JAAS
+            org.apache.kafka.common.security.plain.PlainLoginModule required
+              username="admin"
+              password="admin-secret"
+              user_admin="admin-secret"
+              user_alice="alice-secret";
+          JAAS
+        }
+        let(:config) { super().merge('sasl_jaas_config' => jaas_config_value) }
+
+        include_examples 'sasl_jaas_config password handling'
       end
     end
   end

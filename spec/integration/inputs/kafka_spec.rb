@@ -273,7 +273,28 @@ describe "inputs/kafka", :integration => true do
       }
     end
 
-    context 'with multiline sasl_jaas_config' do
+    shared_examples 'sasl_jaas_config password handling' do
+      it 'stores sasl_jaas_config as password type' do
+        kafka_input = LogStash::Inputs::Kafka.new(consumer_config)
+        expect(kafka_input.sasl_jaas_config).to be_a(LogStash::Util::Password)
+        expect(kafka_input.sasl_jaas_config.value).to eq(jaas_config_value)
+      end
+
+      it 'does not expose password in inspect output' do
+        kafka_input = LogStash::Inputs::Kafka.new(consumer_config)
+        expect(kafka_input.sasl_jaas_config.inspect).to eq('<password>')
+        expect(kafka_input.sasl_jaas_config.inspect).not_to include('admin-secret')
+      end
+    end
+
+    context 'with single-line config' do
+      let(:jaas_config_value) { 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret";' }
+      let(:consumer_config) { base_config.merge('sasl_jaas_config' => jaas_config_value) }
+
+      include_examples 'sasl_jaas_config password handling'
+    end
+
+    context 'with multiline config' do
       let(:jaas_config_value) do
         <<~JAAS
           org.apache.kafka.common.security.plain.PlainLoginModule required
@@ -285,18 +306,7 @@ describe "inputs/kafka", :integration => true do
       end
       let(:consumer_config) { base_config.merge('sasl_jaas_config' => jaas_config_value) }
 
-      it 'stores sasl_jaas_config as password type and preserves formatting' do
-        kafka_input = LogStash::Inputs::Kafka.new(consumer_config)
-        expect(kafka_input.sasl_jaas_config).to be_a(LogStash::Util::Password)
-        expect(kafka_input.sasl_jaas_config.value).to eq(jaas_config_value)
-      end
-
-      it 'does not expose any password in inspect output' do
-        kafka_input = LogStash::Inputs::Kafka.new(consumer_config)
-        expect(kafka_input.sasl_jaas_config.inspect).to eq('<password>')
-        expect(kafka_input.sasl_jaas_config.inspect).not_to include('admin-secret')
-        expect(kafka_input.sasl_jaas_config.inspect).not_to include('alice-secret')
-      end
+      include_examples 'sasl_jaas_config password handling'
     end
   end
 
