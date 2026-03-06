@@ -40,7 +40,7 @@ module LogStash module PluginMixins module Kafka
       end
 
       props.put("sasl.kerberos.service.name", sasl_kerberos_service_name) unless sasl_kerberos_service_name.nil?
-      props.put("sasl.jaas.config", sasl_jaas_config) unless sasl_jaas_config.nil?
+      props.put("sasl.jaas.config", sasl_jaas_config.value) unless sasl_jaas_config.nil?
       props.put("sasl.client.callback.handler.class", sasl_client_callback_handler_class) unless sasl_client_callback_handler_class.nil?
       props.put("sasl.oauthbearer.token.endpoint.url", sasl_oauthbearer_token_endpoint_url) unless sasl_oauthbearer_token_endpoint_url.nil?
       props.put("sasl.oauthbearer.scope.claim.name", sasl_oauthbearer_scope_claim_name) unless sasl_oauthbearer_scope_claim_name.nil?
