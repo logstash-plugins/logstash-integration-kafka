@@ -264,6 +264,43 @@ describe "inputs/kafka", :integration => true do
     end
   end
 
+  # ToDo: add tests for other sasl config options as well (https://github.com/logstash-plugins/logstash-integration-kafka/issues/234)
+  context 'setting sasl_jaas_config' do
+    let(:base_config) do
+      {
+        'topics' => ['logstash_integration_topic_plain'],
+        'group_id' => rand(36**8).to_s(36),
+      }
+    end
+
+    context 'with multiline sasl_jaas_config' do
+      let(:jaas_config_value) do
+        <<~JAAS
+          org.apache.kafka.common.security.plain.PlainLoginModule required
+            username="admin"
+            password="admin-secret"
+            user_admin="admin-secret"
+            user_alice="alice-secret";
+        JAAS
+      end
+      let(:consumer_config) { base_config.merge('sasl_jaas_config' => jaas_config_value) }
+
+      it 'stores sasl_jaas_config as password type and preserves formatting' do
+        kafka_input = LogStash::Inputs::Kafka.new(consumer_config)
+        expect(kafka_input.sasl_jaas_config).to be_a(LogStash::Util::Password)
+        expect(kafka_input.sasl_jaas_config.value).to eq(jaas_config_value)
+      end
+
+      it 'does not expose any password in inspect output' do
+        kafka_input = LogStash::Inputs::Kafka.new(consumer_config)
+        expect(kafka_input.sasl_jaas_config.inspect).to eq('<password>')
+        expect(kafka_input.sasl_jaas_config.inspect).not_to include('admin-secret')
+        expect(kafka_input.sasl_jaas_config.inspect).not_to include('alice-secret')
+      end
+    end
+  end
+
+
   context "static membership 'group.instance.id' setting" do
     let(:base_config) do
       {
