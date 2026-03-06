@@ -1,3 +1,6 @@
+## 12.0.5
+  - Redact `sasl_jaas_config` to prevent credentials from appearing in debug logs. [#232](https://github.com/logstash-plugins/logstash-integration-kafka/pull/232)
+
 ## 12.0.4
   - Re-packaging the plugin [#221](https://github.com/logstash-plugins/logstash-integration-kafka/pull/221)
 

@@ -6,7 +6,7 @@ set -ex
 if [ -n "${KAFKA_VERSION+1}" ]; then
   echo "KAFKA_VERSION is $KAFKA_VERSION"
 else
-   KAFKA_VERSION=4.1.0
+   KAFKA_VERSION=4.2.0
 fi
 
 KAFKA_MAJOR_VERSION="${KAFKA_VERSION%%.*}"
