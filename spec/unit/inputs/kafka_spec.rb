@@ -264,6 +264,43 @@ describe LogStash::Inputs::Kafka do
 
       expect(subject.send(:create_consumer, 'test-client-2', 'group_instance_id')).to be kafka_client
     end
+
+    context 'with sasl_jaas_config' do
+      shared_examples 'sasl_jaas_config password handling' do
+        it "sasl_jaas_config.value returns the original string" do
+          subject.register
+          expect(subject.sasl_jaas_config.value).to eq(jaas_config_value)
+        end
+
+        it "sasl_jaas_config.inspect does not expose the password" do
+          subject.register
+          expect(subject.sasl_jaas_config.inspect).not_to include('admin-secret')
+          expect(subject.sasl_jaas_config.inspect).to eq('<password>')
+        end
+      end
+
+      context 'with single-line config' do
+        let(:jaas_config_value) { 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret";' }
+        let(:config) { super().merge('sasl_jaas_config' => jaas_config_value) }
+
+        include_examples 'sasl_jaas_config password handling'
+      end
+
+      context 'with multiline config' do
+        let(:jaas_config_value) {
+          <<~JAAS
+            org.apache.kafka.common.security.plain.PlainLoginModule required
+              username="admin"
+              password="admin-secret"
+              user_admin="admin-secret"
+              user_alice="alice-secret";
+          JAAS
+        }
+        let(:config) { super().merge('sasl_jaas_config' => jaas_config_value) }
+
+        include_examples 'sasl_jaas_config password handling'
+      end
+    end
   end
 
   describe "schema registry" do

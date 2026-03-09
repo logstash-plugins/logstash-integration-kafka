@@ -6,7 +6,7 @@ set -ex
 if [ -n "${KAFKA_VERSION+1}" ]; then
   echo "KAFKA_VERSION is $KAFKA_VERSION"
 else
-   KAFKA_VERSION=3.9.1
+   KAFKA_VERSION=3.9.2
 fi
 
 export _JAVA_OPTIONS="-Djava.net.preferIPv4Stack=true"
