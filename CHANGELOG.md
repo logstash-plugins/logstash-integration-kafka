@@ -1,5 +1,5 @@
 ## 11.8.5
-- Redact `sasl_jaas_config` to prevent credentials from appearing in debug logs. [#237](https://github.com/logstash-plugins/logstash-integration-kafka/pull/237)
+  - Redact `sasl_jaas_config` to prevent credentials from appearing in debug logs. [#237](https://github.com/logstash-plugins/logstash-integration-kafka/pull/237)
 
 ## 11.8.4
   - Upgrade kafka-avro-serializer dependency [#225](https://github.com/logstash-plugins/logstash-integration-kafka/pull/225)
