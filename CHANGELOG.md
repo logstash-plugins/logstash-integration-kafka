@@ -1,3 +1,6 @@
+## 12.0.6
+  - [DOC] Add info about Kafka timestamp behavior [#240](https://github.com/logstash-plugins/logstash-integration-kafka/pull/240)
+
 ## 12.0.5
   - Redact `sasl_jaas_config` to prevent credentials from appearing in debug logs. [#232](https://github.com/logstash-plugins/logstash-integration-kafka/pull/232)
 
