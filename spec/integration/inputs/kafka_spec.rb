@@ -50,6 +50,11 @@ describe "inputs/kafka", :integration => true do
     { 'topics' => ['logstash_integration_topic_plain'], 'group_id' => group_id_5,
       'auto_offset_reset' => 'earliest', 'enable_auto_commit' => 'false' }
   end
+  let(:sasl_config) do
+    { 'topics' => ['logstash_integration_sasl_topic'], 'group_id' => group_id_6,
+      'bootstrap_servers' => 'localhost:9094',
+      'auto_offset_reset' => 'earliest',  'security_protocol' => 'SASL_PLAINTEXT' }
+  end
   let(:timeout_seconds) { 30 }
   let(:num_events) { 103 }
 
@@ -264,51 +269,48 @@ describe "inputs/kafka", :integration => true do
     end
   end
 
-  # ToDo: add tests for other sasl config options as well (https://github.com/logstash-plugins/logstash-integration-kafka/issues/234)
-  context 'setting sasl_jaas_config' do
-    let(:base_config) do
-      {
-        'topics' => ['logstash_integration_topic_plain'],
-        'group_id' => rand(36**8).to_s(36),
-      }
-    end
-
-    shared_examples 'sasl_jaas_config password handling' do
-      it 'stores sasl_jaas_config as password type' do
-        kafka_input = LogStash::Inputs::Kafka.new(consumer_config)
-        expect(kafka_input.sasl_jaas_config).to be_a(LogStash::Util::Password)
-        expect(kafka_input.sasl_jaas_config.value).to eq(jaas_config_value)
-      end
-
-      it 'does not expose password in inspect output' do
-        kafka_input = LogStash::Inputs::Kafka.new(consumer_config)
-        expect(kafka_input.sasl_jaas_config.inspect).to eq('<password>')
-        expect(kafka_input.sasl_jaas_config.inspect).not_to include('admin-secret')
+  context 'SASL authentication' do
+    shared_examples 'consumes messages over SASL_PLAINTEXT' do
+      it 'authenticates and consumes all messages' do
+        queue = consume_messages(consumer_config, timeout: timeout_seconds, event_count: num_events)
+        expect(queue.length).to eq(num_events)
       end
     end
 
-    context 'with single-line config' do
-      let(:jaas_config_value) { 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret";' }
-      let(:consumer_config) { base_config.merge('sasl_jaas_config' => jaas_config_value) }
+    context 'with PLAIN mechanism' do
+      let(:consumer_config) do
+        sasl_config.merge(
+          'sasl_mechanism' => 'PLAIN',
+          'sasl_jaas_config' => 'org.apache.kafka.common.security.plain.PlainLoginModule required username="logstash" password="logstash-secret";',
+        )
+      end
 
-      include_examples 'sasl_jaas_config password handling'
+      include_examples 'consumes messages over SASL_PLAINTEXT'
     end
 
-    context 'with multiline config' do
-      let(:jaas_config_value) do
-        <<~JAAS
-          org.apache.kafka.common.security.plain.PlainLoginModule required
-            username="admin"
-            password="admin-secret"
-            user_admin="admin-secret"
-            user_alice="alice-secret";
-        JAAS
+    context 'with SCRAM-SHA-256 mechanism' do
+      let(:consumer_config) do
+        sasl_config.merge(
+          'sasl_mechanism' => 'SCRAM-SHA-256',
+          'sasl_jaas_config' => 'org.apache.kafka.common.security.scram.ScramLoginModule required username="logstash" password="logstash-secret";',
+        )
       end
-      let(:consumer_config) { base_config.merge('sasl_jaas_config' => jaas_config_value) }
 
-      include_examples 'sasl_jaas_config password handling'
+      include_examples 'consumes messages over SASL_PLAINTEXT'
+    end
+
+    context 'with SCRAM-SHA-512 mechanism' do
+      let(:consumer_config) do
+        sasl_config.merge(
+          'sasl_mechanism' => 'SCRAM-SHA-512',
+          'sasl_jaas_config' => 'org.apache.kafka.common.security.scram.ScramLoginModule required username="logstash" password="logstash-secret";',
+        )
+      end
+
+      include_examples 'consumes messages over SASL_PLAINTEXT'
     end
   end
+
 
 
   context "static membership 'group.instance.id' setting" do

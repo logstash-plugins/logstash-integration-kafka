@@ -39,9 +39,44 @@ else
     --ignore-formatted \
     --standalone
 fi
+
+echo "Configuring SASL_PLAINTEXT listener on port 9094"
+# Add SASL configuration to server.properties (using inline sasl.jaas.config)
+cat >> build/kafka/config/server.properties << EOF
+
+# SASL Configuration
+listeners=PLAINTEXT://:9092,CONTROLLER://:9093,SASL_PLAINTEXT://:9094
+advertised.listeners=PLAINTEXT://localhost:9092,SASL_PLAINTEXT://localhost:9094
+listener.security.protocol.map=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,SASL_PLAINTEXT:SASL_PLAINTEXT
+
+# Enable multiple SASL mechanisms
+sasl.enabled.mechanisms=PLAIN,SCRAM-SHA-256,SCRAM-SHA-512
+sasl.mechanism.inter.broker.protocol=PLAIN
+
+# JAAS config for PLAIN mechanism
+listener.name.sasl_plaintext.plain.sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required \\
+    username="admin" \\
+    password="admin-secret" \\
+    user_admin="admin-secret" \\
+    user_logstash="logstash-secret";
+
+# JAAS config for SCRAM mechanisms (will be configured via kafka-configs)
+listener.name.sasl_plaintext.scram-sha-256.sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required \\
+    username="admin" \\
+    password="admin-secret";
+
+listener.name.sasl_plaintext.scram-sha-512.sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required \\
+    username="admin" \\
+    password="admin-secret";
+EOF
+
 echo "Starting Kafka broker"
 build/kafka/bin/kafka-server-start.sh -daemon "build/kafka/config/server.properties" --override advertised.host.name=127.0.0.1 --override log.dirs="${PWD}/build/kafka-logs"
 sleep 10
+
+echo "Creating SCRAM credentials for logstash user"
+build/kafka/bin/kafka-configs.sh --bootstrap-server localhost:9092 --alter --add-config 'SCRAM-SHA-256=[iterations=8192,password=logstash-secret]' --entity-type users --entity-name logstash
+build/kafka/bin/kafka-configs.sh --bootstrap-server localhost:9092 --alter --add-config 'SCRAM-SHA-512=[iterations=8192,password=logstash-secret]' --entity-type users --entity-name logstash
 
 echo "Setup Confluent Platform"
 # check if CONFLUENT_VERSION env var is set
@@ -99,9 +134,11 @@ build/kafka/bin/kafka-topics.sh --create --partitions 1 --replication-factor 1 -
 build/kafka/bin/kafka-topics.sh --create --partitions 1 --replication-factor 1 --topic logstash_integration_zstd_topic --bootstrap-server localhost:9092
 build/kafka/bin/kafka-topics.sh --create --partitions 3 --replication-factor 1 --topic logstash_integration_partitioner_topic --bootstrap-server localhost:9092
 build/kafka/bin/kafka-topics.sh --create --partitions 3 --replication-factor 1 --topic logstash_integration_static_membership_topic --bootstrap-server localhost:9092
+build/kafka/bin/kafka-topics.sh --create --partitions 3 --replication-factor 1 --topic logstash_integration_sasl_topic --bootstrap-server localhost:9092
 curl -s -o build/apache_logs.txt https://s3.amazonaws.com/data.elasticsearch.org/apache_logs/apache_logs.txt
 cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_integration_topic_plain --bootstrap-server localhost:9092
 cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_integration_topic_snappy --bootstrap-server localhost:9092 --compression-codec snappy
 cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_integration_topic_lz4 --bootstrap-server localhost:9092 --compression-codec lz4
+cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_integration_sasl_topic --bootstrap-server localhost:9092
 
 echo "Setup complete, running specs"
