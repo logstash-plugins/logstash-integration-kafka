@@ -55,6 +55,13 @@ describe "inputs/kafka", :integration => true do
       'bootstrap_servers' => 'localhost:9094',
       'auto_offset_reset' => 'earliest',  'security_protocol' => 'SASL_PLAINTEXT' }
   end
+  let(:sasl_ssl_config) do
+    { 'topics' => ['logstash_integration_sasl_topic'], 'group_id' => group_id_6,
+      'bootstrap_servers' => 'localhost:9095',
+      'auto_offset_reset' => 'earliest', 'security_protocol' => 'SASL_SSL',
+      'ssl_truststore_location' => File.join(Dir.pwd, 'tls_repository/clienttruststore.jks'),
+      'ssl_truststore_password' => 'changeit' }
+  end
   let(:timeout_seconds) { 30 }
   let(:num_events) { 103 }
 
@@ -270,48 +277,61 @@ describe "inputs/kafka", :integration => true do
   end
 
   context 'SASL authentication' do
-    shared_examples 'consumes messages over SASL_PLAINTEXT' do
+    shared_examples 'consumes all messages' do
       it 'authenticates and consumes all messages' do
         queue = consume_messages(consumer_config, timeout: timeout_seconds, event_count: num_events)
         expect(queue.length).to eq(num_events)
       end
     end
 
-    context 'with PLAIN mechanism' do
-      let(:consumer_config) do
-        sasl_config.merge(
-          'sasl_mechanism' => 'PLAIN',
-          'sasl_jaas_config' => 'org.apache.kafka.common.security.plain.PlainLoginModule required username="logstash" password="logstash-secret";',
-        )
+    context 'over SASL_PLAINTEXT' do
+      context 'with PLAIN mechanism' do
+        let(:consumer_config) do
+          sasl_config.merge(
+            'sasl_mechanism' => 'PLAIN',
+            'sasl_jaas_config' => 'org.apache.kafka.common.security.plain.PlainLoginModule required username="logstash" password="logstash-secret";',
+          )
+        end
+
+        include_examples 'consumes all messages'
       end
 
-      include_examples 'consumes messages over SASL_PLAINTEXT'
+      context 'with SCRAM-SHA-256 mechanism' do
+        let(:consumer_config) do
+          sasl_config.merge(
+            'sasl_mechanism' => 'SCRAM-SHA-256',
+            'sasl_jaas_config' => 'org.apache.kafka.common.security.scram.ScramLoginModule required username="logstash" password="logstash-secret";',
+          )
+        end
+
+        include_examples 'consumes all messages'
+      end
+
+      context 'with SCRAM-SHA-512 mechanism' do
+        let(:consumer_config) do
+          sasl_config.merge(
+            'sasl_mechanism' => 'SCRAM-SHA-512',
+            'sasl_jaas_config' => 'org.apache.kafka.common.security.scram.ScramLoginModule required username="logstash" password="logstash-secret";',
+          )
+        end
+
+        include_examples 'consumes all messages'
+      end
     end
 
-    context 'with SCRAM-SHA-256 mechanism' do
-      let(:consumer_config) do
-        sasl_config.merge(
-          'sasl_mechanism' => 'SCRAM-SHA-256',
-          'sasl_jaas_config' => 'org.apache.kafka.common.security.scram.ScramLoginModule required username="logstash" password="logstash-secret";',
-        )
+    context 'over SASL_SSL' do
+      context 'with PLAIN mechanism' do
+        let(:consumer_config) do
+          sasl_ssl_config.merge(
+            'sasl_mechanism' => 'PLAIN',
+            'sasl_jaas_config' => 'org.apache.kafka.common.security.plain.PlainLoginModule required username="logstash" password="logstash-secret";',
+          )
+        end
+
+        include_examples 'consumes all messages'
       end
-
-      include_examples 'consumes messages over SASL_PLAINTEXT'
-    end
-
-    context 'with SCRAM-SHA-512 mechanism' do
-      let(:consumer_config) do
-        sasl_config.merge(
-          'sasl_mechanism' => 'SCRAM-SHA-512',
-          'sasl_jaas_config' => 'org.apache.kafka.common.security.scram.ScramLoginModule required username="logstash" password="logstash-secret";',
-        )
-      end
-
-      include_examples 'consumes messages over SASL_PLAINTEXT'
     end
   end
-
-
 
   context "static membership 'group.instance.id' setting" do
     let(:base_config) do
