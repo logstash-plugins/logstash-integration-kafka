@@ -1,3 +1,6 @@
+## 11.8.7
+  - Upgrade Avro dependency to 1.11.5 [#242](https://github.com/logstash-plugins/logstash-integration-kafka/pull/242)
+
 ## 11.8.6
   - [DOC] Add info about Kafka timestamp behavior  [#241](https://github.com/logstash-plugins/logstash-integration-kafka/pull/241)
 
