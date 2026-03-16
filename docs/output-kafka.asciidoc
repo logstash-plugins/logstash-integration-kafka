@@ -81,7 +81,7 @@ This behavior affects Kafka’s retention policy.
 For example, if a Logstash event was created two weeks ago and Kafka retention is set to seven days, then when the message arrives in Kafka today it may be discarded immediately, because its timestamp is older than seven days.
 +
 You can change this behavior by setting timestamps on message arrival instead.
-The message is not discarded but kept for 7 more days. Set `log.message.timestamp.type` to `LogAppendTime` (default `CreateTime`) in the Kafka configuration.
+  The message is not discarded but kept for 7 more days. Set `log.message.timestamp.type` to `LogAppendTime` (default `CreateTime`) in your Kafka configuration.
 ****
 
 [id="plugins-{type}s-{plugin}-aws_msk_iam_auth"]
