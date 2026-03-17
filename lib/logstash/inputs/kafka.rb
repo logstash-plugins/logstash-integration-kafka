@@ -75,6 +75,8 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   #
   # * earliest: automatically reset the offset to the earliest offset
   # * latest: automatically reset the offset to the latest offset
+  # * by_duration:<duration>: automatically reset the offset to a configured duration from the current
+  #   timestamp (ISO 8601 format, e.g. by_duration:PT1H). Available since Apache Kafka 4.0.0.
   # * none: throw exception to the consumer if no previous offset is found for the consumer's group
   # * anything else: throw exception to the consumer.
   config :auto_offset_reset, :validate => :string
