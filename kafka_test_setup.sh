@@ -39,9 +39,25 @@ else
     --ignore-formatted \
     --standalone
 fi
+
+echo "Setting up TLS keystores and truststore"
+rm -Rf tls_repository
+mkdir tls_repository
+./setup_keystore_and_truststore.sh
+
+echo "Configuring SASL_PLAINTEXT listener on port 9094 and SASL_SSL listener on port 9095"
+cat spec/fixtures/kafka_sasl_config.properties >> build/kafka/config/server.properties
+echo "ssl.keystore.location=${PWD}/tls_repository/kafka_broker.jks" >> build/kafka/config/server.properties
+echo "ssl.keystore.password=changeit" >> build/kafka/config/server.properties
+echo "ssl.key.password=changeit" >> build/kafka/config/server.properties
+
 echo "Starting Kafka broker"
 build/kafka/bin/kafka-server-start.sh -daemon "build/kafka/config/server.properties" --override advertised.host.name=127.0.0.1 --override log.dirs="${PWD}/build/kafka-logs"
 sleep 10
+
+echo "Creating SCRAM credentials for logstash user"
+build/kafka/bin/kafka-configs.sh --bootstrap-server localhost:9092 --alter --add-config 'SCRAM-SHA-256=[iterations=8192,password=logstash-secret]' --entity-type users --entity-name logstash
+build/kafka/bin/kafka-configs.sh --bootstrap-server localhost:9092 --alter --add-config 'SCRAM-SHA-512=[iterations=8192,password=logstash-secret]' --entity-type users --entity-name logstash
 
 echo "Setup Confluent Platform"
 # check if CONFLUENT_VERSION env var is set
@@ -60,9 +76,6 @@ cp "confluent-community-$CONFLUENT_VERSION.tar.gz" "build/confluent_platform.tar
 mkdir "build/confluent_platform" && tar xzf "build/confluent_platform.tar.gz" -C "build/confluent_platform" --strip-components 1
 
 echo "Configuring TLS on Schema registry"
-rm -Rf tls_repository
-mkdir tls_repository
-./setup_keystore_and_truststore.sh
 # configure schema-registry to handle https on 8083 port
 if [[ "$OSTYPE" == "darwin"* ]]; then
   sed -i '' 's/http:\/\/0.0.0.0:8081/http:\/\/0.0.0.0:8081, https:\/\/0.0.0.0:8083/g' "build/confluent_platform/etc/schema-registry/schema-registry.properties"
@@ -99,9 +112,11 @@ build/kafka/bin/kafka-topics.sh --create --partitions 1 --replication-factor 1 -
 build/kafka/bin/kafka-topics.sh --create --partitions 1 --replication-factor 1 --topic logstash_integration_zstd_topic --bootstrap-server localhost:9092
 build/kafka/bin/kafka-topics.sh --create --partitions 3 --replication-factor 1 --topic logstash_integration_partitioner_topic --bootstrap-server localhost:9092
 build/kafka/bin/kafka-topics.sh --create --partitions 3 --replication-factor 1 --topic logstash_integration_static_membership_topic --bootstrap-server localhost:9092
+build/kafka/bin/kafka-topics.sh --create --partitions 3 --replication-factor 1 --topic logstash_integration_sasl_topic --bootstrap-server localhost:9092
 curl -s -o build/apache_logs.txt https://s3.amazonaws.com/data.elasticsearch.org/apache_logs/apache_logs.txt
 cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_integration_topic_plain --bootstrap-server localhost:9092
 cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_integration_topic_snappy --bootstrap-server localhost:9092 --compression-codec snappy
 cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_integration_topic_lz4 --bootstrap-server localhost:9092 --compression-codec lz4
+cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_integration_sasl_topic --bootstrap-server localhost:9092
 
 echo "Setup complete, running specs"
