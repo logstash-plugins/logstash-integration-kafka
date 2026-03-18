@@ -1,3 +1,8 @@
+## 12.1.0
+  - Update Kafka client to 4.2.0 [#243](https://github.com/logstash-plugins/logstash-integration-kafka/pull/243)
+    - Remove explicit `lz4-java` dependency (now transitive from Kafka client)
+    - Document `by_duration` offset reset strategy (available since Apache Kafka 4.0.0)
+
 ## 12.0.6
   - [DOC] Add info about Kafka timestamp behavior [#240](https://github.com/logstash-plugins/logstash-integration-kafka/pull/240)
 
@@ -21,7 +26,7 @@
     - Breaking Change: partitioner options `default` and `uniform_sticky` are removed
     - `linger_ms` default value changed from 0 to 5
   - Add `group_protocols` options for configuring Kafka consumer rebalance protocol
-    - Setting `group_protocols => consumer` opts in to the new consumer group protocol
+    - Setting `group_protocol => consumer` opts in to the new consumer group protocol
 
 ## 11.7.0
   - Add `reconnect_backoff_max_ms` option for configuring kafka client [#204](https://github.com/logstash-plugins/logstash-integration-kafka/pull/204)

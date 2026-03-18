@@ -414,6 +414,30 @@ describe LogStash::Inputs::Kafka do
     end
   end
 
+  context 'auto_offset_reset config' do
+    let(:base_props) do
+      {
+        'bootstrap.servers' => 'localhost:9092',
+        'key.deserializer' => 'org.apache.kafka.common.serialization.StringDeserializer',
+        'value.deserializer' => 'org.apache.kafka.common.serialization.StringDeserializer'
+      }
+    end
+
+    %w[earliest latest none by_duration:PT1H by_duration:P1D by_duration:PT30S by_duration:PT15M].each do |value|
+      it "accepts '#{value}' as a valid auto.offset.reset value" do
+        props = base_props.merge('auto.offset.reset' => value)
+        expect { org.apache.kafka.clients.consumer.ConsumerConfig.new(props) }.to_not raise_error
+      end
+    end
+
+    %w[by_duration: by_duration:INVALID by_duration:-PT1H by_duration:abc].each do |value|
+      it "rejects '#{value}' as an invalid auto.offset.reset value" do
+        props = base_props.merge('auto.offset.reset' => value)
+        expect { org.apache.kafka.clients.consumer.ConsumerConfig.new(props) }.to raise_error(org.apache.kafka.common.config.ConfigException)
+      end
+    end
+  end
+
   context 'string integer config' do
     let(:config) { super().merge('session_timeout_ms' => '25000',
                                  'max_poll_interval_ms' => '345000',

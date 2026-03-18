@@ -40,19 +40,9 @@ java {
 }
 
 // given https://docs.confluent.io/current/installation/versions-interoperability.html matrix
-// Confluent Platform 7.9.x is Apache Kafka 3.9.x
-String confluentKafkaVersion = '8.1.1'
-String apacheKafkaVersion = '4.1.0'
-
-configurations.configureEach {
-    resolutionStrategy {
-        capabilitiesResolution {
-            withCapability("org.lz4:lz4-java") {
-                select(candidates.find { ((ModuleComponentIdentifier) it.id).group == "at.yawk.lz4" })
-            }
-        }
-    }
-}
+// Confluent Platform 8.2.x is Apache Kafka 4.2.x
+String confluentKafkaVersion = '8.2.0'
+String apacheKafkaVersion = '4.2.0'
 
 repositories {
     mavenCentral()
@@ -68,7 +58,6 @@ dependencies {
     }
 
     implementation "org.apache.kafka:kafka-clients:${apacheKafkaVersion}"
-    implementation 'at.yawk.lz4:lz4-java:1.10.1'
 }
 task generateGemJarRequiresFile {
     doLast {

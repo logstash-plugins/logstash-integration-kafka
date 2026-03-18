@@ -2,8 +2,8 @@
 :plugin: kafka
 :type: input
 :default_codec: plain
-:kafka_client: 4.1.0
-:kafka_client_doc: 41
+:kafka_client: 4.2.0
+:kafka_client_doc: 42
 
 ///////////////////////////////////////////
 START - GENERATED VARIABLES, DO NOT EDIT!
@@ -211,6 +211,7 @@ What to do when there is no initial offset in Kafka or if an offset is out of ra
 
 * earliest: automatically reset the offset to the earliest offset
 * latest: automatically reset the offset to the latest offset
+* by_duration:<duration>: automatically reset the offset to a configured duration from the current timestamp. The duration must be specified in ISO 8601 format (PnDTnHnMn.nS). Negative durations are not allowed. For example, `by_duration:PT1H` resets to 1 hour ago. Available since Apache Kafka 4.0.0.
 * none: throw exception to the consumer if no previous offset is found for the consumer's group
 * anything else: throw exception to the consumer.
 
