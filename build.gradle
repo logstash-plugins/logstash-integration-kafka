@@ -63,6 +63,10 @@ repositories {
 }
 
 dependencies {
+    constraints {
+        implementation('org.apache.avro:avro:1.11.5')
+    }
+
     implementation("io.confluent:kafka-avro-serializer:${confluentKafkaVersion}") {
         exclude group: 'org.apache.kafka', module:'kafka-clients'
     }
