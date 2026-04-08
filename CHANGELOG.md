@@ -1,5 +1,5 @@
 ## 11.8.8
-  - Fix `sasl_jaas_config` output configuration [#245](https://github.com/logstash-plugins/logstash-integration-kafka/pull/247)
+  - Fix `sasl_jaas_config` output configuration [#247](https://github.com/logstash-plugins/logstash-integration-kafka/pull/247)
 
 ## 11.8.7
   - Upgrade Avro dependency to 1.11.5 [#242](https://github.com/logstash-plugins/logstash-integration-kafka/pull/242)
