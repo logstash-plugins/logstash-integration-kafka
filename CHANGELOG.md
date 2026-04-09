@@ -1,3 +1,5 @@
+## Unreleased
+
 ## 12.1.0
   - Update Kafka client to 4.2.0 [#243](https://github.com/logstash-plugins/logstash-integration-kafka/pull/243)
     - Remove explicit `lz4-java` dependency (now transitive from Kafka client)
