@@ -231,7 +231,7 @@ describe "outputs/kafka", :integration => true do
   end
 
   context 'SASL authentication' do
-    let(:test_topic) { 'logstash_integration_sasl_topic' }
+    let(:test_topic) { 'logstash_integration_sasl_output_topic' }
     let(:num_events) { 3 }
 
     let(:sasl_config) do
