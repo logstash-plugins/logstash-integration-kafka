@@ -224,10 +224,6 @@ describe "outputs/kafka", :integration => true do
     it 'loads data' do
       expect(fetch_messages_from_all_partitions - @messages_offset).to eql num_events
     end
-
-    def fetch_messages_from_all_partitions
-      3.times.map { |i| fetch_messages(test_topic, partition: i).size }.sum
-    end
   end
 
   context 'SASL authentication' do
@@ -254,12 +250,12 @@ describe "outputs/kafka", :integration => true do
 
     shared_examples 'loads data' do
       before :each do
-        @messages_offset = fetch_messages_from_all_sasl_partitions
+        @messages_offset = fetch_messages_from_all_partitions
         load_kafka_data(producer_config)
       end
 
       it 'loads data' do
-        expect(fetch_messages_from_all_sasl_partitions - @messages_offset).to eql num_events
+        expect(fetch_messages_from_all_partitions - @messages_offset).to eql num_events
       end
     end
 
@@ -310,10 +306,6 @@ describe "outputs/kafka", :integration => true do
         include_examples 'loads data'
       end
     end
-
-    def fetch_messages_from_all_sasl_partitions
-      3.times.map { |i| fetch_messages(test_topic, partition: i).size }.sum
-    end
   end
 
   def load_kafka_data(config)
@@ -326,6 +318,10 @@ describe "outputs/kafka", :integration => true do
 
   def fetch_messages(topic, partition: 0, offset: :earliest)
     kafka_client.fetch_messages(topic: topic, partition: partition, offset: offset)
+  end
+
+  def fetch_messages_from_all_partitions
+    3.times.map { |i| fetch_messages(test_topic, partition: i).size }.sum
   end
 
 end
