@@ -224,9 +224,87 @@ describe "outputs/kafka", :integration => true do
     it 'loads data' do
       expect(fetch_messages_from_all_partitions - @messages_offset).to eql num_events
     end
+  end
 
-    def fetch_messages_from_all_partitions
-      3.times.map { |i| fetch_messages(test_topic, partition: i).size }.sum
+  context 'SASL authentication' do
+    let(:test_topic) { 'logstash_integration_sasl_output_topic' }
+    let(:num_events) { 3 }
+
+    let(:sasl_config) do
+      base_config.merge(
+        'topic_id' => test_topic,
+        'bootstrap_servers' => 'localhost:9094',
+        'security_protocol' => 'SASL_PLAINTEXT'
+      )
+    end
+
+    let(:sasl_ssl_config) do
+      base_config.merge(
+        'topic_id' => test_topic,
+        'bootstrap_servers' => 'localhost:9095',
+        'security_protocol' => 'SASL_SSL',
+        'ssl_truststore_location' => File.join(Dir.pwd, 'tls_repository/clienttruststore.jks'),
+        'ssl_truststore_password' => 'changeit'
+      )
+    end
+
+    shared_examples 'loads data' do
+      before :each do
+        @messages_offset = fetch_messages_from_all_partitions
+        load_kafka_data(producer_config)
+      end
+
+      it 'loads data' do
+        expect(fetch_messages_from_all_partitions - @messages_offset).to eql num_events
+      end
+    end
+
+    context 'over SASL_PLAINTEXT' do
+      context 'with PLAIN mechanism' do
+        let(:producer_config) do
+          sasl_config.merge(
+            'sasl_mechanism' => 'PLAIN',
+            'sasl_jaas_config' => 'org.apache.kafka.common.security.plain.PlainLoginModule required username="logstash" password="logstash-secret";'
+          )
+        end
+
+        include_examples 'loads data'
+      end
+
+      context 'with SCRAM-SHA-256 mechanism' do
+        let(:producer_config) do
+          sasl_config.merge(
+            'sasl_mechanism' => 'SCRAM-SHA-256',
+            'sasl_jaas_config' => 'org.apache.kafka.common.security.scram.ScramLoginModule required username="logstash" password="logstash-secret";'
+          )
+        end
+
+        include_examples 'loads data'
+      end
+
+      context 'with SCRAM-SHA-512 mechanism' do
+        let(:producer_config) do
+          sasl_config.merge(
+            'sasl_mechanism' => 'SCRAM-SHA-512',
+            'sasl_jaas_config' => 'org.apache.kafka.common.security.scram.ScramLoginModule required username="logstash" password="logstash-secret";'
+          )
+        end
+
+        include_examples 'loads data'
+      end
+    end
+
+    context 'over SASL_SSL' do
+      context 'with PLAIN mechanism' do
+        let(:producer_config) do
+          sasl_ssl_config.merge(
+            'sasl_mechanism' => 'PLAIN',
+            'sasl_jaas_config' => 'org.apache.kafka.common.security.plain.PlainLoginModule required username="logstash" password="logstash-secret";'
+          )
+        end
+
+        include_examples 'loads data'
+      end
     end
   end
 
@@ -240,6 +318,10 @@ describe "outputs/kafka", :integration => true do
 
   def fetch_messages(topic, partition: 0, offset: :earliest)
     kafka_client.fetch_messages(topic: topic, partition: partition, offset: offset)
+  end
+
+  def fetch_messages_from_all_partitions
+    3.times.map { |i| fetch_messages(test_topic, partition: i).size }.sum
   end
 
 end
