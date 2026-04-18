@@ -53,13 +53,47 @@ The Logstash Kafka consumer handles group management and uses the default offset
 strategy using Kafka topics.
 
 Logstash instances by default form a single logical group to subscribe to Kafka topics
-Each Logstash Kafka consumer can run multiple threads to increase read throughput. Alternatively, 
+Each Logstash Kafka consumer can run multiple threads to increase read throughput. Alternatively,
 you could run multiple Logstash instances with the same `group_id` to spread the load across
 physical machines. Messages in a topic will be distributed to all Logstash instances with
 the same `group_id`.
 
 Ideally you should have as many threads as the number of partitions for a perfect balance --
 more threads than partitions means that some threads will be idle
+
+[id="plugins-{type}s-{plugin}-share-groups"]
+==== Kafka Share Groups (queue semantics)
+
+Setting <<plugins-{type}s-{plugin}-consumer_mode>> to `share_group` enables Kafka 4.0+ Share
+Groups (KIP-932). Share groups provide *queue semantics*: any consumer in the group can read
+from any partition, and each record is delivered to exactly one consumer. Unlike consumer
+groups, the number of active consumers is no longer bounded by the partition count.
+
+Requirements:
+
+* Kafka brokers 4.0 or later with `group.share.enable=true`
+* The `group_id` setting identifies the share group name
+
+Share group consumers must acknowledge each record. Successful records are always acknowledged
+as `ACCEPT`. The <<plugins-{type}s-{plugin}-share_group_acknowledgement_on_error>> option
+controls acknowledgement for records that fail processing (`release` for redelivery or `reject`
+to permanently discard).
+
+Example configuration:
+
+[source,ruby]
+--
+input {
+  kafka {
+    bootstrap_servers => "localhost:9092"
+    topics => ["my-topic"]
+    group_id => "my-share-group"
+    consumer_mode => "share_group"
+    consumer_threads => 4
+    share_group_acknowledgement_on_error => "release"
+  }
+}
+--
 
 For more information see https://kafka.apache.org/{kafka_client_doc}/documentation.html#theconsumer
 
@@ -123,6 +157,7 @@ See the https://kafka.apache.org/{kafka_client_doc}/documentation for more detai
 | <<plugins-{type}s-{plugin}-client_id>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-client_rack>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-connections_max_idle_ms>> |<<number,number>>|No
+| <<plugins-{type}s-{plugin}-consumer_mode>> |<<string,string>>, one of `["consumer_group", "share_group"]`|No
 | <<plugins-{type}s-{plugin}-consumer_threads>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-decorate_events>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-enable_auto_commit>> |<<boolean,boolean>>|No
@@ -175,6 +210,7 @@ See the https://kafka.apache.org/{kafka_client_doc}/documentation for more detai
 | <<plugins-{type}s-{plugin}-security_protocol>> |<<string,string>>, one of `["PLAINTEXT", "SSL", "SASL_PLAINTEXT", "SASL_SSL"]`|No
 | <<plugins-{type}s-{plugin}-send_buffer_bytes>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-session_timeout_ms>> |<<number,number>>|No
+| <<plugins-{type}s-{plugin}-share_group_acknowledgement_on_error>> |<<string,string>>, one of `["release", "reject"]`|No
 | <<plugins-{type}s-{plugin}-ssl_endpoint_identification_algorithm>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-ssl_key_password>> |<<password,password>>|No
 | <<plugins-{type}s-{plugin}-ssl_keystore_location>> |a valid filesystem path|No
@@ -285,8 +321,40 @@ https://cwiki.apache.org/confluence/display/KAFKA/KIP-392%3A+Allow+consumers+to+
 
 Close idle connections after the number of milliseconds specified by this config.
 
+[id="plugins-{type}s-{plugin}-consumer_mode"]
+===== `consumer_mode`
+
+* Value can be either of: `consumer_group`, `share_group`
+* Default value is `consumer_group`
+
+Sets the consumer mode for this input.
+
+`consumer_group` (default) uses the standard Kafka consumer group protocol (`KafkaConsumer`).
+Partitions are assigned exclusively to consumers — each partition is consumed by exactly one
+thread in the group at a time.
+
+`share_group` uses the Kafka 4.0+ Share Group protocol (`KafkaShareConsumer`, KIP-932).
+Share groups provide *queue semantics*: records from any partition can be fetched by any
+consumer in the group, and each record is delivered to exactly one consumer. There is no
+partition assignment, so any number of consumers can scale independently without being
+limited by the partition count.
+
+To use share groups, your Kafka brokers must be version 4.0 or later and must have
+`group.share.enable=true` set in the broker configuration.
+
+[NOTE]
+====
+The following options are not applicable in `share_group` mode and will be ignored or
+raise a configuration error if set to non-default values:
+`group_protocol`, `group_instance_id`, `partition_assignment_strategy`,
+`heartbeat_interval_ms`, `session_timeout_ms`, `isolation_level`,
+`enable_auto_commit`, `auto_commit_interval_ms`, `auto_offset_reset`,
+`check_crcs`, `exclude_internal_topics`.
+Schema Registry integration (`schema_registry_url`) is also not supported.
+====
+
 [id="plugins-{type}s-{plugin}-consumer_threads"]
-===== `consumer_threads` 
+===== `consumer_threads`
 
   * Value type is <<number,number>>
   * Default value is `1`
@@ -825,13 +893,31 @@ Security protocol to use, which can be either of PLAINTEXT,SSL,SASL_PLAINTEXT,SA
 The size of the TCP send buffer (SO_SNDBUF) to use when sending data
 
 [id="plugins-{type}s-{plugin}-session_timeout_ms"]
-===== `session_timeout_ms` 
+===== `session_timeout_ms`
 
   * Value type is <<number,number>>
   * Default value is `10000` milliseconds (10 seconds).
 
 The timeout after which, if the `poll_timeout_ms` is not invoked, the consumer is marked dead
 and a rebalance operation is triggered for the group identified by `group_id`
+
+[id="plugins-{type}s-{plugin}-share_group_acknowledgement_on_error"]
+===== `share_group_acknowledgement_on_error`
+
+* Value can be either of: `release`, `reject`
+* Default value is `release`
+* Only applicable when <<plugins-{type}s-{plugin}-consumer_mode>> is `share_group`
+
+Controls how a record is acknowledged when an error occurs while processing it.
+
+`release` (default): The record is released back to the share group for redelivery to any
+available consumer. Use this when processing errors are transient and the record should
+be retried.
+
+`reject`: The record is permanently discarded and will not be redelivered. Use this when
+the record is malformed and retrying would never succeed.
+
+Successfully processed records are always acknowledged as ACCEPT regardless of this setting.
 
 [id="plugins-{type}s-{plugin}-ssl_endpoint_identification_algorithm"]
 ===== `ssl_endpoint_identification_algorithm`

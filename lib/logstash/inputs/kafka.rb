@@ -281,6 +281,33 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # otherwise auto-topic creation is not permitted.
   config :auto_create_topics, :validate => :boolean, :default => true
 
+  # Sets the consumer mode for this input.
+  #
+  # * `consumer_group` (default): Standard Kafka consumer group mode. Partitions are assigned
+  #   exclusively to consumers; each partition is consumed by exactly one thread in the group.
+  #   This mode uses `KafkaConsumer` internally.
+  #
+  # * `share_group`: Kafka 4.0+ Share Group mode (KIP-932). Provides queue semantics where
+  #   records from any partition can be delivered to any consumer in the share group, and each
+  #   record is delivered to exactly one consumer. Consumers must acknowledge each record.
+  #   This mode uses `KafkaShareConsumer` internally and requires Kafka brokers 4.0 or later
+  #   with `group.share.enable=true` on the broker.
+  #
+  # When using `share_group` mode the following options are ignored or not applicable:
+  # `group_protocol`, `group_instance_id`, `partition_assignment_strategy`,
+  # `heartbeat_interval_ms`, `session_timeout_ms`, `isolation_level`,
+  # `enable_auto_commit`, `auto_commit_interval_ms`, `auto_offset_reset`,
+  # `check_crcs`, `exclude_internal_topics`.
+  config :consumer_mode, :validate => ["consumer_group", "share_group"], :default => "consumer_group"
+
+  # Controls how records are acknowledged when `consumer_mode` is set to `share_group`.
+  # Successfully processed records are always acknowledged as ACCEPT.
+  # This setting controls what happens when an error occurs during record processing:
+  #
+  # * `release` (default): Re-queue the record for redelivery to any consumer in the share group.
+  # * `reject`: Permanently discard the record (it will not be redelivered).
+  config :share_group_acknowledgement_on_error, :validate => ["release", "reject"], :default => "release"
+
   config :decorate_events, :validate => %w(none basic extended false true), :default => "none"
 
   attr_reader :metadata_mode
@@ -294,15 +321,24 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
     super(params)
   end
 
+  SHARE_GROUP_INCOMPATIBLE_OPTIONS = %w[group_protocol group_instance_id partition_assignment_strategy].freeze
+
   public
   def register
     @runner_threads = []
     @metadata_mode = extract_metadata_level(@decorate_events)
     reassign_dns_lookup
     @pattern ||= java.util.regex.Pattern.compile(@topics_pattern) unless @topics_pattern.nil?
-    check_schema_registry_parameters
 
-    set_group_protocol!
+    if @consumer_mode == "share_group"
+      validate_share_group_config!
+      ack_type_class = org.apache.kafka.clients.consumer.AcknowledgeType
+      @share_group_ack_error_type = @share_group_acknowledgement_on_error == "reject" ?
+        ack_type_class::REJECT : ack_type_class::RELEASE
+    else
+      check_schema_registry_parameters
+      set_group_protocol!
+    end
   end
 
   METADATA_NONE     = Set[].freeze
@@ -329,20 +365,35 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
   public
   def run(logstash_queue)
-    @runner_consumers = consumer_threads.times.map do |i|
-      thread_group_instance_id = consumer_threads > 1 && group_instance_id ? "#{group_instance_id}-#{i}" : group_instance_id
-      subscribe(create_consumer("#{client_id}-#{i}", thread_group_instance_id))
+    if @consumer_mode == "share_group"
+      @runner_consumers = consumer_threads.times.map do |i|
+        subscribe(create_share_consumer("#{client_id}-#{i}"))
+      end
+      @runner_threads = @runner_consumers.map.with_index do |consumer, i|
+        share_group_thread_runner(logstash_queue, consumer, "kafka-input-worker-#{client_id}-#{i}")
+      end
+    else
+      @runner_consumers = consumer_threads.times.map do |i|
+        thread_group_instance_id = consumer_threads > 1 && group_instance_id ? "#{group_instance_id}-#{i}" : group_instance_id
+        subscribe(create_consumer("#{client_id}-#{i}", thread_group_instance_id))
+      end
+      @runner_threads = @runner_consumers.map.with_index { |consumer, i| thread_runner(logstash_queue, consumer,
+                                                                                       "kafka-input-worker-#{client_id}-#{i}") }
     end
-    @runner_threads = @runner_consumers.map.with_index { |consumer, i| thread_runner(logstash_queue, consumer,
-                                                                                     "kafka-input-worker-#{client_id}-#{i}") }
     @runner_threads.each(&:start)
     @runner_threads.each(&:join)
   end # def run
 
   public
   def stop
-    # if we have consumers, wake them up to unblock our runner threads
-    @runner_consumers && @runner_consumers.each(&:wakeup)
+    # wake up consumers to unblock the poll loop in runner threads
+    @runner_consumers && @runner_consumers.each do |consumer|
+      begin
+        consumer.wakeup
+      rescue => e
+        logger.debug("Error waking up consumer on stop", :error => e.message)
+      end
+    end
   end
 
   public
@@ -563,6 +614,135 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
   def header_with_value(header)
     !header.nil? && !header.value.nil? && !header.key.nil?
+  end
+
+  def validate_share_group_config!
+    overridden = SHARE_GROUP_INCOMPATIBLE_OPTIONS.select do |opt|
+      value = send(opt.to_sym)
+      default = self.class.get_config.dig(opt, :default)
+      !value.nil? && value != default
+    end
+    unless overridden.empty?
+      raise LogStash::ConfigurationError,
+        "The following options are not compatible with share_group consumer_mode and must be removed: #{overridden.join(', ')}"
+    end
+
+    if schema_registry_url
+      raise LogStash::ConfigurationError,
+        "schema_registry_url is not supported with share_group consumer_mode"
+    end
+  end
+
+  def create_share_consumer(client_id)
+    begin
+      props = java.util.Properties.new
+      kafka = org.apache.kafka.clients.consumer.ConsumerConfig
+
+      props.put(kafka::BOOTSTRAP_SERVERS_CONFIG, bootstrap_servers)
+      props.put(kafka::CLIENT_DNS_LOOKUP_CONFIG, client_dns_lookup)
+      props.put(kafka::CLIENT_ID_CONFIG, client_id)
+      props.put(kafka::CONNECTIONS_MAX_IDLE_MS_CONFIG, connections_max_idle_ms.to_s) unless connections_max_idle_ms.nil?
+      props.put(kafka::FETCH_MAX_BYTES_CONFIG, fetch_max_bytes.to_s) unless fetch_max_bytes.nil?
+      props.put(kafka::FETCH_MAX_WAIT_MS_CONFIG, fetch_max_wait_ms.to_s) unless fetch_max_wait_ms.nil?
+      props.put(kafka::FETCH_MIN_BYTES_CONFIG, fetch_min_bytes.to_s) unless fetch_min_bytes.nil?
+      props.put(kafka::GROUP_ID_CONFIG, group_id)
+      props.put(kafka::KEY_DESERIALIZER_CLASS_CONFIG, key_deserializer_class)
+      props.put(kafka::MAX_PARTITION_FETCH_BYTES_CONFIG, max_partition_fetch_bytes.to_s) unless max_partition_fetch_bytes.nil?
+      props.put(kafka::MAX_POLL_RECORDS_CONFIG, max_poll_records.to_s) unless max_poll_records.nil?
+      props.put(kafka::MAX_POLL_INTERVAL_MS_CONFIG, max_poll_interval_ms.to_s) unless max_poll_interval_ms.nil?
+      props.put(kafka::METADATA_MAX_AGE_CONFIG, metadata_max_age_ms.to_s) unless metadata_max_age_ms.nil?
+      props.put(kafka::RECEIVE_BUFFER_CONFIG, receive_buffer_bytes.to_s) unless receive_buffer_bytes.nil?
+      props.put(kafka::RECONNECT_BACKOFF_MS_CONFIG, reconnect_backoff_ms.to_s) unless reconnect_backoff_ms.nil?
+      props.put(kafka::RECONNECT_BACKOFF_MAX_MS_CONFIG, reconnect_backoff_max_ms.to_s) unless reconnect_backoff_max_ms.nil?
+      props.put(kafka::REQUEST_TIMEOUT_MS_CONFIG, request_timeout_ms.to_s) unless request_timeout_ms.nil?
+      props.put(kafka::RETRY_BACKOFF_MS_CONFIG, retry_backoff_ms.to_s) unless retry_backoff_ms.nil?
+      props.put(kafka::SEND_BUFFER_CONFIG, send_buffer_bytes.to_s) unless send_buffer_bytes.nil?
+      props.put(kafka::VALUE_DESERIALIZER_CLASS_CONFIG, value_deserializer_class)
+      props.put(kafka::CLIENT_RACK_CONFIG, client_rack) unless client_rack.nil?
+
+      # Share consumer defaults to implicit acknowledgement, which disallows explicit
+      # acknowledge() calls. The plugin acknowledges each record after processing, so
+      # explicit mode is required.
+      props.put("share.acknowledgement.mode", "explicit")
+
+      props.put("security.protocol", security_protocol) unless security_protocol.nil?
+      if security_protocol == "SSL"
+        set_trustore_keystore_config(props)
+      elsif security_protocol == "SASL_PLAINTEXT"
+        set_sasl_config(props)
+      elsif security_protocol == "SASL_SSL"
+        set_trustore_keystore_config(props)
+        set_sasl_config(props)
+      end
+
+      org.apache.kafka.clients.consumer.KafkaShareConsumer.new(props)
+    rescue => e
+      logger.error("Unable to create Kafka share consumer from given configuration",
+                   :kafka_error_message => e,
+                   :cause => e.respond_to?(:getCause) ? e.getCause() : nil)
+      raise e
+    end
+  end
+
+  def share_group_thread_runner(logstash_queue, consumer, name)
+    java.lang.Thread.new do
+      LogStash::Util::set_thread_name(name)
+      begin
+        codec_instance = @codec.clone
+        ack_accept = org.apache.kafka.clients.consumer.AcknowledgeType::ACCEPT
+        until stop?
+          records = do_poll_share(consumer)
+          unless records.empty?
+            records.each do |record|
+              begin
+                handle_record(record, codec_instance, logstash_queue)
+                consumer.acknowledge(record, ack_accept)
+              rescue => e
+                logger.error("Error processing record in share group mode, acknowledging with #{@share_group_acknowledgement_on_error}",
+                             :kafka_error_message => e,
+                             :cause => e.respond_to?(:getCause) ? e.getCause() : nil)
+                consumer.acknowledge(record, @share_group_ack_error_type)
+              end
+            end
+            commit_share_acknowledgements(consumer)
+          end
+        end
+      ensure
+        consumer.close
+      end
+    end
+  end
+
+  public
+  def do_poll_share(consumer)
+    records = []
+    begin
+      records = consumer.poll(java.time.Duration.ofMillis(poll_timeout_ms))
+    rescue org.apache.kafka.common.errors.WakeupException => e
+      logger.debug("Wake up from share consumer poll", :kafka_error_message => e)
+      raise e unless stop?
+    rescue => e
+      logger.error("Unable to poll Kafka share consumer",
+                   :kafka_error_message => e,
+                   :cause => e.respond_to?(:getCause) ? e.getCause() : nil)
+      Stud.stoppable_sleep(1) { stop? }
+    end
+    records
+  end
+
+  private
+
+  def commit_share_acknowledgements(consumer)
+    begin
+      consumer.commitSync
+    rescue org.apache.kafka.common.errors.WakeupException => e
+      logger.debug("Wake up from share consumer commitSync", :kafka_error_message => e)
+      raise e unless stop?
+    rescue StandardError => e
+      logger.error("Unable to commit share group acknowledgements",
+                   :kafka_error_message => e,
+                   :cause => e.respond_to?(:getCause) ? e.getCause() : nil)
+    end
   end
 
 end #class LogStash::Inputs::Kafka
