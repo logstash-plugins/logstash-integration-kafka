@@ -45,8 +45,10 @@ require 'logstash/plugin_mixins/deprecation_logger_support'
 # physical machines. Messages in a topic will be distributed to all Logstash instances with
 # the same `group_id`.
 #
-# Ideally you should have as many threads as the number of partitions for a perfect balance --
-# more threads than partitions means that some threads will be idle
+# In `consumer_group` mode, you should ideally have as many threads as the number of partitions
+# for a perfect balance -- more threads than partitions means that some threads will be idle.
+# This does not apply in `share_group` mode, where any thread can fetch from any partition, so
+# the number of threads is not bounded by the partition count.
 #
 # For more information see http://kafka.apache.org/documentation.html#theconsumer
 #
@@ -100,8 +102,10 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # is to be able to track the source of requests beyond just ip/port by allowing
   # a logical application name to be included.
   config :client_id, :validate => :string, :default => "logstash"
-  # Ideally you should have as many threads as the number of partitions for a perfect
-  # balance — more threads than partitions means that some threads will be idle
+  # In `consumer_group` mode, you should ideally have as many threads as the number of partitions
+  # for a perfect balance — more threads than partitions means that some threads will be idle.
+  # This does not apply in `share_group` mode, where any thread can fetch from any partition, so
+  # the number of threads is not bounded by the partition count.
   config :consumer_threads, :validate => :number, :default => 1
   # If true, periodically commit to Kafka the offsets of messages already returned by the consumer. 
   # This committed offset will be used when the process fails as the position from

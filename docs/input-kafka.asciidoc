@@ -58,8 +58,10 @@ you could run multiple Logstash instances with the same `group_id` to spread the
 physical machines. Messages in a topic will be distributed to all Logstash instances with
 the same `group_id`.
 
-Ideally you should have as many threads as the number of partitions for a perfect balance --
-more threads than partitions means that some threads will be idle
+In `consumer_group` mode, you should ideally have as many threads as the number of partitions
+for a perfect balance -- more threads than partitions means that some threads will be idle.
+This does not apply in `share_group` mode, where any thread can fetch from any partition, so
+the number of threads is not bounded by the partition count.
 
 [id="plugins-{type}s-{plugin}-share-groups"]
 ==== Kafka Share Groups (queue semantics)
@@ -361,8 +363,10 @@ to the Share Group protocol: `heartbeat_interval_ms`, `session_timeout_ms`, `iso
   * Value type is <<number,number>>
   * Default value is `1`
 
-Ideally you should have as many threads as the number of partitions for a perfect
-balance — more threads than partitions means that some threads will be idle
+In `consumer_group` mode, you should ideally have as many threads as the number of partitions
+for a perfect balance — more threads than partitions means that some threads will be idle.
+This does not apply in `share_group` mode, where any thread can fetch from any partition, so
+the number of threads is not bounded by the partition count
 
 [id="plugins-{type}s-{plugin}-decorate_events"]
 ===== `decorate_events` 
