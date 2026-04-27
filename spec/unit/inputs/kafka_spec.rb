@@ -615,24 +615,6 @@ describe LogStash::Inputs::Kafka do
       end
     end
 
-    describe '#do_poll_share' do
-      let(:payload) do
-        3.times.map { org.apache.kafka.clients.consumer.ConsumerRecord.new("logstash", 0, 0, "k", "v") }
-      end
-
-      before { subject.register }
-
-      it "returns polled records" do
-        allow(share_consumer_double).to receive(:poll).and_return(payload)
-        expect(subject.do_poll_share(share_consumer_double)).to eq(payload)
-      end
-
-      it "returns empty array and does not raise on a standard error" do
-        allow(share_consumer_double).to receive(:poll).and_raise(StandardError.new("poll failure"))
-        expect { subject.do_poll_share(share_consumer_double) }.not_to raise_error
-      end
-    end
-
     describe 'acknowledgement_on_error' do
       before { subject.register }
 

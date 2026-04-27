@@ -293,10 +293,12 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   #   This mode uses `KafkaShareConsumer` internally and requires Kafka brokers 4.0 or later
   #   with `group.share.enable=true` on the broker.
   #
-  # When using `share_group` mode the following options are ignored or not applicable:
-  # `group_protocol`, `group_instance_id`, `partition_assignment_strategy`,
-  # `heartbeat_interval_ms`, `session_timeout_ms`, `isolation_level`,
-  # `enable_auto_commit`, `auto_commit_interval_ms`, `auto_offset_reset`,
+  # In `share_group` mode the following options raise a configuration error if set to
+  # a non-default value: `group_protocol`, `group_instance_id`, `partition_assignment_strategy`.
+  # Schema Registry (`schema_registry_url`) is also not supported.
+  # The following options are silently ignored in `share_group` mode because they do not
+  # apply to the Share Group protocol: `heartbeat_interval_ms`, `session_timeout_ms`,
+  # `isolation_level`, `enable_auto_commit`, `auto_commit_interval_ms`, `auto_offset_reset`,
   # `check_crcs`, `exclude_internal_topics`.
   config :consumer_mode, :validate => ["consumer_group", "share_group"], :default => "consumer_group"
 
@@ -491,46 +493,63 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   end
 
   private
+  def build_common_props(client_id)
+    props = java.util.Properties.new
+    kafka = org.apache.kafka.clients.consumer.ConsumerConfig
+
+    props.put(kafka::BOOTSTRAP_SERVERS_CONFIG, bootstrap_servers)
+    props.put(kafka::CLIENT_DNS_LOOKUP_CONFIG, client_dns_lookup)
+    props.put(kafka::CLIENT_ID_CONFIG, client_id)
+    props.put(kafka::CONNECTIONS_MAX_IDLE_MS_CONFIG, connections_max_idle_ms.to_s) unless connections_max_idle_ms.nil?
+    props.put(kafka::FETCH_MAX_BYTES_CONFIG, fetch_max_bytes.to_s) unless fetch_max_bytes.nil?
+    props.put(kafka::FETCH_MAX_WAIT_MS_CONFIG, fetch_max_wait_ms.to_s) unless fetch_max_wait_ms.nil?
+    props.put(kafka::FETCH_MIN_BYTES_CONFIG, fetch_min_bytes.to_s) unless fetch_min_bytes.nil?
+    props.put(kafka::GROUP_ID_CONFIG, group_id)
+    props.put(kafka::KEY_DESERIALIZER_CLASS_CONFIG, key_deserializer_class)
+    props.put(kafka::MAX_PARTITION_FETCH_BYTES_CONFIG, max_partition_fetch_bytes.to_s) unless max_partition_fetch_bytes.nil?
+    props.put(kafka::MAX_POLL_RECORDS_CONFIG, max_poll_records.to_s) unless max_poll_records.nil?
+    props.put(kafka::MAX_POLL_INTERVAL_MS_CONFIG, max_poll_interval_ms.to_s) unless max_poll_interval_ms.nil?
+    props.put(kafka::METADATA_MAX_AGE_CONFIG, metadata_max_age_ms.to_s) unless metadata_max_age_ms.nil?
+    props.put(kafka::RECEIVE_BUFFER_CONFIG, receive_buffer_bytes.to_s) unless receive_buffer_bytes.nil?
+    props.put(kafka::RECONNECT_BACKOFF_MS_CONFIG, reconnect_backoff_ms.to_s) unless reconnect_backoff_ms.nil?
+    props.put(kafka::RECONNECT_BACKOFF_MAX_MS_CONFIG, reconnect_backoff_max_ms.to_s) unless reconnect_backoff_max_ms.nil?
+    props.put(kafka::REQUEST_TIMEOUT_MS_CONFIG, request_timeout_ms.to_s) unless request_timeout_ms.nil?
+    props.put(kafka::RETRY_BACKOFF_MS_CONFIG, retry_backoff_ms.to_s) unless retry_backoff_ms.nil?
+    props.put(kafka::SEND_BUFFER_CONFIG, send_buffer_bytes.to_s) unless send_buffer_bytes.nil?
+    props.put(kafka::VALUE_DESERIALIZER_CLASS_CONFIG, value_deserializer_class)
+    props.put(kafka::CLIENT_RACK_CONFIG, client_rack) unless client_rack.nil?
+
+    props.put("security.protocol", security_protocol) unless security_protocol.nil?
+    if security_protocol == "SSL"
+      set_trustore_keystore_config(props)
+    elsif security_protocol == "SASL_PLAINTEXT"
+      set_sasl_config(props)
+    elsif security_protocol == "SASL_SSL"
+      set_trustore_keystore_config(props)
+      set_sasl_config(props)
+    end
+
+    props
+  end
+
   def create_consumer(client_id, group_instance_id)
     begin
-      props = java.util.Properties.new
+      props = build_common_props(client_id)
       kafka = org.apache.kafka.clients.consumer.ConsumerConfig
 
       props.put(kafka::AUTO_COMMIT_INTERVAL_MS_CONFIG, auto_commit_interval_ms.to_s) unless auto_commit_interval_ms.nil?
       props.put(kafka::AUTO_OFFSET_RESET_CONFIG, auto_offset_reset) unless auto_offset_reset.nil?
       props.put(kafka::ALLOW_AUTO_CREATE_TOPICS_CONFIG, auto_create_topics) unless auto_create_topics.nil?
-      props.put(kafka::BOOTSTRAP_SERVERS_CONFIG, bootstrap_servers)
       props.put(kafka::CHECK_CRCS_CONFIG, check_crcs.to_s) unless check_crcs.nil?
-      props.put(kafka::CLIENT_DNS_LOOKUP_CONFIG, client_dns_lookup)
-      props.put(kafka::CLIENT_ID_CONFIG, client_id)
-      props.put(kafka::CONNECTIONS_MAX_IDLE_MS_CONFIG, connections_max_idle_ms.to_s) unless connections_max_idle_ms.nil?
       props.put(kafka::ENABLE_AUTO_COMMIT_CONFIG, enable_auto_commit.to_s)
       props.put(kafka::EXCLUDE_INTERNAL_TOPICS_CONFIG, exclude_internal_topics) unless exclude_internal_topics.nil?
-      props.put(kafka::FETCH_MAX_BYTES_CONFIG, fetch_max_bytes.to_s) unless fetch_max_bytes.nil?
-      props.put(kafka::FETCH_MAX_WAIT_MS_CONFIG, fetch_max_wait_ms.to_s) unless fetch_max_wait_ms.nil?
-      props.put(kafka::FETCH_MIN_BYTES_CONFIG, fetch_min_bytes.to_s) unless fetch_min_bytes.nil?
-      props.put(kafka::GROUP_ID_CONFIG, group_id)
       props.put(kafka::GROUP_INSTANCE_ID_CONFIG, group_instance_id) unless group_instance_id.nil?
       props.put(kafka::GROUP_PROTOCOL_CONFIG, group_protocol)
       props.put(kafka::HEARTBEAT_INTERVAL_MS_CONFIG, heartbeat_interval_ms.to_s) unless heartbeat_interval_ms.nil?
       props.put(kafka::ISOLATION_LEVEL_CONFIG, isolation_level)
-      props.put(kafka::KEY_DESERIALIZER_CLASS_CONFIG, key_deserializer_class)
-      props.put(kafka::MAX_PARTITION_FETCH_BYTES_CONFIG, max_partition_fetch_bytes.to_s) unless max_partition_fetch_bytes.nil?
-      props.put(kafka::MAX_POLL_RECORDS_CONFIG, max_poll_records.to_s) unless max_poll_records.nil?
-      props.put(kafka::MAX_POLL_INTERVAL_MS_CONFIG, max_poll_interval_ms.to_s) unless max_poll_interval_ms.nil?
-      props.put(kafka::METADATA_MAX_AGE_CONFIG, metadata_max_age_ms.to_s) unless metadata_max_age_ms.nil?
       props.put(kafka::PARTITION_ASSIGNMENT_STRATEGY_CONFIG, partition_assignment_strategy_class) unless partition_assignment_strategy.nil?
-      props.put(kafka::RECEIVE_BUFFER_CONFIG, receive_buffer_bytes.to_s) unless receive_buffer_bytes.nil?
-      props.put(kafka::RECONNECT_BACKOFF_MS_CONFIG, reconnect_backoff_ms.to_s) unless reconnect_backoff_ms.nil?
-      props.put(kafka::RECONNECT_BACKOFF_MAX_MS_CONFIG, reconnect_backoff_max_ms.to_s) unless reconnect_backoff_max_ms.nil?
-      props.put(kafka::REQUEST_TIMEOUT_MS_CONFIG, request_timeout_ms.to_s) unless request_timeout_ms.nil?
-      props.put(kafka::RETRY_BACKOFF_MS_CONFIG, retry_backoff_ms.to_s) unless retry_backoff_ms.nil?
-      props.put(kafka::SEND_BUFFER_CONFIG, send_buffer_bytes.to_s) unless send_buffer_bytes.nil?
       props.put(kafka::SESSION_TIMEOUT_MS_CONFIG, session_timeout_ms.to_s) unless session_timeout_ms.nil?
-      props.put(kafka::VALUE_DESERIALIZER_CLASS_CONFIG, value_deserializer_class)
-      props.put(kafka::CLIENT_RACK_CONFIG, client_rack) unless client_rack.nil? 
 
-      props.put("security.protocol", security_protocol) unless security_protocol.nil?
       if schema_registry_url
         props.put(kafka::VALUE_DESERIALIZER_CLASS_CONFIG, Java::io.confluent.kafka.serializers.KafkaAvroDeserializer.java_class)
         serdes_config = Java::io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig
@@ -545,14 +564,6 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
         else
           props.put(serdes_config::BASIC_AUTH_CREDENTIALS_SOURCE, 'URL')
         end
-      end
-      if security_protocol == "SSL"
-        set_trustore_keystore_config(props)
-      elsif security_protocol == "SASL_PLAINTEXT"
-        set_sasl_config(props)
-      elsif security_protocol == "SASL_SSL"
-        set_trustore_keystore_config(props)
-        set_sasl_config(props)
       end
       if schema_registry_ssl_truststore_location
         props.put('schema.registry.ssl.truststore.location', schema_registry_ssl_truststore_location)
@@ -635,45 +646,12 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
   def create_share_consumer(client_id)
     begin
-      props = java.util.Properties.new
-      kafka = org.apache.kafka.clients.consumer.ConsumerConfig
-
-      props.put(kafka::BOOTSTRAP_SERVERS_CONFIG, bootstrap_servers)
-      props.put(kafka::CLIENT_DNS_LOOKUP_CONFIG, client_dns_lookup)
-      props.put(kafka::CLIENT_ID_CONFIG, client_id)
-      props.put(kafka::CONNECTIONS_MAX_IDLE_MS_CONFIG, connections_max_idle_ms.to_s) unless connections_max_idle_ms.nil?
-      props.put(kafka::FETCH_MAX_BYTES_CONFIG, fetch_max_bytes.to_s) unless fetch_max_bytes.nil?
-      props.put(kafka::FETCH_MAX_WAIT_MS_CONFIG, fetch_max_wait_ms.to_s) unless fetch_max_wait_ms.nil?
-      props.put(kafka::FETCH_MIN_BYTES_CONFIG, fetch_min_bytes.to_s) unless fetch_min_bytes.nil?
-      props.put(kafka::GROUP_ID_CONFIG, group_id)
-      props.put(kafka::KEY_DESERIALIZER_CLASS_CONFIG, key_deserializer_class)
-      props.put(kafka::MAX_PARTITION_FETCH_BYTES_CONFIG, max_partition_fetch_bytes.to_s) unless max_partition_fetch_bytes.nil?
-      props.put(kafka::MAX_POLL_RECORDS_CONFIG, max_poll_records.to_s) unless max_poll_records.nil?
-      props.put(kafka::MAX_POLL_INTERVAL_MS_CONFIG, max_poll_interval_ms.to_s) unless max_poll_interval_ms.nil?
-      props.put(kafka::METADATA_MAX_AGE_CONFIG, metadata_max_age_ms.to_s) unless metadata_max_age_ms.nil?
-      props.put(kafka::RECEIVE_BUFFER_CONFIG, receive_buffer_bytes.to_s) unless receive_buffer_bytes.nil?
-      props.put(kafka::RECONNECT_BACKOFF_MS_CONFIG, reconnect_backoff_ms.to_s) unless reconnect_backoff_ms.nil?
-      props.put(kafka::RECONNECT_BACKOFF_MAX_MS_CONFIG, reconnect_backoff_max_ms.to_s) unless reconnect_backoff_max_ms.nil?
-      props.put(kafka::REQUEST_TIMEOUT_MS_CONFIG, request_timeout_ms.to_s) unless request_timeout_ms.nil?
-      props.put(kafka::RETRY_BACKOFF_MS_CONFIG, retry_backoff_ms.to_s) unless retry_backoff_ms.nil?
-      props.put(kafka::SEND_BUFFER_CONFIG, send_buffer_bytes.to_s) unless send_buffer_bytes.nil?
-      props.put(kafka::VALUE_DESERIALIZER_CLASS_CONFIG, value_deserializer_class)
-      props.put(kafka::CLIENT_RACK_CONFIG, client_rack) unless client_rack.nil?
+      props = build_common_props(client_id)
 
       # Share consumer defaults to implicit acknowledgement, which disallows explicit
       # acknowledge() calls. The plugin acknowledges each record after processing, so
       # explicit mode is required.
       props.put("share.acknowledgement.mode", "explicit")
-
-      props.put("security.protocol", security_protocol) unless security_protocol.nil?
-      if security_protocol == "SSL"
-        set_trustore_keystore_config(props)
-      elsif security_protocol == "SASL_PLAINTEXT"
-        set_sasl_config(props)
-      elsif security_protocol == "SASL_SSL"
-        set_trustore_keystore_config(props)
-        set_sasl_config(props)
-      end
 
       org.apache.kafka.clients.consumer.KafkaShareConsumer.new(props)
     rescue => e
@@ -691,7 +669,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
         codec_instance = @codec.clone
         ack_accept = org.apache.kafka.clients.consumer.AcknowledgeType::ACCEPT
         until stop?
-          records = do_poll_share(consumer)
+          records = do_poll(consumer)
           unless records.empty?
             records.each do |record|
               begin
@@ -712,25 +690,6 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
       end
     end
   end
-
-  public
-  def do_poll_share(consumer)
-    records = []
-    begin
-      records = consumer.poll(java.time.Duration.ofMillis(poll_timeout_ms))
-    rescue org.apache.kafka.common.errors.WakeupException => e
-      logger.debug("Wake up from share consumer poll", :kafka_error_message => e)
-      raise e unless stop?
-    rescue => e
-      logger.error("Unable to poll Kafka share consumer",
-                   :kafka_error_message => e,
-                   :cause => e.respond_to?(:getCause) ? e.getCause() : nil)
-      Stud.stoppable_sleep(1) { stop? }
-    end
-    records
-  end
-
-  private
 
   def commit_share_acknowledgements(consumer)
     begin
