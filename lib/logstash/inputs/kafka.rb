@@ -297,13 +297,11 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   #   This mode uses `KafkaShareConsumer` internally and requires Kafka brokers 4.0 or later
   #   with `group.share.enable=true` on the broker.
   #
-  # In `share_group` mode the following options raise a configuration error if set to
-  # a non-default value: `group_protocol`, `group_instance_id`, `partition_assignment_strategy`.
-  # Schema Registry (`schema_registry_url`) is also not supported.
-  # The following options are silently ignored in `share_group` mode because they do not
-  # apply to the Share Group protocol: `heartbeat_interval_ms`, `session_timeout_ms`,
+  # The following options are not supported in `share_group` mode and raise a configuration
+  # error if set in the pipeline config: `group_protocol`, `group_instance_id`,
+  # `partition_assignment_strategy`, `heartbeat_interval_ms`, `session_timeout_ms`,
   # `isolation_level`, `enable_auto_commit`, `auto_commit_interval_ms`, `auto_offset_reset`,
-  # `check_crcs`, `exclude_internal_topics`.
+  # `check_crcs`, `exclude_internal_topics`, `schema_registry_url`.
   config :consumer_mode, :validate => ["consumer_group", "share_group"], :default => "consumer_group"
 
   # Controls how records are acknowledged when `consumer_mode` is set to `share_group`.
@@ -327,7 +325,20 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
     super(params)
   end
 
-  SHARE_GROUP_INCOMPATIBLE_OPTIONS = %w[group_protocol group_instance_id partition_assignment_strategy].freeze
+  SHARE_GROUP_INCOMPATIBLE_OPTIONS = %w[
+    group_protocol
+    group_instance_id
+    partition_assignment_strategy
+    heartbeat_interval_ms
+    session_timeout_ms
+    isolation_level
+    enable_auto_commit
+    auto_commit_interval_ms
+    auto_offset_reset
+    check_crcs
+    exclude_internal_topics
+    schema_registry_url
+  ].freeze
 
   public
   def register
@@ -632,19 +643,10 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   end
 
   def validate_share_group_config!
-    overridden = SHARE_GROUP_INCOMPATIBLE_OPTIONS.select do |opt|
-      value = send(opt.to_sym)
-      default = self.class.get_config.dig(opt, :default)
-      !value.nil? && value != default
-    end
-    unless overridden.empty?
+    incompatible = original_params.keys & SHARE_GROUP_INCOMPATIBLE_OPTIONS
+    unless incompatible.empty?
       raise LogStash::ConfigurationError,
-        "The following options are not compatible with share_group consumer_mode and must be removed: #{overridden.join(', ')}"
-    end
-
-    if schema_registry_url
-      raise LogStash::ConfigurationError,
-        "schema_registry_url is not supported with share_group consumer_mode"
+        "The following options are not compatible with share_group consumer_mode and must be removed: #{incompatible.join(', ')}"
     end
   end
 

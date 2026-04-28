@@ -525,6 +525,29 @@ describe LogStash::Inputs::Kafka do
         config['schema_registry_url'] = 'http://localhost:8081'
         expect { subject.register }.to raise_error(LogStash::ConfigurationError, /schema_registry_url/)
       end
+
+      %w[
+        enable_auto_commit
+        auto_commit_interval_ms
+        heartbeat_interval_ms
+        session_timeout_ms
+        isolation_level
+        auto_offset_reset
+        check_crcs
+        exclude_internal_topics
+        group_protocol
+      ].each do |opt|
+        it "raises ConfigurationError when #{opt} is set in the pipeline config" do
+          config[opt] = case opt
+                        when 'enable_auto_commit', 'check_crcs', 'exclude_internal_topics' then 'true'
+                        when 'auto_commit_interval_ms', 'heartbeat_interval_ms', 'session_timeout_ms' then '5000'
+                        when 'isolation_level' then 'read_committed'
+                        when 'auto_offset_reset' then 'earliest'
+                        when 'group_protocol' then 'consumer'
+                        end
+          expect { subject.register }.to raise_error(LogStash::ConfigurationError, /#{opt}/)
+        end
+      end
     end
 
     describe '#create_share_consumer' do

@@ -346,15 +346,11 @@ To use share groups, your Kafka brokers must be version 4.0 or later and must ha
 
 [NOTE]
 ====
-Setting any of the following options to a non-default value raises a configuration error
-in `share_group` mode: `group_protocol`, `group_instance_id`, `partition_assignment_strategy`.
-Schema Registry integration (`schema_registry_url`) is also not supported and will raise
-a configuration error if set.
-
-The following options are silently ignored in `share_group` mode because they do not apply
-to the Share Group protocol: `heartbeat_interval_ms`, `session_timeout_ms`, `isolation_level`,
-`enable_auto_commit`, `auto_commit_interval_ms`, `auto_offset_reset`, `check_crcs`,
-`exclude_internal_topics`.
+Setting any of the following options in the pipeline config raises a configuration error in
+`share_group` mode, since they do not apply to the Share Group protocol: `group_protocol`,
+`group_instance_id`, `partition_assignment_strategy`, `heartbeat_interval_ms`,
+`session_timeout_ms`, `isolation_level`, `enable_auto_commit`, `auto_commit_interval_ms`,
+`auto_offset_reset`, `check_crcs`, `exclude_internal_topics`, `schema_registry_url`.
 ====
 
 [id="plugins-{type}s-{plugin}-consumer_threads"]
