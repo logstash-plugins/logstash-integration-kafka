@@ -130,6 +130,64 @@ describe "inputs/kafka", :integration => true do
     end
   end
 
+  context "#share-group" do
+    let(:share_group_msg_count) { 20 }
+    let(:share_group_config) do
+      {
+        'topics'           => ['logstash_share_group_topic'],
+        'group_id'         => "sg-integration-#{rand(36**6).to_s(36)}",
+        'consumer_mode'    => 'share_group',
+        'consumer_threads' => 2,
+        'bootstrap_servers' => 'localhost:9092',
+      }
+    end
+
+    it "raises ConfigurationError when auto_offset_reset is set with share_group" do
+      bad_config = share_group_config.merge('auto_offset_reset' => 'earliest')
+      kafka_input = LogStash::Inputs::Kafka.new(bad_config)
+      expect { kafka_input.register }.to raise_error(LogStash::ConfigurationError, /auto_offset_reset/)
+    end
+
+    it "raises ConfigurationError when share_group_acknowledgement_on_error is set with consumer_group" do
+      bad_config = share_group_config.merge('consumer_mode' => 'consumer_group', 'share_group_acknowledgement_on_error' => 'reject')
+      kafka_input = LogStash::Inputs::Kafka.new(bad_config)
+      expect { kafka_input.register }.to raise_error(LogStash::ConfigurationError, /share_group_acknowledgement_on_error/)
+    end
+
+    it "consumes messages produced while the consumer is running" do
+      # Share groups default to share.auto.offset.reset=latest, so messages must
+      # be produced AFTER the consumer joins the group to guarantee delivery.
+      queue = Queue.new
+      kafka_input = LogStash::Inputs::Kafka.new(share_group_config)
+      kafka_input.register
+      t = Thread.new { kafka_input.run(queue) }
+      begin
+        t.run
+        sleep 8  # share group partition assignment takes ~5s; wait for STABLE epoch
+
+        share_group_msg_count.times do |i|
+          record = org.apache.kafka.clients.producer.ProducerRecord.new(
+            'logstash_share_group_topic', "share-msg-#{i}")
+          send_message(record)
+        end
+
+        wait(timeout_seconds).for { queue.length }.to eq(share_group_msg_count)
+        expect(queue.length).to eq(share_group_msg_count)
+      ensure
+        kafka_input.do_stop
+        t.kill
+        t.join(30)
+      end
+    end
+
+    it "check_crcs is accepted in share_group mode without error" do
+      config = share_group_config.merge('check_crcs' => true)
+      kafka_input = LogStash::Inputs::Kafka.new(config)
+      expect { kafka_input.register }.not_to raise_error
+      kafka_input.do_stop rescue nil
+    end
+  end
+
   context "#kafka-decorate" do
     it "should show the right topic and group name in decorated kafka section" do
       start = LogStash::Timestamp.now.time.to_i

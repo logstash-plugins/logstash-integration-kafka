@@ -84,6 +84,11 @@ describe LogStash::Inputs::Kafka do
       expect { subject.register }.to_not raise_error
     end
 
+    it "raises ConfigurationError when share_group_acknowledgement_on_error is set in consumer_group mode" do
+      config['share_group_acknowledgement_on_error'] = 'reject'
+      expect { subject.register }.to raise_error(LogStash::ConfigurationError, /share_group_acknowledgement_on_error/)
+    end
+
     context "when the deprecated `default` is specified" do
       let(:config) { common_config.merge('client_dns_lookup' => 'default') }
 
@@ -533,13 +538,12 @@ describe LogStash::Inputs::Kafka do
         session_timeout_ms
         isolation_level
         auto_offset_reset
-        check_crcs
         exclude_internal_topics
         group_protocol
       ].each do |opt|
         it "raises ConfigurationError when #{opt} is set in the pipeline config" do
           config[opt] = case opt
-                        when 'enable_auto_commit', 'check_crcs', 'exclude_internal_topics' then 'true'
+                        when 'enable_auto_commit', 'exclude_internal_topics' then 'true'
                         when 'auto_commit_interval_ms', 'heartbeat_interval_ms', 'session_timeout_ms' then '5000'
                         when 'isolation_level' then 'read_committed'
                         when 'auto_offset_reset' then 'earliest'
@@ -547,6 +551,11 @@ describe LogStash::Inputs::Kafka do
                         end
           expect { subject.register }.to raise_error(LogStash::ConfigurationError, /#{opt}/)
         end
+      end
+
+      it "accepts check_crcs in share_group mode (supported by KafkaShareConsumer)" do
+        config['check_crcs'] = true
+        expect { subject.register }.not_to raise_error
       end
     end
 
