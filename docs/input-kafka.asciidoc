@@ -58,10 +58,11 @@ you could run multiple Logstash instances with the same `group_id` to spread the
 physical machines. Messages in a topic will be distributed to all Logstash instances with
 the same `group_id`.
 
-In `consumer_group` mode, you should ideally have as many threads as the number of partitions
-for a perfect balance -- more threads than partitions means that some threads will be idle.
-This does not apply in `share_group` mode, where any thread can fetch from any partition, so
-the number of threads is not bounded by the partition count.
+The number of consumer threads this input should spawn for fetching events and pushing them into the pipeline's queue.
+
+When configured with `consumer_mode => consumer_group`, each partition in the topic can only be assigned to a single consumer at a time, so if the _total_ number of consumer threads across all consumers in the group exceeds the number of partitions, some of those threads will be idle.
+
+This constraint doesn't apply when configured with `consumer_mode => share_group` which is not partition-oriented.
 
 [id="plugins-{type}s-{plugin}-share-groups"]
 ==== Kafka Share Groups (queue semantics)
@@ -76,10 +77,9 @@ Requirements:
 * Kafka brokers 4.0 or later with `group.share.enable=true`
 * The `group_id` setting identifies the share group name
 
-Share group consumers must acknowledge each record. Successful records are always acknowledged
-as `ACCEPT`. The <<plugins-{type}s-{plugin}-share_group_acknowledgement_on_error>> option
-controls acknowledgement for records that fail processing (`release` for redelivery or `reject`
-to permanently discard).
+Share group consumers must acknowledge each record.
+After an event is accepted by the pipeline's queue, it is acknowledged as `ACCEPT` to ensure that no other consumer in the share group receives it.
+When an event is either _not_ accepted by the pipeline's queue or an error occurs before it is offered to the queue, the <<plugins-{type}s-{plugin}-share_group_acknowledgement_on_error>> option controls how the event is acknowledged (`release` for redelivery or `reject` to permanently discard).
 
 Example configuration:
 
@@ -350,7 +350,13 @@ Setting any of the following options in the pipeline config raises a configurati
 `share_group` mode, since they do not apply to the Share Group protocol: `group_protocol`,
 `group_instance_id`, `partition_assignment_strategy`, `heartbeat_interval_ms`,
 `session_timeout_ms`, `isolation_level`, `enable_auto_commit`, `auto_commit_interval_ms`,
-`auto_offset_reset`, `check_crcs`, `exclude_internal_topics`, `schema_registry_url`.
+`auto_offset_reset`, `exclude_internal_topics`, `schema_registry_url`.
+
+Some of these have broker/group-level equivalents for share groups that can be configured
+directly on the broker (for example, `auto.offset.reset` → `share.auto.offset.reset`,
+`heartbeat.interval.ms` → `share.heartbeat.interval.ms`,
+`session.timeout.ms` → `share.session.timeout.ms`,
+`isolation.level` → `share.isolation.level`).
 ====
 
 [id="plugins-{type}s-{plugin}-consumer_threads"]
@@ -910,16 +916,10 @@ and a rebalance operation is triggered for the group identified by `group_id`
 * Default value is `release`
 * Only applicable when <<plugins-{type}s-{plugin}-consumer_mode>> is `share_group`
 
-Controls how a record is acknowledged when an error occurs while processing it.
+Controls how a record is acknowledged when the event is either not accepted by the pipeline's queue or an error occurs before it is offered.
 
-`release` (default): The record is released back to the share group for redelivery to any
-available consumer. Use this when processing errors are transient and the record should
-be retried.
-
-`reject`: The record is permanently discarded and will not be redelivered. Use this when
-the record is malformed and retrying would never succeed.
-
-Successfully processed records are always acknowledged as ACCEPT regardless of this setting.
+* `release` (default): The record is released back to the share group for redelivery to any available consumer. This strategy favors consistency over availability, which can allow a single malformed event to be retried indefinitely.
+* `reject`: The record is permanently discarded and will not be redelivered. This strategy favors availability over consistency and risks data loss.
 
 [id="plugins-{type}s-{plugin}-ssl_endpoint_identification_algorithm"]
 ===== `ssl_endpoint_identification_algorithm`

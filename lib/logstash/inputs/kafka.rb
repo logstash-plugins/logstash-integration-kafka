@@ -301,7 +301,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # error if set in the pipeline config: `group_protocol`, `group_instance_id`,
   # `partition_assignment_strategy`, `heartbeat_interval_ms`, `session_timeout_ms`,
   # `isolation_level`, `enable_auto_commit`, `auto_commit_interval_ms`, `auto_offset_reset`,
-  # `check_crcs`, `exclude_internal_topics`, `schema_registry_url`.
+  # `exclude_internal_topics`, `schema_registry_url`.
   config :consumer_mode, :validate => ["consumer_group", "share_group"], :default => "consumer_group"
 
   # Controls how records are acknowledged when `consumer_mode` is set to `share_group`.
@@ -335,9 +335,12 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
     enable_auto_commit
     auto_commit_interval_ms
     auto_offset_reset
-    check_crcs
     exclude_internal_topics
     schema_registry_url
+  ].freeze
+
+  CONSUMER_GROUP_ONLY_OPTIONS = %w[
+    share_group_acknowledgement_on_error
   ].freeze
 
   public
@@ -350,9 +353,14 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
     if @consumer_mode == "share_group"
       validate_share_group_config!
       ack_type_class = org.apache.kafka.clients.consumer.AcknowledgeType
-      @share_group_ack_error_type = @share_group_acknowledgement_on_error == "reject" ?
-        ack_type_class::REJECT : ack_type_class::RELEASE
+      @share_group_ack_error_type =
+        if @share_group_acknowledgement_on_error == "reject"
+          ack_type_class::REJECT
+        else
+          ack_type_class::RELEASE
+        end
     else
+      validate_consumer_group_config!
       check_schema_registry_parameters
       set_group_protocol!
     end
@@ -532,6 +540,8 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
     props.put(kafka::RETRY_BACKOFF_MS_CONFIG, retry_backoff_ms.to_s) unless retry_backoff_ms.nil?
     props.put(kafka::SEND_BUFFER_CONFIG, send_buffer_bytes.to_s) unless send_buffer_bytes.nil?
     props.put(kafka::VALUE_DESERIALIZER_CLASS_CONFIG, value_deserializer_class)
+    props.put(kafka::ALLOW_AUTO_CREATE_TOPICS_CONFIG, auto_create_topics) unless auto_create_topics.nil?
+    props.put(kafka::CHECK_CRCS_CONFIG, check_crcs.to_s) unless check_crcs.nil?
     props.put(kafka::CLIENT_RACK_CONFIG, client_rack) unless client_rack.nil?
 
     props.put("security.protocol", security_protocol) unless security_protocol.nil?
@@ -554,8 +564,6 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
       props.put(kafka::AUTO_COMMIT_INTERVAL_MS_CONFIG, auto_commit_interval_ms.to_s) unless auto_commit_interval_ms.nil?
       props.put(kafka::AUTO_OFFSET_RESET_CONFIG, auto_offset_reset) unless auto_offset_reset.nil?
-      props.put(kafka::ALLOW_AUTO_CREATE_TOPICS_CONFIG, auto_create_topics) unless auto_create_topics.nil?
-      props.put(kafka::CHECK_CRCS_CONFIG, check_crcs.to_s) unless check_crcs.nil?
       props.put(kafka::ENABLE_AUTO_COMMIT_CONFIG, enable_auto_commit.to_s)
       props.put(kafka::EXCLUDE_INTERNAL_TOPICS_CONFIG, exclude_internal_topics) unless exclude_internal_topics.nil?
       props.put(kafka::GROUP_INSTANCE_ID_CONFIG, group_instance_id) unless group_instance_id.nil?
@@ -650,6 +658,14 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
     end
   end
 
+  def validate_consumer_group_config!
+    incompatible = original_params.keys & CONSUMER_GROUP_ONLY_OPTIONS
+    unless incompatible.empty?
+      raise LogStash::ConfigurationError,
+        "The following options require consumer_mode => 'share_group' and cannot be used with consumer_group mode: #{incompatible.join(', ')}"
+    end
+  end
+
   def create_share_consumer(client_id)
     begin
       props = build_common_props(client_id)
@@ -674,18 +690,23 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
       begin
         codec_instance = @codec.clone
         ack_accept = org.apache.kafka.clients.consumer.AcknowledgeType::ACCEPT
+        ack_release = org.apache.kafka.clients.consumer.AcknowledgeType::RELEASE
         until stop?
           records = do_poll(consumer)
           unless records.empty?
             records.each do |record|
-              begin
-                handle_record(record, codec_instance, logstash_queue)
-                consumer.acknowledge(record, ack_accept)
-              rescue => e
-                logger.error("Error processing record in share group mode, acknowledging with #{@share_group_acknowledgement_on_error}",
-                             :kafka_error_message => e,
-                             :cause => e.respond_to?(:getCause) ? e.getCause() : nil)
-                consumer.acknowledge(record, @share_group_ack_error_type)
+              if stop?
+                consumer.acknowledge(record, ack_release)
+              else
+                begin
+                  handle_record(record, codec_instance, logstash_queue)
+                  consumer.acknowledge(record, ack_accept)
+                rescue => e
+                  logger.error("Error processing record in share group mode, acknowledging with #{@share_group_acknowledgement_on_error}",
+                               :kafka_error_message => e,
+                               :cause => e.respond_to?(:getCause) ? e.getCause() : nil)
+                  consumer.acknowledge(record, @share_group_ack_error_type)
+                end
               end
             end
             commit_share_acknowledgements(consumer)
