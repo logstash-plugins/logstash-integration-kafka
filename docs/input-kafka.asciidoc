@@ -365,10 +365,11 @@ directly on the broker (for example, `auto.offset.reset` → `share.auto.offset.
   * Value type is <<number,number>>
   * Default value is `1`
 
-In `consumer_group` mode, you should ideally have as many threads as the number of partitions
-for a perfect balance — more threads than partitions means that some threads will be idle.
-This does not apply in `share_group` mode, where any thread can fetch from any partition, so
-the number of threads is not bounded by the partition count
+The number of consumer threads this input should spawn for fetching events and pushing them into the pipeline's queue.
+
+When configured with `consumer_mode => consumer_group`, each partition in the topic can only be assigned to a single consumer at a time, so if the _total_ number of consumer threads across all consumers in the group exceeds the number of partitions, some of those threads will be idle.
+
+This constraint doesn't apply when configured with `consumer_mode => share_group` which is not partition-oriented.
 
 [id="plugins-{type}s-{plugin}-decorate_events"]
 ===== `decorate_events` 
