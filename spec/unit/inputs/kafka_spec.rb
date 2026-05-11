@@ -557,6 +557,11 @@ describe LogStash::Inputs::Kafka do
         config['check_crcs'] = true
         expect { subject.register }.not_to raise_error
       end
+
+      it "accepts auto_create_topics in share_group mode (supported by KafkaShareConsumer)" do
+        config['auto_create_topics'] = true
+        expect { subject.register }.not_to raise_error
+      end
     end
 
     describe '#create_share_consumer' do
