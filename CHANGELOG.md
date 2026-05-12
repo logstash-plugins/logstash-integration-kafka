@@ -1,3 +1,6 @@
+## 12.1.2
+  - Upgrade `com.fasterxml.jackson` dependencies to 2.21.2 [#254](https://github.com/logstash-plugins/logstash-integration-kafka/pull/254)
+
 ## 12.1.1
   - Fix `sasl_jaas_config` output configuration [#245](https://github.com/logstash-plugins/logstash-integration-kafka/pull/245)
 
