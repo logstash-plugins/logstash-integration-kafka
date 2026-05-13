@@ -43,6 +43,7 @@ java {
 // Confluent Platform 7.9.x is Apache Kafka 3.9.x
 String confluentKafkaVersion = '7.9.5'
 String apacheKafkaVersion = '3.9.2'
+String jacksonVersion = '2.21.2'
 
 configurations.configureEach {
     resolutionStrategy {
@@ -65,6 +66,8 @@ repositories {
 dependencies {
     constraints {
         implementation('org.apache.avro:avro:1.11.5')
+        // remove this once kafka-avro-serializer starts pulling 2.21.2+ versions
+        implementation("com.fasterxml.jackson:jackson-bom:${jacksonVersion}")
     }
 
     implementation("io.confluent:kafka-avro-serializer:${confluentKafkaVersion}") {
@@ -115,3 +118,8 @@ task vendor {
 }
 
 vendor.dependsOn(generateGemJarRequiresFile)
+
+clean {
+    delete "vendor"
+    delete "lib/logstash-integration-kafka_jars.rb"
+}
