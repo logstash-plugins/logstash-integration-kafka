@@ -1,3 +1,6 @@
+## 11.8.9
+  - Upgrades jackson.core to 2.21.2 version [#255](https://github.com/logstash-plugins/logstash-integration-kafka/pull/255)
+
 ## 11.8.8
   - Fix `sasl_jaas_config` output configuration [#247](https://github.com/logstash-plugins/logstash-integration-kafka/pull/247)
 
