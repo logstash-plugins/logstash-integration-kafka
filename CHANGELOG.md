@@ -1,3 +1,6 @@
+## 12.1.3
+  - Upgrades `httpcore5` dependency to v5.3.6 [#262](https://github.com/logstash-plugins/logstash-integration-kafka/pull/262)
+
 ## 12.1.2
   - Upgrade `com.fasterxml.jackson` dependencies to 2.21.2 [#254](https://github.com/logstash-plugins/logstash-integration-kafka/pull/254)
 
