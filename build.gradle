@@ -41,7 +41,7 @@ java {
 
 // given https://docs.confluent.io/current/installation/versions-interoperability.html matrix
 // Confluent Platform 8.2.x is Apache Kafka 4.2.x
-String confluentKafkaVersion = '8.2.0'
+String confluentKafkaVersion = '8.2.1'
 String apacheKafkaVersion = '4.2.0'
 String jacksonVersion = '2.21.2'
 
@@ -56,6 +56,12 @@ repositories {
 dependencies {
     // remove this once kafka-avro-serializer starts pulling 2.21.2+ versions
     implementation platform("com.fasterxml.jackson:jackson-bom:${jacksonVersion}")
+
+    constraints {
+        // remove once kafka-avro-serializer pulls httpcore5-h2 > 5.3.5 versions
+        implementation('org.apache.httpcomponents.core5:httpcore5:5.3.6')
+        implementation('org.apache.httpcomponents.core5:httpcore5-h2:5.3.6')
+    }
 
     implementation("io.confluent:kafka-avro-serializer:${confluentKafkaVersion}") {
         exclude group: 'org.apache.kafka', module:'kafka-clients'
