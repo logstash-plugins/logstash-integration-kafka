@@ -1,6 +1,12 @@
 ## 12.2.0
   - Add share group consumer support to Kafka input via `consumer_mode => "share_group"` (Kafka 4.0+ KIP-932) [#252](https://github.com/logstash-plugins/logstash-integration-kafka/pull/252)
 
+## 12.1.3
+  - Upgrades `httpcore5` dependency to v5.3.6 [#262](https://github.com/logstash-plugins/logstash-integration-kafka/pull/262)
+
+## 12.1.2
+  - Upgrade `com.fasterxml.jackson` dependencies to 2.21.2 [#254](https://github.com/logstash-plugins/logstash-integration-kafka/pull/254)
+
 ## 12.1.1
   - Fix `sasl_jaas_config` output configuration [#245](https://github.com/logstash-plugins/logstash-integration-kafka/pull/245)
 
