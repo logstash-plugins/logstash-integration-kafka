@@ -45,8 +45,10 @@ require 'logstash/plugin_mixins/deprecation_logger_support'
 # physical machines. Messages in a topic will be distributed to all Logstash instances with
 # the same `group_id`.
 #
-# Ideally you should have as many threads as the number of partitions for a perfect balance --
-# more threads than partitions means that some threads will be idle
+# In `consumer_group` mode, you should ideally have as many threads as the number of partitions
+# for a perfect balance -- more threads than partitions means that some threads will be idle.
+# This does not apply in `share_group` mode, where any thread can fetch from any partition, so
+# the number of threads is not bounded by the partition count.
 #
 # For more information see http://kafka.apache.org/documentation.html#theconsumer
 #
@@ -100,8 +102,10 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # is to be able to track the source of requests beyond just ip/port by allowing
   # a logical application name to be included.
   config :client_id, :validate => :string, :default => "logstash"
-  # Ideally you should have as many threads as the number of partitions for a perfect
-  # balance — more threads than partitions means that some threads will be idle
+  # In `consumer_group` mode, you should ideally have as many threads as the number of partitions
+  # for a perfect balance — more threads than partitions means that some threads will be idle.
+  # This does not apply in `share_group` mode, where any thread can fetch from any partition, so
+  # the number of threads is not bounded by the partition count.
   config :consumer_threads, :validate => :number, :default => 1
   # If true, periodically commit to Kafka the offsets of messages already returned by the consumer. 
   # This committed offset will be used when the process fails as the position from
@@ -281,6 +285,33 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # otherwise auto-topic creation is not permitted.
   config :auto_create_topics, :validate => :boolean, :default => true
 
+  # Sets the consumer mode for this input.
+  #
+  # * `consumer_group` (default): Standard Kafka consumer group mode. Partitions are assigned
+  #   exclusively to consumers; each partition is consumed by exactly one thread in the group.
+  #   This mode uses `KafkaConsumer` internally.
+  #
+  # * `share_group`: Kafka 4.0+ Share Group mode (KIP-932). Provides queue semantics where
+  #   records from any partition can be delivered to any consumer in the share group, and each
+  #   record is delivered to exactly one consumer. Consumers must acknowledge each record.
+  #   This mode uses `KafkaShareConsumer` internally and requires Kafka brokers 4.0 or later
+  #   with `group.share.enable=true` on the broker.
+  #
+  # The following options are not supported in `share_group` mode and raise a configuration
+  # error if set in the pipeline config: `group_protocol`, `group_instance_id`,
+  # `partition_assignment_strategy`, `heartbeat_interval_ms`, `session_timeout_ms`,
+  # `isolation_level`, `enable_auto_commit`, `auto_commit_interval_ms`, `auto_offset_reset`,
+  # `exclude_internal_topics`, `schema_registry_url`.
+  config :consumer_mode, :validate => ["consumer_group", "share_group"], :default => "consumer_group"
+
+  # Controls how records are acknowledged when `consumer_mode` is set to `share_group`.
+  # Successfully processed records are always acknowledged as ACCEPT.
+  # This setting controls what happens when an error occurs during record processing:
+  #
+  # * `release` (default): Re-queue the record for redelivery to any consumer in the share group.
+  # * `reject`: Permanently discard the record (it will not be redelivered).
+  config :share_group_acknowledgement_on_error, :validate => ["release", "reject"], :default => "release"
+
   config :decorate_events, :validate => %w(none basic extended false true), :default => "none"
 
   attr_reader :metadata_mode
@@ -294,15 +325,45 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
     super(params)
   end
 
+  SHARE_GROUP_INCOMPATIBLE_OPTIONS = %w[
+    group_protocol
+    group_instance_id
+    partition_assignment_strategy
+    heartbeat_interval_ms
+    session_timeout_ms
+    isolation_level
+    enable_auto_commit
+    auto_commit_interval_ms
+    auto_offset_reset
+    exclude_internal_topics
+    schema_registry_url
+  ].freeze
+
+  CONSUMER_GROUP_ONLY_OPTIONS = %w[
+    share_group_acknowledgement_on_error
+  ].freeze
+
   public
   def register
     @runner_threads = []
     @metadata_mode = extract_metadata_level(@decorate_events)
     reassign_dns_lookup
     @pattern ||= java.util.regex.Pattern.compile(@topics_pattern) unless @topics_pattern.nil?
-    check_schema_registry_parameters
 
-    set_group_protocol!
+    if @consumer_mode == "share_group"
+      validate_share_group_config!
+      ack_type_class = org.apache.kafka.clients.consumer.AcknowledgeType
+      @share_group_ack_error_type =
+        if @share_group_acknowledgement_on_error == "reject"
+          ack_type_class::REJECT
+        else
+          ack_type_class::RELEASE
+        end
+    else
+      validate_consumer_group_config!
+      check_schema_registry_parameters
+      set_group_protocol!
+    end
   end
 
   METADATA_NONE     = Set[].freeze
@@ -329,20 +390,35 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
   public
   def run(logstash_queue)
-    @runner_consumers = consumer_threads.times.map do |i|
-      thread_group_instance_id = consumer_threads > 1 && group_instance_id ? "#{group_instance_id}-#{i}" : group_instance_id
-      subscribe(create_consumer("#{client_id}-#{i}", thread_group_instance_id))
+    if @consumer_mode == "share_group"
+      @runner_consumers = consumer_threads.times.map do |i|
+        subscribe(create_share_consumer("#{client_id}-#{i}"))
+      end
+      @runner_threads = @runner_consumers.map.with_index do |consumer, i|
+        share_group_thread_runner(logstash_queue, consumer, "kafka-input-worker-#{client_id}-#{i}")
+      end
+    else
+      @runner_consumers = consumer_threads.times.map do |i|
+        thread_group_instance_id = consumer_threads > 1 && group_instance_id ? "#{group_instance_id}-#{i}" : group_instance_id
+        subscribe(create_consumer("#{client_id}-#{i}", thread_group_instance_id))
+      end
+      @runner_threads = @runner_consumers.map.with_index { |consumer, i| thread_runner(logstash_queue, consumer,
+                                                                                       "kafka-input-worker-#{client_id}-#{i}") }
     end
-    @runner_threads = @runner_consumers.map.with_index { |consumer, i| thread_runner(logstash_queue, consumer,
-                                                                                     "kafka-input-worker-#{client_id}-#{i}") }
     @runner_threads.each(&:start)
     @runner_threads.each(&:join)
   end # def run
 
   public
   def stop
-    # if we have consumers, wake them up to unblock our runner threads
-    @runner_consumers && @runner_consumers.each(&:wakeup)
+    # wake up consumers to unblock the poll loop in runner threads
+    @runner_consumers && @runner_consumers.each do |consumer|
+      begin
+        consumer.wakeup
+      rescue => e
+        logger.debug("Error waking up consumer on stop", :error => e.message)
+      end
+    end
   end
 
   public
@@ -440,46 +516,63 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   end
 
   private
+  def build_common_props(client_id)
+    props = java.util.Properties.new
+    kafka = org.apache.kafka.clients.consumer.ConsumerConfig
+
+    props.put(kafka::BOOTSTRAP_SERVERS_CONFIG, bootstrap_servers)
+    props.put(kafka::CLIENT_DNS_LOOKUP_CONFIG, client_dns_lookup)
+    props.put(kafka::CLIENT_ID_CONFIG, client_id)
+    props.put(kafka::CONNECTIONS_MAX_IDLE_MS_CONFIG, connections_max_idle_ms.to_s) unless connections_max_idle_ms.nil?
+    props.put(kafka::FETCH_MAX_BYTES_CONFIG, fetch_max_bytes.to_s) unless fetch_max_bytes.nil?
+    props.put(kafka::FETCH_MAX_WAIT_MS_CONFIG, fetch_max_wait_ms.to_s) unless fetch_max_wait_ms.nil?
+    props.put(kafka::FETCH_MIN_BYTES_CONFIG, fetch_min_bytes.to_s) unless fetch_min_bytes.nil?
+    props.put(kafka::GROUP_ID_CONFIG, group_id)
+    props.put(kafka::KEY_DESERIALIZER_CLASS_CONFIG, key_deserializer_class)
+    props.put(kafka::MAX_PARTITION_FETCH_BYTES_CONFIG, max_partition_fetch_bytes.to_s) unless max_partition_fetch_bytes.nil?
+    props.put(kafka::MAX_POLL_RECORDS_CONFIG, max_poll_records.to_s) unless max_poll_records.nil?
+    props.put(kafka::MAX_POLL_INTERVAL_MS_CONFIG, max_poll_interval_ms.to_s) unless max_poll_interval_ms.nil?
+    props.put(kafka::METADATA_MAX_AGE_CONFIG, metadata_max_age_ms.to_s) unless metadata_max_age_ms.nil?
+    props.put(kafka::RECEIVE_BUFFER_CONFIG, receive_buffer_bytes.to_s) unless receive_buffer_bytes.nil?
+    props.put(kafka::RECONNECT_BACKOFF_MS_CONFIG, reconnect_backoff_ms.to_s) unless reconnect_backoff_ms.nil?
+    props.put(kafka::RECONNECT_BACKOFF_MAX_MS_CONFIG, reconnect_backoff_max_ms.to_s) unless reconnect_backoff_max_ms.nil?
+    props.put(kafka::REQUEST_TIMEOUT_MS_CONFIG, request_timeout_ms.to_s) unless request_timeout_ms.nil?
+    props.put(kafka::RETRY_BACKOFF_MS_CONFIG, retry_backoff_ms.to_s) unless retry_backoff_ms.nil?
+    props.put(kafka::SEND_BUFFER_CONFIG, send_buffer_bytes.to_s) unless send_buffer_bytes.nil?
+    props.put(kafka::VALUE_DESERIALIZER_CLASS_CONFIG, value_deserializer_class)
+    props.put(kafka::ALLOW_AUTO_CREATE_TOPICS_CONFIG, auto_create_topics) unless auto_create_topics.nil?
+    props.put(kafka::CHECK_CRCS_CONFIG, check_crcs.to_s) unless check_crcs.nil?
+    props.put(kafka::CLIENT_RACK_CONFIG, client_rack) unless client_rack.nil?
+
+    props.put("security.protocol", security_protocol) unless security_protocol.nil?
+    if security_protocol == "SSL"
+      set_trustore_keystore_config(props)
+    elsif security_protocol == "SASL_PLAINTEXT"
+      set_sasl_config(props)
+    elsif security_protocol == "SASL_SSL"
+      set_trustore_keystore_config(props)
+      set_sasl_config(props)
+    end
+
+    props
+  end
+
   def create_consumer(client_id, group_instance_id)
     begin
-      props = java.util.Properties.new
+      props = build_common_props(client_id)
       kafka = org.apache.kafka.clients.consumer.ConsumerConfig
 
       props.put(kafka::AUTO_COMMIT_INTERVAL_MS_CONFIG, auto_commit_interval_ms.to_s) unless auto_commit_interval_ms.nil?
       props.put(kafka::AUTO_OFFSET_RESET_CONFIG, auto_offset_reset) unless auto_offset_reset.nil?
-      props.put(kafka::ALLOW_AUTO_CREATE_TOPICS_CONFIG, auto_create_topics) unless auto_create_topics.nil?
-      props.put(kafka::BOOTSTRAP_SERVERS_CONFIG, bootstrap_servers)
-      props.put(kafka::CHECK_CRCS_CONFIG, check_crcs.to_s) unless check_crcs.nil?
-      props.put(kafka::CLIENT_DNS_LOOKUP_CONFIG, client_dns_lookup)
-      props.put(kafka::CLIENT_ID_CONFIG, client_id)
-      props.put(kafka::CONNECTIONS_MAX_IDLE_MS_CONFIG, connections_max_idle_ms.to_s) unless connections_max_idle_ms.nil?
       props.put(kafka::ENABLE_AUTO_COMMIT_CONFIG, enable_auto_commit.to_s)
       props.put(kafka::EXCLUDE_INTERNAL_TOPICS_CONFIG, exclude_internal_topics) unless exclude_internal_topics.nil?
-      props.put(kafka::FETCH_MAX_BYTES_CONFIG, fetch_max_bytes.to_s) unless fetch_max_bytes.nil?
-      props.put(kafka::FETCH_MAX_WAIT_MS_CONFIG, fetch_max_wait_ms.to_s) unless fetch_max_wait_ms.nil?
-      props.put(kafka::FETCH_MIN_BYTES_CONFIG, fetch_min_bytes.to_s) unless fetch_min_bytes.nil?
-      props.put(kafka::GROUP_ID_CONFIG, group_id)
       props.put(kafka::GROUP_INSTANCE_ID_CONFIG, group_instance_id) unless group_instance_id.nil?
       props.put(kafka::GROUP_PROTOCOL_CONFIG, group_protocol)
       props.put(kafka::HEARTBEAT_INTERVAL_MS_CONFIG, heartbeat_interval_ms.to_s) unless heartbeat_interval_ms.nil?
       props.put(kafka::ISOLATION_LEVEL_CONFIG, isolation_level)
-      props.put(kafka::KEY_DESERIALIZER_CLASS_CONFIG, key_deserializer_class)
-      props.put(kafka::MAX_PARTITION_FETCH_BYTES_CONFIG, max_partition_fetch_bytes.to_s) unless max_partition_fetch_bytes.nil?
-      props.put(kafka::MAX_POLL_RECORDS_CONFIG, max_poll_records.to_s) unless max_poll_records.nil?
-      props.put(kafka::MAX_POLL_INTERVAL_MS_CONFIG, max_poll_interval_ms.to_s) unless max_poll_interval_ms.nil?
-      props.put(kafka::METADATA_MAX_AGE_CONFIG, metadata_max_age_ms.to_s) unless metadata_max_age_ms.nil?
       props.put(kafka::PARTITION_ASSIGNMENT_STRATEGY_CONFIG, partition_assignment_strategy_class) unless partition_assignment_strategy.nil?
-      props.put(kafka::RECEIVE_BUFFER_CONFIG, receive_buffer_bytes.to_s) unless receive_buffer_bytes.nil?
-      props.put(kafka::RECONNECT_BACKOFF_MS_CONFIG, reconnect_backoff_ms.to_s) unless reconnect_backoff_ms.nil?
-      props.put(kafka::RECONNECT_BACKOFF_MAX_MS_CONFIG, reconnect_backoff_max_ms.to_s) unless reconnect_backoff_max_ms.nil?
-      props.put(kafka::REQUEST_TIMEOUT_MS_CONFIG, request_timeout_ms.to_s) unless request_timeout_ms.nil?
-      props.put(kafka::RETRY_BACKOFF_MS_CONFIG, retry_backoff_ms.to_s) unless retry_backoff_ms.nil?
-      props.put(kafka::SEND_BUFFER_CONFIG, send_buffer_bytes.to_s) unless send_buffer_bytes.nil?
       props.put(kafka::SESSION_TIMEOUT_MS_CONFIG, session_timeout_ms.to_s) unless session_timeout_ms.nil?
-      props.put(kafka::VALUE_DESERIALIZER_CLASS_CONFIG, value_deserializer_class)
-      props.put(kafka::CLIENT_RACK_CONFIG, client_rack) unless client_rack.nil? 
 
-      props.put("security.protocol", security_protocol) unless security_protocol.nil?
       if schema_registry_url
         props.put(kafka::VALUE_DESERIALIZER_CLASS_CONFIG, Java::io.confluent.kafka.serializers.KafkaAvroDeserializer.java_class)
         serdes_config = Java::io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig
@@ -494,14 +587,6 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
         else
           props.put(serdes_config::BASIC_AUTH_CREDENTIALS_SOURCE, 'URL')
         end
-      end
-      if security_protocol == "SSL"
-        set_trustore_keystore_config(props)
-      elsif security_protocol == "SASL_PLAINTEXT"
-        set_sasl_config(props)
-      elsif security_protocol == "SASL_SSL"
-        set_trustore_keystore_config(props)
-        set_sasl_config(props)
       end
       if schema_registry_ssl_truststore_location
         props.put('schema.registry.ssl.truststore.location', schema_registry_ssl_truststore_location)
@@ -563,6 +648,87 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
   def header_with_value(header)
     !header.nil? && !header.value.nil? && !header.key.nil?
+  end
+
+  def validate_share_group_config!
+    incompatible = original_params.keys & SHARE_GROUP_INCOMPATIBLE_OPTIONS
+    unless incompatible.empty?
+      raise LogStash::ConfigurationError,
+        "The following options are not compatible with share_group consumer_mode and must be removed: #{incompatible.join(', ')}"
+    end
+  end
+
+  def validate_consumer_group_config!
+    incompatible = original_params.keys & CONSUMER_GROUP_ONLY_OPTIONS
+    unless incompatible.empty?
+      raise LogStash::ConfigurationError,
+        "The following options require consumer_mode => 'share_group' and cannot be used with consumer_group mode: #{incompatible.join(', ')}"
+    end
+  end
+
+  def create_share_consumer(client_id)
+    begin
+      props = build_common_props(client_id)
+
+      # Share consumer defaults to implicit acknowledgement, which disallows explicit
+      # acknowledge() calls. The plugin acknowledges each record after processing, so
+      # explicit mode is required.
+      props.put("share.acknowledgement.mode", "explicit")
+
+      org.apache.kafka.clients.consumer.KafkaShareConsumer.new(props)
+    rescue => e
+      logger.error("Unable to create Kafka share consumer from given configuration",
+                   :kafka_error_message => e,
+                   :cause => e.respond_to?(:getCause) ? e.getCause() : nil)
+      raise e
+    end
+  end
+
+  def share_group_thread_runner(logstash_queue, consumer, name)
+    java.lang.Thread.new do
+      LogStash::Util::set_thread_name(name)
+      begin
+        codec_instance = @codec.clone
+        ack_accept = org.apache.kafka.clients.consumer.AcknowledgeType::ACCEPT
+        ack_release = org.apache.kafka.clients.consumer.AcknowledgeType::RELEASE
+        until stop?
+          records = do_poll(consumer)
+          unless records.empty?
+            records.each do |record|
+              if stop?
+                consumer.acknowledge(record, ack_release)
+              else
+                begin
+                  handle_record(record, codec_instance, logstash_queue)
+                  consumer.acknowledge(record, ack_accept)
+                rescue => e
+                  logger.error("Error processing record in share group mode, acknowledging with #{@share_group_acknowledgement_on_error}",
+                               :kafka_error_message => e,
+                               :cause => e.respond_to?(:getCause) ? e.getCause() : nil)
+                  consumer.acknowledge(record, @share_group_ack_error_type)
+                end
+              end
+            end
+            commit_share_acknowledgements(consumer)
+          end
+        end
+      ensure
+        consumer.close
+      end
+    end
+  end
+
+  def commit_share_acknowledgements(consumer)
+    begin
+      consumer.commitSync
+    rescue org.apache.kafka.common.errors.WakeupException => e
+      logger.debug("Wake up from share consumer commitSync", :kafka_error_message => e)
+      raise e unless stop?
+    rescue StandardError => e
+      logger.error("Unable to commit share group acknowledgements",
+                   :kafka_error_message => e,
+                   :cause => e.respond_to?(:getCause) ? e.getCause() : nil)
+    end
   end
 
 end #class LogStash::Inputs::Kafka

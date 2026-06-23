@@ -84,6 +84,11 @@ describe LogStash::Inputs::Kafka do
       expect { subject.register }.to_not raise_error
     end
 
+    it "raises ConfigurationError when share_group_acknowledgement_on_error is set in consumer_group mode" do
+      config['share_group_acknowledgement_on_error'] = 'reject'
+      expect { subject.register }.to raise_error(LogStash::ConfigurationError, /share_group_acknowledgement_on_error/)
+    end
+
     context "when the deprecated `default` is specified" do
       let(:config) { common_config.merge('client_dns_lookup' => 'default') }
 
@@ -493,6 +498,180 @@ describe LogStash::Inputs::Kafka do
 
       expect( subject.send(:create_consumer, 'sample_client-4', 'group_instance_id') ).to be kafka_client
       expect( subject.enable_auto_commit ).to be true
+    end
+  end
+
+  context 'share group mode' do
+    let(:share_consumer_double) { double('kafka-share-consumer') }
+    let(:config) { common_config.merge('consumer_mode' => 'share_group') }
+
+    before do
+      allow(share_consumer_double).to receive(:subscribe)
+      allow(share_consumer_double).to receive(:wakeup)
+      allow(share_consumer_double).to receive(:close)
+    end
+
+    describe '#register' do
+      it "registers without error" do
+        expect { subject.register }.not_to raise_error
+      end
+
+      it "raises ConfigurationError when group_instance_id is set" do
+        config['group_instance_id'] = 'my-instance'
+        expect { subject.register }.to raise_error(LogStash::ConfigurationError, /group_instance_id/)
+      end
+
+      it "raises ConfigurationError when partition_assignment_strategy is set" do
+        config['partition_assignment_strategy'] = 'sticky'
+        expect { subject.register }.to raise_error(LogStash::ConfigurationError, /partition_assignment_strategy/)
+      end
+
+      it "raises ConfigurationError when schema_registry_url is set" do
+        config['schema_registry_url'] = 'http://localhost:8081'
+        expect { subject.register }.to raise_error(LogStash::ConfigurationError, /schema_registry_url/)
+      end
+
+      %w[
+        enable_auto_commit
+        auto_commit_interval_ms
+        heartbeat_interval_ms
+        session_timeout_ms
+        isolation_level
+        auto_offset_reset
+        exclude_internal_topics
+        group_protocol
+      ].each do |opt|
+        it "raises ConfigurationError when #{opt} is set in the pipeline config" do
+          config[opt] = case opt
+                        when 'enable_auto_commit', 'exclude_internal_topics' then 'true'
+                        when 'auto_commit_interval_ms', 'heartbeat_interval_ms', 'session_timeout_ms' then '5000'
+                        when 'isolation_level' then 'read_committed'
+                        when 'auto_offset_reset' then 'earliest'
+                        when 'group_protocol' then 'consumer'
+                        end
+          expect { subject.register }.to raise_error(LogStash::ConfigurationError, /#{opt}/)
+        end
+      end
+
+      it "accepts check_crcs in share_group mode (supported by KafkaShareConsumer)" do
+        config['check_crcs'] = true
+        expect { subject.register }.not_to raise_error
+      end
+
+      it "accepts auto_create_topics in share_group mode (supported by KafkaShareConsumer)" do
+        config['auto_create_topics'] = true
+        expect { subject.register }.not_to raise_error
+      end
+    end
+
+    describe '#create_share_consumer' do
+      it "creates a KafkaShareConsumer with correct bootstrap_servers and group_id" do
+        expect(org.apache.kafka.clients.consumer.KafkaShareConsumer).
+          to receive(:new).with(hash_including(
+            'bootstrap.servers' => 'localhost:9092',
+            'group.id' => 'logstash'
+          )).and_return(share_consumer_double)
+
+        expect(subject.send(:create_share_consumer, 'test-share-client-0')).to be share_consumer_double
+      end
+
+      it "does not set enable.auto.commit, isolation.level or auto.offset.reset" do
+        expect(org.apache.kafka.clients.consumer.KafkaShareConsumer).
+          to receive(:new) do |props|
+            expect(props).not_to have_key('enable.auto.commit')
+            expect(props).not_to have_key('isolation.level')
+            expect(props).not_to have_key('auto.offset.reset')
+            share_consumer_double
+          end
+
+        subject.send(:create_share_consumer, 'test-share-client-0')
+      end
+
+      it "sets share.acknowledgement.mode to explicit" do
+        expect(org.apache.kafka.clients.consumer.KafkaShareConsumer).
+          to receive(:new).with(hash_including('share.acknowledgement.mode' => 'explicit')).
+              and_return(share_consumer_double)
+
+        subject.send(:create_share_consumer, 'test-share-client-0')
+      end
+
+      context 'with client_rack' do
+        let(:config) { super().merge('client_rack' => 'US-EAST-1') }
+
+        it "passes client.rack to the share consumer" do
+          expect(org.apache.kafka.clients.consumer.KafkaShareConsumer).
+            to receive(:new).with(hash_including('client.rack' => 'US-EAST-1')).
+                and_return(share_consumer_double)
+
+          subject.send(:create_share_consumer, 'test-share-client-0')
+        end
+      end
+    end
+
+    describe '#running in share_group mode' do
+      let(:q) { Queue.new }
+      let(:payload) do
+        5.times.map { org.apache.kafka.clients.consumer.ConsumerRecord.new("logstash", 0, 0, "key", "value") }
+      end
+
+      before do
+        subject.register
+        expect(subject).to receive(:create_share_consumer).once.and_return(share_consumer_double)
+        polled = false
+        allow(share_consumer_double).to receive(:poll) do
+          if polled
+            []
+          else
+            polled = true
+            payload
+          end
+        end
+        allow(share_consumer_double).to receive(:acknowledge)
+        allow(share_consumer_double).to receive(:commitSync)
+      end
+
+      it "processes events and acknowledges each record" do
+        expect(share_consumer_double).to receive(:acknowledge).exactly(5).times
+        expect(share_consumer_double).to receive(:commitSync).at_least(:once)
+
+        t = Thread.new { sleep(1); subject.do_stop }
+        subject.run(q)
+        t.join
+
+        expect(q.size).to eq(5)
+      end
+
+      it "acknowledges with ACCEPT on successful record processing" do
+        ack_accept = org.apache.kafka.clients.consumer.AcknowledgeType::ACCEPT
+        expect(share_consumer_double).to receive(:acknowledge).with(anything, ack_accept).exactly(5).times
+        allow(share_consumer_double).to receive(:commitSync)
+
+        t = Thread.new { sleep(1); subject.do_stop }
+        subject.run(q)
+        t.join
+      end
+    end
+
+    describe 'acknowledgement_on_error' do
+      before { subject.register }
+
+      context 'with release strategy (default)' do
+        it "uses RELEASE ack type on error" do
+          expect(subject.instance_variable_get(:@share_group_ack_error_type)).to eq(
+            org.apache.kafka.clients.consumer.AcknowledgeType::RELEASE
+          )
+        end
+      end
+
+      context 'with reject strategy' do
+        let(:config) { super().merge('share_group_acknowledgement_on_error' => 'reject') }
+
+        it "uses REJECT ack type on error" do
+          expect(subject.instance_variable_get(:@share_group_ack_error_type)).to eq(
+            org.apache.kafka.clients.consumer.AcknowledgeType::REJECT
+          )
+        end
+      end
     end
   end
 end
