@@ -1,3 +1,6 @@
+## 12.1.4
+  - Update jackson dependency to 2.21.4 [#268](https://github.com/logstash-plugins/logstash-integration-kafka/pull/268)
+
 ## 12.1.3
   - Upgrades `httpcore5` dependency to v5.3.6 [#262](https://github.com/logstash-plugins/logstash-integration-kafka/pull/262)
 
