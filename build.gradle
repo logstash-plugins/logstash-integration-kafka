@@ -43,7 +43,7 @@ java {
 // Confluent Platform 7.9.x is Apache Kafka 3.9.x
 String confluentKafkaVersion = '7.9.5'
 String apacheKafkaVersion = '3.9.2'
-String jacksonVersion = '2.21.2'
+String jacksonVersion = '2.21.4'
 
 configurations.configureEach {
     resolutionStrategy {
