@@ -43,7 +43,7 @@ java {
 // Confluent Platform 8.2.x is Apache Kafka 4.2.x
 String confluentKafkaVersion = '8.2.1'
 String apacheKafkaVersion = '4.2.0'
-String jacksonVersion = '2.21.2'
+String jacksonVersion = '2.21.4'
 
 repositories {
     mavenCentral()
