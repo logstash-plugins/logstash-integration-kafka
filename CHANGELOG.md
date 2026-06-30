@@ -1,3 +1,6 @@
+## 11.8.10
+  - Update jackson dependency to 2.21.4 [#269](https://github.com/logstash-plugins/logstash-integration-kafka/pull/269)
+
 ## 11.8.9
   - Upgrades jackson.core to 2.21.2 version [#255](https://github.com/logstash-plugins/logstash-integration-kafka/pull/255)
 
