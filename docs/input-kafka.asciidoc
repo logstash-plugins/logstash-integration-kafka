@@ -122,6 +122,7 @@ See the https://kafka.apache.org/{kafka_client_doc}/documentation for more detai
 | <<plugins-{type}s-{plugin}-client_dns_lookup>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-client_id>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-client_rack>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-commit_after_pq_fsync>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-connections_max_idle_ms>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-consumer_threads>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-decorate_events>> |<<string,string>>|No
@@ -276,6 +277,25 @@ The setting corresponds with Kafka's `broker.rack` configuration.
 
 NOTE: Available only for Kafka 2.4.0 and higher. See
 https://cwiki.apache.org/confluence/display/KAFKA/KIP-392%3A+Allow+consumers+to+fetch+from+closest+replica[KIP-392].
+
+[id="plugins-{type}s-{plugin}-commit_after_pq_fsync"]
+===== `commit_after_pq_fsync`
+
+  * Value type is <<boolean,boolean>>
+  * Default value is `false`
+
+When set to `true`, Kafka offsets are committed to the broker only after the Logstash
+persistent queue has fsynced the polled batch to disk. This guarantees at-least-once
+delivery across Logstash crashes: an offset is never committed for events that could
+still be lost with the process.
+
+Requires Logstash to run with a persistent queue (`queue.type: persisted`); pipeline
+startup fails with a configuration error otherwise. Requires Logstash X.Y or later.
+Forces `enable_auto_commit` to `false`, since the Kafka client's background committer
+would bypass the fsync gate.
+
+Each poll batch incurs one fsync, which bounds consumer throughput by fsync latency;
+increase `max_poll_records` to amortize the cost.
 
 [id="plugins-{type}s-{plugin}-connections_max_idle_ms"]
 ===== `connections_max_idle_ms` 
