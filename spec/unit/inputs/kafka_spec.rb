@@ -95,6 +95,67 @@ describe LogStash::Inputs::Kafka do
     end
   end
 
+  describe 'commit_after_pq_fsync' do
+    let(:config) { common_config.merge('commit_after_pq_fsync' => true) }
+
+    context 'with a persisted queue' do
+      before { allow(subject).to receive(:pipeline_queue_type).and_return('persisted') }
+
+      it 'registers successfully' do
+        expect { subject.register }.not_to raise_error
+      end
+
+      it 'forces enable_auto_commit to false' do
+        subject.register
+        expect(subject.enable_auto_commit).to be false
+      end
+
+      context 'when enable_auto_commit is explicitly true' do
+        let(:config) { super().merge('enable_auto_commit' => true) }
+
+        it 'warns and forces it to false' do
+          expect(subject.logger).to receive(:warn).with(/forcing enable_auto_commit to false/)
+          subject.register
+          expect(subject.enable_auto_commit).to be false
+        end
+      end
+
+      context 'when enable_auto_commit is explicitly false' do
+        let(:config) { super().merge('enable_auto_commit' => false) }
+
+        it 'does not warn' do
+          expect(subject.logger).not_to receive(:warn).with(/enable_auto_commit/)
+          subject.register
+        end
+      end
+    end
+
+    context 'with a memory queue' do
+      before { allow(subject).to receive(:pipeline_queue_type).and_return('memory') }
+
+      it 'raises a configuration error' do
+        expect { subject.register }.to raise_error(LogStash::ConfigurationError, /queue\.type: persisted/)
+      end
+    end
+
+    context 'when the queue type cannot be determined' do
+      before { allow(subject).to receive(:pipeline_queue_type).and_return(nil) }
+
+      it 'raises a configuration error (fail-safe)' do
+        expect { subject.register }.to raise_error(LogStash::ConfigurationError, /queue\.type: persisted/)
+      end
+    end
+
+    context 'when disabled (default)' do
+      let(:config) { common_config }
+
+      it 'does not query the pipeline queue type' do
+        expect(subject).not_to receive(:pipeline_queue_type)
+        subject.register
+      end
+    end
+  end
+
   describe '#running' do
     let(:q) { Queue.new }
     let(:config) { common_config.merge('client_id' => 'test') }

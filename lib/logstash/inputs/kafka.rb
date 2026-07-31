@@ -103,10 +103,14 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # Ideally you should have as many threads as the number of partitions for a perfect
   # balance — more threads than partitions means that some threads will be idle
   config :consumer_threads, :validate => :number, :default => 1
-  # If true, periodically commit to Kafka the offsets of messages already returned by the consumer. 
+  # If true, periodically commit to Kafka the offsets of messages already returned by the consumer.
   # This committed offset will be used when the process fails as the position from
   # which the consumption will begin.
   config :enable_auto_commit, :validate => :boolean, :default => true
+  # If true, Kafka offsets are committed only after the Logstash persistent queue
+  # has fsynced the polled batch to disk. Requires `queue.type: persisted` and
+  # forces `enable_auto_commit` to false.
+  config :commit_after_pq_fsync, :validate => :boolean, :default => false
   # Whether records from internal topics (such as offsets) should be exposed to the consumer.
   # If set to true the only way to receive records from an internal topic is subscribing to it.
   config :exclude_internal_topics, :validate => :string
@@ -303,6 +307,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
     check_schema_registry_parameters
 
     set_group_protocol!
+    validate_pq_fsync_config!
   end
 
   METADATA_NONE     = Set[].freeze
@@ -522,6 +527,31 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
                    :cause => e.respond_to?(:getCause) ? e.getCause() : nil)
       raise e
     end
+  end
+
+  # commit_after_pq_fsync needs a durable queue and manual offset commits.
+  # Validated here because register failures abort pipeline startup, while
+  # exceptions from run are retried forever by the pipeline's inputworker.
+  def validate_pq_fsync_config!
+    return unless @commit_after_pq_fsync
+
+    queue_type = pipeline_queue_type
+    unless queue_type == 'persisted'
+      raise LogStash::ConfigurationError,
+            "commit_after_pq_fsync requires Logstash to be configured with a persistent queue " \
+            "(queue.type: persisted), detected queue.type: #{queue_type.inspect}"
+    end
+
+    if @enable_auto_commit
+      logger.warn("commit_after_pq_fsync is enabled; forcing enable_auto_commit to false")
+      @enable_auto_commit = false
+    end
+  end
+
+  def pipeline_queue_type
+    execution_context&.pipeline&.settings&.get('queue.type')
+  rescue StandardError
+    nil
   end
 
   # In order to use group_protocol => consumer, heartbeat_interval_ms, session_timeout_ms and partition_assignment_strategy need to be unset
