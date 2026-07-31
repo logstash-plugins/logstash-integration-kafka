@@ -370,6 +370,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
           records = do_poll(consumer)
           unless records.empty?
             records.each { |record| handle_record(record, codec_instance, logstash_queue) }
+            checkpoint_persistent_queue!(logstash_queue) if @commit_after_pq_fsync
             maybe_commit_offset(consumer)
           end
         end
@@ -427,6 +428,18 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
         end
       end
     end
+  end
+
+  # Blocks until the PQ has fsynced everything pushed so far. Re-raises on
+  # failure so the offset commit is skipped and this consumer thread stops:
+  # the events' durability is unknown, so the offsets must stay uncommitted
+  # for another consumer to re-poll after rebalance.
+  def checkpoint_persistent_queue!(logstash_queue)
+    logstash_queue.checkpoint!
+  rescue => e
+    logger.error("PQ checkpoint failed; Kafka offsets will not be committed, consumer stopping",
+                 :error => e.message, :cause => e.respond_to?(:getCause) ? e.getCause : nil)
+    raise
   end
 
   def maybe_commit_offset(consumer)
