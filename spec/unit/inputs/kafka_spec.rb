@@ -146,6 +146,16 @@ describe LogStash::Inputs::Kafka do
       end
     end
 
+    context 'at run time' do
+      before { allow(subject).to receive(:pipeline_queue_type).and_return('persisted') }
+
+      it 'raises when the queue write client does not support checkpoint!' do
+        subject.register
+        # a plain Ruby Queue stands in for an old-Logstash write client: no checkpoint!
+        expect { subject.run(Queue.new) }.to raise_error(LogStash::ConfigurationError, /checkpoint!/)
+      end
+    end
+
     context 'when disabled (default)' do
       let(:config) { common_config }
 

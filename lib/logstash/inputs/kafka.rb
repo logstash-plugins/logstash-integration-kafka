@@ -334,6 +334,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
   public
   def run(logstash_queue)
+    check_pq_fsync_support!(logstash_queue)
     @runner_consumers = consumer_threads.times.map do |i|
       thread_group_instance_id = consumer_threads > 1 && group_instance_id ? "#{group_instance_id}-#{i}" : group_instance_id
       subscribe(create_consumer("#{client_id}-#{i}", thread_group_instance_id))
@@ -546,6 +547,19 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
       logger.warn("commit_after_pq_fsync is enabled; forcing enable_auto_commit to false")
       @enable_auto_commit = false
     end
+  end
+
+  # Defense in depth: on Logstash versions whose write client predates the
+  # checkpoint! API this turns a mid-stream NoMethodError into a clear error.
+  # NOTE: inputworker retries run-time failures every second, so this logs
+  # repeatedly by design — the message must stay self-explanatory.
+  def check_pq_fsync_support!(logstash_queue)
+    return unless @commit_after_pq_fsync
+    return if logstash_queue.respond_to?(:checkpoint!)
+
+    raise LogStash::ConfigurationError,
+          "commit_after_pq_fsync requires a Logstash version whose queue write client " \
+          "supports checkpoint! — upgrade Logstash to X.Y or later"
   end
 
   def pipeline_queue_type
