@@ -339,10 +339,12 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
       thread_group_instance_id = consumer_threads > 1 && group_instance_id ? "#{group_instance_id}-#{i}" : group_instance_id
       subscribe(create_consumer("#{client_id}-#{i}", thread_group_instance_id))
     end
+    @thread_errors = java.util.concurrent.CopyOnWriteArrayList.new
     @runner_threads = @runner_consumers.map.with_index { |consumer, i| thread_runner(logstash_queue, consumer,
                                                                                      "kafka-input-worker-#{client_id}-#{i}") }
     @runner_threads.each(&:start)
     @runner_threads.each(&:join)
+    raise @thread_errors[0] unless @thread_errors.empty?
   end # def run
 
   public
@@ -374,6 +376,11 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
             maybe_commit_offset(consumer)
           end
         end
+      rescue => e
+        # Capture unexpected failures (e.g. PQ checkpoint error) so run can re-raise
+        # them after all threads finish, allowing the inputworker to restart the input.
+        # Suppress during orderly shutdown — stop? means we were asked to exit.
+        @thread_errors << e unless stop?
       ensure
         consumer.close
       end

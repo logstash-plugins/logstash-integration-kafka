@@ -212,10 +212,10 @@ describe LogStash::Inputs::Kafka do
         expect(q.size).to eq(10)
       end
 
-      it 'does not commit offsets when checkpoint! raises' do
+      it 'does not commit offsets when checkpoint! raises, and surfaces the error' do
         allow(q).to receive(:checkpoint!).and_raise(IOError.new('disk full'))
         expect(consumer_double).not_to receive(:commitSync)
-        run_until_stopped
+        expect { run_until_stopped }.to raise_error(IOError, 'disk full')
       end
 
       context 'when the option is disabled' do
