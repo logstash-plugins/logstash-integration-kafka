@@ -297,6 +297,11 @@ would bypass the fsync gate.
 Each poll batch incurs one fsync, which bounds consumer throughput by fsync latency;
 increase `max_poll_records` to amortize the cost.
 
+NOTE: The fsync holds the pipeline's shared queue lock for its duration, briefly
+blocking all other inputs in the same pipeline. To avoid unintended throughput
+contention, run this input in a dedicated pipeline (via `pipelines.yml`) so that
+the lock is not shared with unrelated inputs.
+
 [id="plugins-{type}s-{plugin}-connections_max_idle_ms"]
 ===== `connections_max_idle_ms` 
 
