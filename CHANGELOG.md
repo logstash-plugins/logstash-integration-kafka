@@ -1,3 +1,6 @@
+## 12.2.0
+  - Added `commit_after_pq_fsync` option to the input: commit Kafka offsets only after the Logstash persistent queue has fsynced the polled batch to disk [#272](https://github.com/logstash-plugins/logstash-integration-kafka/pull/272)
+
 ## 12.1.5
   - Upgrades `httpcore5` dependency to v5.4.2 [#270](https://github.com/logstash-plugins/logstash-integration-kafka/pull/270)
 

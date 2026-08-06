@@ -103,10 +103,14 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
   # Ideally you should have as many threads as the number of partitions for a perfect
   # balance — more threads than partitions means that some threads will be idle
   config :consumer_threads, :validate => :number, :default => 1
-  # If true, periodically commit to Kafka the offsets of messages already returned by the consumer. 
+  # If true, periodically commit to Kafka the offsets of messages already returned by the consumer.
   # This committed offset will be used when the process fails as the position from
   # which the consumption will begin.
   config :enable_auto_commit, :validate => :boolean, :default => true
+  # If true, Kafka offsets are committed only after the Logstash persistent queue
+  # has fsynced the polled batch to disk. Requires `queue.type: persisted` and
+  # forces `enable_auto_commit` to false.
+  config :commit_after_pq_fsync, :validate => :boolean, :default => false
   # Whether records from internal topics (such as offsets) should be exposed to the consumer.
   # If set to true the only way to receive records from an internal topic is subscribing to it.
   config :exclude_internal_topics, :validate => :string
@@ -303,6 +307,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
     check_schema_registry_parameters
 
     set_group_protocol!
+    validate_pq_fsync_config!
   end
 
   METADATA_NONE     = Set[].freeze
@@ -329,14 +334,17 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
   public
   def run(logstash_queue)
+    check_pq_fsync_support!(logstash_queue)
     @runner_consumers = consumer_threads.times.map do |i|
       thread_group_instance_id = consumer_threads > 1 && group_instance_id ? "#{group_instance_id}-#{i}" : group_instance_id
       subscribe(create_consumer("#{client_id}-#{i}", thread_group_instance_id))
     end
+    @thread_errors = java.util.concurrent.CopyOnWriteArrayList.new
     @runner_threads = @runner_consumers.map.with_index { |consumer, i| thread_runner(logstash_queue, consumer,
                                                                                      "kafka-input-worker-#{client_id}-#{i}") }
     @runner_threads.each(&:start)
     @runner_threads.each(&:join)
+    raise @thread_errors[0] unless @thread_errors.empty?
   end # def run
 
   public
@@ -364,9 +372,15 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
           records = do_poll(consumer)
           unless records.empty?
             records.each { |record| handle_record(record, codec_instance, logstash_queue) }
+            checkpoint_persistent_queue!(logstash_queue) if @commit_after_pq_fsync
             maybe_commit_offset(consumer)
           end
         end
+      rescue => e
+        # Capture unexpected failures (e.g. PQ checkpoint error) so run can re-raise
+        # them after all threads finish, allowing the inputworker to restart the input.
+        # Suppress during orderly shutdown — stop? means we were asked to exit.
+        @thread_errors << e unless stop?
       ensure
         consumer.close
       end
@@ -421,6 +435,18 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
         end
       end
     end
+  end
+
+  # Blocks until the PQ has fsynced everything pushed so far. Re-raises on
+  # failure so the offset commit is skipped and this consumer thread stops:
+  # the events' durability is unknown, so the offsets must stay uncommitted
+  # for another consumer to re-poll after rebalance.
+  def checkpoint_persistent_queue!(logstash_queue)
+    logstash_queue.checkpoint!
+  rescue => e
+    logger.error("PQ checkpoint failed; Kafka offsets will not be committed, consumer stopping",
+                 :error => e.message, :cause => e.respond_to?(:getCause) ? e.getCause : nil)
+    raise
   end
 
   def maybe_commit_offset(consumer)
@@ -522,6 +548,44 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
                    :cause => e.respond_to?(:getCause) ? e.getCause() : nil)
       raise e
     end
+  end
+
+  # commit_after_pq_fsync needs a durable queue and manual offset commits.
+  # Validated here because register failures abort pipeline startup, while
+  # exceptions from run are retried forever by the pipeline's inputworker.
+  def validate_pq_fsync_config!
+    return unless @commit_after_pq_fsync
+
+    queue_type = pipeline_queue_type
+    unless queue_type == 'persisted'
+      raise LogStash::ConfigurationError,
+            "commit_after_pq_fsync requires Logstash to be configured with a persistent queue " \
+            "(queue.type: persisted), detected queue.type: #{queue_type.inspect}"
+    end
+
+    if @enable_auto_commit
+      logger.warn("commit_after_pq_fsync is enabled; forcing enable_auto_commit to false")
+      @enable_auto_commit = false
+    end
+  end
+
+  # Defense in depth: on Logstash versions whose write client predates the
+  # checkpoint! API this turns a mid-stream NoMethodError into a clear error.
+  # NOTE: inputworker retries run-time failures every second, so this logs
+  # repeatedly by design — the message must stay self-explanatory.
+  def check_pq_fsync_support!(logstash_queue)
+    return unless @commit_after_pq_fsync
+    return if logstash_queue.respond_to?(:checkpoint!)
+
+    raise LogStash::ConfigurationError,
+          "commit_after_pq_fsync requires a Logstash version whose queue write client " \
+          "supports checkpoint! — upgrade Logstash to X.Y or later"
+  end
+
+  def pipeline_queue_type
+    execution_context&.pipeline&.settings&.get('queue.type')
+  rescue StandardError
+    nil
   end
 
   # In order to use group_protocol => consumer, heartbeat_interval_ms, session_timeout_ms and partition_assignment_strategy need to be unset

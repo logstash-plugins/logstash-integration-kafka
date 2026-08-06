@@ -95,6 +95,140 @@ describe LogStash::Inputs::Kafka do
     end
   end
 
+  describe 'commit_after_pq_fsync' do
+    let(:config) { common_config.merge('commit_after_pq_fsync' => true) }
+
+    context 'with a persisted queue' do
+      before { allow(subject).to receive(:pipeline_queue_type).and_return('persisted') }
+
+      it 'registers successfully' do
+        expect { subject.register }.not_to raise_error
+      end
+
+      it 'forces enable_auto_commit to false' do
+        subject.register
+        expect(subject.enable_auto_commit).to be false
+      end
+
+      context 'when enable_auto_commit is explicitly true' do
+        let(:config) { super().merge('enable_auto_commit' => true) }
+
+        it 'warns and forces it to false' do
+          expect(subject.logger).to receive(:warn).with(/forcing enable_auto_commit to false/)
+          subject.register
+          expect(subject.enable_auto_commit).to be false
+        end
+      end
+
+      context 'when enable_auto_commit is explicitly false' do
+        let(:config) { super().merge('enable_auto_commit' => false) }
+
+        it 'does not warn' do
+          expect(subject.logger).not_to receive(:warn).with(/enable_auto_commit/)
+          subject.register
+        end
+      end
+    end
+
+    context 'with a memory queue' do
+      before { allow(subject).to receive(:pipeline_queue_type).and_return('memory') }
+
+      it 'raises a configuration error' do
+        expect { subject.register }.to raise_error(LogStash::ConfigurationError, /queue\.type: persisted/)
+      end
+    end
+
+    context 'when the queue type cannot be determined' do
+      before { allow(subject).to receive(:pipeline_queue_type).and_return(nil) }
+
+      it 'raises a configuration error (fail-safe)' do
+        expect { subject.register }.to raise_error(LogStash::ConfigurationError, /queue\.type: persisted/)
+      end
+    end
+
+    context 'at run time' do
+      before { allow(subject).to receive(:pipeline_queue_type).and_return('persisted') }
+
+      it 'raises when the queue write client does not support checkpoint!' do
+        subject.register
+        # a plain Ruby Queue stands in for an old-Logstash write client: no checkpoint!
+        expect { subject.run(Queue.new) }.to raise_error(LogStash::ConfigurationError, /checkpoint!/)
+      end
+    end
+
+    context 'when disabled (default)' do
+      let(:config) { common_config }
+
+      it 'does not query the pipeline queue type' do
+        expect(subject).not_to receive(:pipeline_queue_type)
+        subject.register
+      end
+    end
+
+    context 'when running' do
+      let(:config) { common_config.merge('commit_after_pq_fsync' => true, 'client_id' => 'test') }
+      let(:q) do
+        queue = Queue.new
+        def queue.checkpoint!; end  # PQ write-client API stand-in
+        queue
+      end
+
+      before do
+        allow(subject).to receive(:pipeline_queue_type).and_return('persisted')
+        expect(subject).to receive(:create_consumer).once.and_return(consumer_double)
+        allow(consumer_double).to receive(:wakeup)
+        allow(consumer_double).to receive(:close)
+        allow(consumer_double).to receive(:subscribe)
+        polled = false
+        allow(consumer_double).to receive(:poll) do
+          if polled
+            []
+          else
+            polled = true
+            payload
+          end
+        end
+        subject.register
+      end
+
+      def run_until_stopped
+        t = Thread.new do
+          sleep(1)
+          subject.do_stop
+        end
+        subject.run(q)
+        t.join
+      end
+
+      it 'checkpoints the queue before committing offsets' do
+        expect(q).to receive(:checkpoint!).ordered
+        expect(consumer_double).to receive(:commitSync).ordered
+        run_until_stopped
+      end
+
+      it 'processes events into the queue' do
+        allow(consumer_double).to receive(:commitSync)
+        run_until_stopped
+        expect(q.size).to eq(10)
+      end
+
+      it 'does not commit offsets when checkpoint! raises, and surfaces the error' do
+        allow(q).to receive(:checkpoint!).and_raise(IOError.new('disk full'))
+        expect(consumer_double).not_to receive(:commitSync)
+        expect { run_until_stopped }.to raise_error(IOError, 'disk full')
+      end
+
+      context 'when the option is disabled' do
+        let(:config) { common_config.merge('client_id' => 'test') }
+
+        it 'never calls checkpoint!' do
+          expect(q).not_to receive(:checkpoint!)
+          run_until_stopped
+        end
+      end
+    end
+  end
+
   describe '#running' do
     let(:q) { Queue.new }
     let(:config) { common_config.merge('client_id' => 'test') }
