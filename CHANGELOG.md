@@ -1,3 +1,6 @@
+## 12.1.8
+  - Require httpclient5 version 5.6.4 or later  [#277](https://github.com/logstash-plugins/logstash-integration-kafka/pull/277)
+
 ## 12.1.7
   - Upgrades `kafka-avro-serializer` dependency to v8.3.1, and constrains transitive dependency on apache `httpclient5` to be at least `v5.6.3` [#273](https://github.com/logstash-plugins/logstash-integration-kafka/pull/273)
 
