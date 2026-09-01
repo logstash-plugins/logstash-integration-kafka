@@ -78,6 +78,88 @@ describe "outputs/kafka" do
     end
   end
 
+  context 'when using message_headers_field' do
+    let(:headers_field) { "[@metadata][kafka][headers]" }
+    let(:config_with_headers_field) { simple_kafka_config.merge({"message_headers_field" => headers_field}) }
+    let(:sent_record) { @sent_record }
+
+    def register_and_receive(kafka, event)
+      expect_any_instance_of(org.apache.kafka.clients.producer.KafkaProducer).to receive(:send) do |_, record|
+        @sent_record = record
+        nil
+      end
+      kafka.register
+      kafka.multi_receive([event])
+    end
+
+    def record_headers(record)
+      record.headers.toArray.map { |h| [h.key, String.from_java_bytes(h.value).force_encoding(Encoding::UTF_8)] }
+    end
+
+    it 'should add a header for each entry of the referenced hash' do
+      event.set(headers_field, { "breadcrumbId" => "breadcrumb-456", "updateMode" => "FULL", "retryCount" => 3,
+                                 "traceparent" => "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01" })
+      register_and_receive(LogStash::Outputs::Kafka.new(config_with_headers_field), event)
+      expect(record_headers(sent_record)).to contain_exactly(
+        ["breadcrumbId", "breadcrumb-456"], ["updateMode", "FULL"], ["retryCount", "3"],
+        ["traceparent", "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"])
+    end
+
+    it 'should leave the message value and key unchanged' do
+      event.set(headers_field, { "breadcrumbId" => "breadcrumb-456" })
+      kafka = LogStash::Outputs::Kafka.new(config_with_headers_field.merge({"message_key" => "%{host}"}))
+      register_and_receive(kafka, event)
+      expect(sent_record.key).to eq("172.0.0.1")
+      expect(sent_record.value).to eq(event.to_s)
+    end
+
+    it 'should send the event without headers when the referenced field is absent' do
+      register_and_receive(LogStash::Outputs::Kafka.new(config_with_headers_field), event)
+      expect(record_headers(sent_record)).to eq([])
+    end
+
+    it 'should warn and add no headers when the referenced field is not a hash' do
+      event.set(headers_field, "not-a-hash")
+      kafka = LogStash::Outputs::Kafka.new(config_with_headers_field)
+      allow(kafka.logger).to receive(:warn)
+      register_and_receive(kafka, event)
+      expect(record_headers(sent_record)).to eq([])
+      expect(kafka.logger).to have_received(:warn).with(/does not contain a hash/, anything)
+    end
+
+    it 'should skip entries with an empty key or a nil value' do
+      event.set(headers_field, { "breadcrumbId" => "breadcrumb-456", "" => "no-name", "empty" => nil })
+      register_and_receive(LogStash::Outputs::Kafka.new(config_with_headers_field), event)
+      expect(record_headers(sent_record)).to contain_exactly(["breadcrumbId", "breadcrumb-456"])
+    end
+
+    it 'should skip non-scalar values with a warning' do
+      event.set(headers_field, { "breadcrumbId" => "breadcrumb-456", "nested" => { "a" => "b" }, "list" => ["a", "b"] })
+      kafka = LogStash::Outputs::Kafka.new(config_with_headers_field)
+      allow(kafka.logger).to receive(:warn)
+      register_and_receive(kafka, event)
+      expect(record_headers(sent_record)).to contain_exactly(["breadcrumbId", "breadcrumb-456"])
+      expect(kafka.logger).to have_received(:warn).with(/non-scalar header value/, anything)
+    end
+
+    it 'should append dynamic headers after static message_headers, keeping duplicate names' do
+      event.set(headers_field, { "host" => "dynamic-value" })
+      kafka = LogStash::Outputs::Kafka.new(config_with_headers_field.merge({"message_headers" => { "host" => "%{host}" }}))
+      register_and_receive(kafka, event)
+      expect(record_headers(sent_record)).to eq([["host", "172.0.0.1"], ["host", "dynamic-value"]])
+    end
+
+    it 'should raise a configuration error on an invalid field reference' do
+      kafka = LogStash::Outputs::Kafka.new(simple_kafka_config.merge({"message_headers_field" => "[@metadata][kafka]headers]"}))
+      expect { kafka.register }.to raise_error(LogStash::ConfigurationError, /message_headers_field/)
+    end
+
+    it 'should raise a configuration error on an empty field reference' do
+      kafka = LogStash::Outputs::Kafka.new(simple_kafka_config.merge({"message_headers_field" => " "}))
+      expect { kafka.register }.to raise_error(LogStash::ConfigurationError, /message_headers_field/)
+    end
+  end
+
   context "when KafkaProducer#send() raises a retriable exception" do
     let(:failcount) { (rand * 10).to_i }
     let(:sendcount) { failcount + 1 }
