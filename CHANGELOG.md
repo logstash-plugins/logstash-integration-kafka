@@ -1,3 +1,6 @@
+## 12.1.9
+  - Upgrade zstd-jni dependency [#279](https://github.com/logstash-plugins/logstash-integration-kafka/pull/279)
+
 ## 12.1.8
   - Require httpclient5 version 5.6.4 or later  [#277](https://github.com/logstash-plugins/logstash-integration-kafka/pull/277)
 
