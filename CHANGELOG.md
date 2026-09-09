@@ -1,3 +1,6 @@
+## 11.8.12
+  - Upgrade zstd-jni dependency [#280](https://github.com/logstash-plugins/logstash-integration-kafka/pull/280)
+
 ## 11.8.11
   - Update jackson dependency to 2.21.6 [#275](https://github.com/logstash-plugins/logstash-integration-kafka/pull/275)
 
