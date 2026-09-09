@@ -60,6 +60,8 @@ dependencies {
     constraints {
         // remove once kafka-schema-registry-client pulls httpclient >= 5.6.4
         implementation('org.apache.httpcomponents.client5:httpclient5:[5.6.4,5.7[')
+        // remove this when org.apache.kafka:kafka-clients starts pulling the 1.5.7+ version
+        implementation('com.github.luben:zstd-jni:[1.5.7-14,)')
     }
 
     implementation("io.confluent:kafka-avro-serializer:${confluentKafkaVersion}") {
