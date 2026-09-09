@@ -68,6 +68,9 @@ dependencies {
         implementation('org.apache.avro:avro:1.11.5')
         // remove this once kafka-avro-serializer starts pulling 2.21.2+ versions
         implementation("com.fasterxml.jackson:jackson-bom:${jacksonVersion}")
+
+        // remove this when org.apache.kafka:kafka-clients starts pulling the 1.5.7+ version
+        implementation('com.github.luben:zstd-jni:[1.5.7-14,)')
     }
 
     implementation("io.confluent:kafka-avro-serializer:${confluentKafkaVersion}") {
