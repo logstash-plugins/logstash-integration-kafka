@@ -210,6 +210,26 @@ describe "outputs/kafka", :integration => true do
     end
   end
 
+  context 'when setting message_headers_field' do
+    let(:num_events) { 10 }
+    let(:test_topic) { 'logstash_integration_topic5' }
+
+    before :each do
+      event.set('[@metadata][kafka][headers]', { "peer" => "producer-17", "traceparent" => "00-abc123-def456-01" })
+      config = base_config.merge({"topic_id" => test_topic, "message_headers_field" => "[@metadata][kafka][headers]"})
+      load_kafka_data(config)
+    end
+
+    it 'messages should contain headers read from the referenced field' do
+      messages = fetch_messages(test_topic)
+
+      expect(messages.size).to eq(num_events)
+      messages.each do |m|
+        expect(m.headers).to eq({"peer" => "producer-17", "traceparent" => "00-abc123-def456-01"})
+      end
+    end
+  end
+
   context 'setting partitioner' do
     let(:test_topic) { 'logstash_integration_partitioner_topic' }
     let(:partitioner) { 'round_robin' }
