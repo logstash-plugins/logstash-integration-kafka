@@ -20,6 +20,10 @@ module LogStash module PluginMixins module Kafka
       # instance of schema registry. If this option has value `value_deserializer_class` nor `topics_pattern` could be valued
       config :schema_registry_url, :validate => :uri
 
+      # Option to set the api key of the Schema Registry.
+      # This option permits to define an api key to be used with all schema registry requests either in header or as query parameter.
+      config :schema_registry_api_key, :validate => :string
+      
       # Option to set the proxy of the Schema Registry.
       # This option permits to define a proxy to be used to reach the schema registry service instance.
       config :schema_registry_proxy, :validate => :uri
@@ -101,7 +105,11 @@ module LogStash module PluginMixins module Kafka
 
       client = Manticore::Client.new(options)
       begin
-        response = client.get(@schema_registry_url.uri.to_s + '/subjects').body
+        if schema_registry_api_key
+          response = client.get(@schema_registry_url.uri.to_s + '/subjects' + '?key=' + @schema_registry_apikey.to_s).body
+        else
+          response = client.get(@schema_registry_url.uri.to_s + '/subjects').body
+        end
       rescue Manticore::ManticoreException => e
         raise LogStash::ConfigurationError.new("Schema registry service doesn't respond, error: #{e.message}")
       end
