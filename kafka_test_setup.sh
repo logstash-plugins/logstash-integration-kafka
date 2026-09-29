@@ -6,7 +6,7 @@ set -ex
 if [ -n "${KAFKA_VERSION+1}" ]; then
   echo "KAFKA_VERSION is $KAFKA_VERSION"
 else
-   KAFKA_VERSION=4.2.0
+   KAFKA_VERSION=4.3.1
 fi
 
 KAFKA_MAJOR_VERSION="${KAFKA_VERSION%%.*}"
@@ -64,7 +64,7 @@ echo "Setup Confluent Platform"
 if [ -n "${CONFLUENT_VERSION+1}" ]; then
   echo "CONFLUENT_VERSION is $CONFLUENT_VERSION"
 else
-   CONFLUENT_VERSION=8.2.0
+   CONFLUENT_VERSION=8.3.1
 fi
 if [ ! -e "confluent-community-$CONFLUENT_VERSION.tar.gz" ]; then
   echo "Confluent Platform not present locally, downloading"
