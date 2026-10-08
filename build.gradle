@@ -62,6 +62,8 @@ dependencies {
         implementation('org.apache.httpcomponents.client5:httpclient5:[5.6.4,5.7[')
         // remove this when org.apache.kafka:kafka-clients starts pulling the 1.5.7+ version
         implementation('com.github.luben:zstd-jni:[1.5.7-14,)')
+        // remove this when kafka-client pulls 1.11.4+
+        implementation('at.yawk.lz4:lz4-java:[1.11.4,)')
     }
 
     implementation("io.confluent:kafka-avro-serializer:${confluentKafkaVersion}") {
