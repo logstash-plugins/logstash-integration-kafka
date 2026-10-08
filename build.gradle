@@ -78,7 +78,8 @@ dependencies {
     }
 
     implementation "org.apache.kafka:kafka-clients:${apacheKafkaVersion}"
-    implementation 'at.yawk.lz4:lz4-java:1.10.1'
+    // remove this when kafka-clients pulls 1.11.4+
+    implementation('at.yawk.lz4:lz4-java:[1.11.4,)')
 
     constraints {
         implementation("org.apache.commons:commons-compress:1.28.0")
