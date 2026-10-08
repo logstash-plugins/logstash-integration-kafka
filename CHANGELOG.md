@@ -1,3 +1,6 @@
+## 11.8.13
+  - Upgrades lz4-java dependency to 1.11.4 version [#288](https://github.com/logstash-plugins/logstash-integration-kafka/pull/288)
+
 ## 11.8.12
   - Upgrade zstd-jni dependency [#280](https://github.com/logstash-plugins/logstash-integration-kafka/pull/280)
 
