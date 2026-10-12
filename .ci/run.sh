@@ -8,7 +8,7 @@ set -ex
 # Define the Kafka:Confluent version pairs
 VERSIONS=(
 # "3.9.1:7.4.0"
-  "4.2.0:8.2.0"
+  "4.3.1:8.3.1"
 )
 
 for pair in "${VERSIONS[@]}"; do
