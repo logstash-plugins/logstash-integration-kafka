@@ -133,6 +133,7 @@ See the https://kafka.apache.org/{kafka_client_doc}/documentation for more detai
 | <<plugins-{type}s-{plugin}-group_id>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-group_instance_id>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-group_protocol>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-headers_encoding>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-heartbeat_interval_ms>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-isolation_level>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-jaas_path>> |a valid filesystem path|No
@@ -301,7 +302,8 @@ balance — more threads than partitions means that some threads will be idl
   * Accepted values are:
     - `none`: no metadata is added
     - `basic`: record's attributes are added
-    - `extended`: record's attributes, headers are added (limited to headers with values using UTF-8 encoding)
+    - `extended`: record's attributes, headers are added (limited to headers with values using UTF-8 encoding,
+      see <<plugins-{type}s-{plugin}-headers_encoding>>)
     - `false`: deprecated alias for `none`
     - `true`: deprecated alias for `basic`
   * Default value is `none`
@@ -428,6 +430,26 @@ Specifies the consumer group rebalance protocol used by the Kafka client.
 When using `consumer`, the following settings **cannot be configured**:
 `partition_assignment_strategy`, `heartbeat_interval_ms`, and `session_timeout_ms`.
 
+[id="plugins-{type}s-{plugin}-headers_encoding"]
+===== `headers_encoding`
+
+  * Value type is <<string,string>>
+  * Accepted values are:
+    - `utf8`: a header value is added as a string when its bytes are valid UTF-8, otherwise the header is skipped
+    - `amqp`: a header value is first decoded as a single AMQP 1.0 primitive; values that are not one are handled as with `utf8`
+  * Default value is `utf8`
+
+How header values are read into `[@metadata][kafka][headers]` when <<plugins-{type}s-{plugin}-decorate_events>> is `extended`.
+
+Use `amqp` to consume Azure Event Hubs through its Kafka endpoint when the events are produced over AMQP.
+Event Hubs delivers the application properties of those events as headers holding the AMQP-encoded value,
+type constructor included, so with `utf8` string, timestamp and UUID properties are skipped and numbers arrive as unreadable strings.
+With `amqp` they keep their type: integers and floating point numbers become numbers, booleans become booleans,
+strings, symbols, UUIDs and characters become strings, timestamps become Logstash timestamps, and binary values are kept when they are valid UTF-8.
+Composite (list, map, array) and decimal values are not decoded.
+
+NOTE: A header written by a Kafka producer can also be a valid AMQP encoding. For example the one-byte string `@` is the AMQP `null`,
+and the two bytes `T2` are the AMQP `smallint` 50. Only use `amqp` for topics whose headers come from AMQP producers.
 
 [id="plugins-{type}s-{plugin}-heartbeat_interval_ms"]
 ===== `heartbeat_interval_ms` 

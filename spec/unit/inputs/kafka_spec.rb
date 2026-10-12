@@ -400,6 +400,47 @@ describe LogStash::Inputs::Kafka do
         expect { subject.maybe_set_metadata(evt, record) }.not_to raise_error
       end
     end
+
+    context "headers_encoding" do
+      # Application properties of an event sent to Azure Event Hubs over AMQP, as its Kafka endpoint delivers them
+      let(:headers) do
+        {
+          'version' => '5402',                  # smallint 2
+          'tenantKey' => 'a104496e666f',        # str8 "Info"
+          'batchTimestamp' => '83000001a0ed093a7b',
+          'name' => '4a6f686e',                 # plain UTF-8 "John"
+          'raw' => 'fffe',                      # neither AMQP nor UTF-8
+        }.map { |key, hex| double(:key => key, :value => [hex].pack('H*').to_java_bytes) }
+      end
+      let(:record) { double(:headers => headers, :topic => "topic", :partition => 0,
+                            :offset => 123456789, :key => "someId", :timestamp => nil ) }
+      let(:event) { LogStash::Event.new('message' => 'Hello') }
+
+      it "defaults to utf8, keeping only the headers whose bytes are valid UTF-8" do
+        subject.register
+        subject.maybe_set_metadata(event, record)
+        expect(event.get("[@metadata][kafka][headers]")).to eq('version' => "T\u0002", 'name' => 'John')
+      end
+
+      context "with amqp" do
+        let(:config) { super().merge('headers_encoding' => 'amqp') }
+
+        it "decodes AMQP primitives and falls back to utf8 for the other headers" do
+          subject.register
+          subject.maybe_set_metadata(event, record)
+          expect(event.get("[@metadata][kafka][headers][version]")).to eq(2)
+          expect(event.get("[@metadata][kafka][headers][tenantKey]")).to eq('Info')
+          expect(event.get("[@metadata][kafka][headers][batchTimestamp]").to_iso8601).to eq('2026-09-29T12:00:00.123Z')
+          expect(event.get("[@metadata][kafka][headers][name]")).to eq('John')
+          expect(event.include?("[@metadata][kafka][headers][raw]")).to be false
+        end
+      end
+
+      it "rejects unknown values" do
+        config['headers_encoding'] = 'base64'
+        expect { subject.register }.to raise_error LogStash::ConfigurationError
+      end
+    end
   end
 
   context 'with client_rack' do

@@ -7,6 +7,7 @@ require "logstash/json"
 require 'logstash-integration-kafka_jars.rb'
 require 'logstash/plugin_mixins/kafka/common'
 require 'logstash/plugin_mixins/kafka/avro_schema_registry'
+require 'logstash/plugin_mixins/kafka/amqp_value_decoder'
 require 'logstash/plugin_mixins/deprecation_logger_support'
 
 # This input will read events from a Kafka topic. It uses the 0.10 version of
@@ -283,6 +284,12 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
   config :decorate_events, :validate => %w(none basic extended false true), :default => "none"
 
+  # How header values are read when `decorate_events` is `extended`.
+  #   `utf8`: the value is kept as a string when its bytes are valid UTF-8, otherwise the header is skipped
+  #   `amqp`: the value is first decoded as a single AMQP 1.0 primitive, the encoding Azure Event Hubs uses for
+  #           the application properties of events sent over AMQP; values that are not one fall back to `utf8`
+  config :headers_encoding, :validate => %w(utf8 amqp), :default => "utf8"
+
   attr_reader :metadata_mode
 
   # @overload based on schema registry change the codec default
@@ -414,8 +421,12 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
       record.headers
             .select{|h| header_with_value(h) }
             .each do |header|
-        s = String.from_java_bytes(header.value)
-        s.force_encoding(Encoding::UTF_8)
+        bytes = String.from_java_bytes(header.value)
+        if @headers_encoding == "amqp" && (decoded = LogStash::PluginMixins::Kafka::AmqpValueDecoder.decode(bytes))
+          event.set("[@metadata][kafka][headers][" + header.key + "]", decoded.first)
+          next
+        end
+        s = bytes.force_encoding(Encoding::UTF_8)
         if s.valid_encoding?
           event.set("[@metadata][kafka][headers][" + header.key + "]", s)
         end
