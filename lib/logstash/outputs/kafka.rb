@@ -108,6 +108,10 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
   config :message_key, :validate => :string
   # Headers added to kafka message in the form of key-value pairs
   config :message_headers, :validate => :hash, :default => {}
+  # Field reference to a hash whose entries are each added to the message as a Kafka header,
+  # in addition to (and after) `message_headers`. Kafka allows duplicate header names, so a name
+  # present in both is emitted twice. Entries with an empty key or nil value are skipped; non-scalar values are skipped with a warning.
+  config :message_headers_field, :validate => :string
   # the timeout setting for initial metadata request to fetch topic metadata.
   config :metadata_fetch_timeout_ms, :validate => :number, :default => 60_000
   # Partitioner to use - can be `round_robin` or a fully qualified class name of a custom partitioner.
@@ -232,6 +236,17 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
         raise LogStash::ConfigurationError, "'message_headers' contains a key that is not a string!"
       end
     end
+    unless @message_headers_field.nil?
+      if @message_headers_field.strip.empty?
+        raise LogStash::ConfigurationError, "'message_headers_field' must not be empty"
+      end
+      begin
+        org.logstash.FieldReference.from(@message_headers_field)
+      rescue org.logstash.FieldReference::IllegalSyntaxException => e
+        raise LogStash::ConfigurationError, "'message_headers_field' is not a valid field reference: #{e.message}"
+      end
+    end
+    @logged_warnings = Concurrent::Map.new
     @producer = create_producer
   end
 
@@ -346,11 +361,40 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
     @message_headers.each do |key, value|
       record.headers().add(key, event.sprintf(value).to_java_bytes)
     end
+    add_dynamic_message_headers(record, event)
     prepare(record)
   rescue LogStash::ShutdownSignal
     logger.debug('producer received shutdown signal')
   rescue => e
     logger.warn('producer threw exception, restarting', :exception => e.class, :message => e.message)
+  end
+
+  def add_dynamic_message_headers(record, event)
+    return if @message_headers_field.nil?
+    headers = event.get(@message_headers_field)
+    return if headers.nil?
+    unless headers.is_a?(Hash)
+      warn_once("Field referenced by 'message_headers_field' does not contain a hash; no dynamic headers added",
+                :field => @message_headers_field, :actual_type => headers.class.name)
+      return
+    end
+    headers.each do |key, value|
+      name = key.to_s
+      next if name.empty? || value.nil?
+      if value.is_a?(Hash) || value.is_a?(Array)
+        warn_once("Skipping non-scalar header value found in 'message_headers_field'",
+                  :field => @message_headers_field, :header => name)
+        next
+      end
+      record.headers().add(name, value.to_s.to_java_bytes)
+    end
+  rescue => e
+    logger.warn("Failed to add dynamic message headers; event sent without them",
+                :field => @message_headers_field, :exception => e.class, :message => e.message)
+  end
+
+  def warn_once(message, details)
+    logger.warn(message, details) if @logged_warnings.put_if_absent(message, true).nil?
   end
 
   def create_producer
