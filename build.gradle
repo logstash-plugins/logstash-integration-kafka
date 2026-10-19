@@ -43,7 +43,7 @@ java {
 // Confluent Platform 7.9.x is Apache Kafka 3.9.x
 String confluentKafkaVersion = '7.9.5'
 String apacheKafkaVersion = '3.9.2'
-String jacksonVersion = '2.21.6'
+String jacksonVersion = '2.21.7'
 
 configurations.configureEach {
     resolutionStrategy {
@@ -71,6 +71,10 @@ dependencies {
 
         // remove this when org.apache.kafka:kafka-clients starts pulling the 1.5.7+ version
         implementation('com.github.luben:zstd-jni:[1.5.7-14,)')
+        // remove this when kafka-clients pulls snappy-java 1.1.10.10+
+        implementation('org.xerial.snappy:snappy-java:[1.1.10.10,)')
+        // remove this when kafka-schema-registry-client pulls guava 33.7.2-jre+
+        implementation('com.google.guava:guava:33.7.2-jre')
     }
 
     implementation("io.confluent:kafka-avro-serializer:${confluentKafkaVersion}") {
