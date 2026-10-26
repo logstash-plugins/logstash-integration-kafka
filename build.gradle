@@ -43,7 +43,7 @@ java {
 // Confluent Platform 8.3.x is Apache Kafka 4.3.x
 String confluentKafkaVersion = '8.3.1'
 String apacheKafkaVersion = '4.3.1'
-String jacksonVersion = '2.21.6'
+String jacksonVersion = '2.21.7'
 
 repositories {
     mavenCentral()
@@ -62,6 +62,12 @@ dependencies {
         implementation('org.apache.httpcomponents.client5:httpclient5:[5.6.4,5.7[')
         // remove this when org.apache.kafka:kafka-clients starts pulling the 1.5.7+ version
         implementation('com.github.luben:zstd-jni:[1.5.7-14,)')
+        // remove this when kafka-client pulls 1.11.4+
+        implementation('at.yawk.lz4:lz4-java:[1.11.4,)')
+        // remove this when kafka-clients pulls snappy-java 1.1.10.10+
+        implementation('org.xerial.snappy:snappy-java:[1.1.10.10,)')
+        // remove this when kafka-schema-registry-client pulls guava 33.7.2-jre+
+        implementation('com.google.guava:guava:33.7.2-jre')
     }
 
     implementation("io.confluent:kafka-avro-serializer:${confluentKafkaVersion}") {
