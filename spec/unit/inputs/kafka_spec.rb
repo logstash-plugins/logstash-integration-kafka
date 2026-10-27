@@ -652,6 +652,47 @@ describe LogStash::Inputs::Kafka do
       end
     end
 
+    describe '#commit_share_acknowledgements' do
+      # `ShareConsumer#commitSync` reports per-partition acknowledgement failures in its
+      # return value instead of raising, so they are only visible if the plugin inspects it.
+      let(:topic_id_partition) do
+        org.apache.kafka.common.TopicIdPartition.new(
+          org.apache.kafka.common.Uuid.randomUuid, 3, "logstash")
+      end
+      let(:rejected) do
+        java.util.Optional.of(
+          org.apache.kafka.common.errors.InvalidRecordStateException.new("acquisition lock expired"))
+      end
+
+      before { subject.register }
+
+      it "warns about acknowledgements the broker rejected" do
+        allow(share_consumer_double).to receive(:commitSync).and_return({ topic_id_partition => rejected })
+
+        expect(subject.logger).to receive(:warn).with(
+          /rejected/, hash_including(:topic => "logstash", :partition => 3))
+
+        subject.send(:commit_share_acknowledgements, share_consumer_double)
+      end
+
+      it "stays quiet when every acknowledgement succeeded" do
+        allow(share_consumer_double).to receive(:commitSync).
+          and_return({ topic_id_partition => java.util.Optional.empty })
+
+        expect(subject.logger).to_not receive(:warn)
+
+        subject.send(:commit_share_acknowledgements, share_consumer_double)
+      end
+
+      it "tolerates the empty map returned when there was nothing to acknowledge" do
+        allow(share_consumer_double).to receive(:commitSync).and_return(java.util.Collections.emptyMap)
+
+        expect(subject.logger).to_not receive(:warn)
+
+        expect { subject.send(:commit_share_acknowledgements, share_consumer_double) }.to_not raise_error
+      end
+    end
+
     describe 'acknowledgement_on_error' do
       before { subject.register }
 

@@ -58,11 +58,10 @@ you could run multiple Logstash instances with the same `group_id` to spread the
 physical machines. Messages in a topic will be distributed to all Logstash instances with
 the same `group_id`.
 
-The number of consumer threads this input should spawn for fetching events and pushing them into the pipeline's queue.
-
-When configured with `consumer_mode => consumer_group`, each partition in the topic can only be assigned to a single consumer at a time, so if the _total_ number of consumer threads across all consumers in the group exceeds the number of partitions, some of those threads will be idle.
-
-This constraint doesn't apply when configured with `consumer_mode => share_group` which is not partition-oriented.
+Ideally you should have as many threads as the number of partitions for a perfect balance --
+more threads than partitions means that some threads will be idle. This applies to the default
+`consumer_mode => consumer_group`; it does not apply to `consumer_mode => share_group`, which is
+not partition-oriented. See <<plugins-{type}s-{plugin}-consumer_threads>>.
 
 [id="plugins-{type}s-{plugin}-share-groups"]
 ==== Kafka Share Groups (queue semantics)

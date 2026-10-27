@@ -720,7 +720,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
 
   def commit_share_acknowledgements(consumer)
     begin
-      consumer.commitSync
+      log_rejected_acknowledgements(consumer.commitSync)
     rescue org.apache.kafka.common.errors.WakeupException => e
       logger.debug("Wake up from share consumer commitSync", :kafka_error_message => e)
       raise e unless stop?
@@ -728,6 +728,21 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
       logger.error("Unable to commit share group acknowledgements",
                    :kafka_error_message => e,
                    :cause => e.respond_to?(:getCause) ? e.getCause() : nil)
+    end
+  end
+
+  # Unlike `KafkaConsumer#commitSync`, which returns void and raises on failure,
+  # `ShareConsumer#commitSync` reports per-partition acknowledgement failures through its
+  # return value and only raises for unrecoverable errors.
+  def log_rejected_acknowledgements(results)
+    return if results.nil?
+
+    results.each do |topic_id_partition, maybe_error|
+      next unless maybe_error && maybe_error.isPresent
+      logger.warn("Share group acknowledgements were rejected, the affected records will be redelivered",
+                  :topic => topic_id_partition.topic,
+                  :partition => topic_id_partition.partition,
+                  :kafka_error_message => maybe_error.get)
     end
   end
 
