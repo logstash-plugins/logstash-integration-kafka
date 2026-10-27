@@ -41,9 +41,9 @@ java {
 
 // given https://docs.confluent.io/current/installation/versions-interoperability.html matrix
 // Confluent Platform 8.2.x is Apache Kafka 4.2.x
-String confluentKafkaVersion = '8.2.1'
+String confluentKafkaVersion = '8.3.1'
 String apacheKafkaVersion = '4.2.0'
-String jacksonVersion = '2.21.2'
+String jacksonVersion = '2.21.7'
 
 repositories {
     mavenCentral()
@@ -58,9 +58,16 @@ dependencies {
     implementation platform("com.fasterxml.jackson:jackson-bom:${jacksonVersion}")
 
     constraints {
-        // remove once kafka-avro-serializer pulls httpcore5-h2 > 5.3.5 versions
-        implementation('org.apache.httpcomponents.core5:httpcore5:5.3.6')
-        implementation('org.apache.httpcomponents.core5:httpcore5-h2:5.3.6')
+        // remove once kafka-schema-registry-client pulls httpclient >= 5.6.4
+        implementation('org.apache.httpcomponents.client5:httpclient5:[5.6.4,5.7[')
+        // remove this when org.apache.kafka:kafka-clients starts pulling the 1.5.7+ version
+        implementation('com.github.luben:zstd-jni:[1.5.7-14,)')
+        // remove this when kafka-client pulls 1.11.4+
+        implementation('at.yawk.lz4:lz4-java:[1.11.4,)')
+        // remove this when kafka-clients pulls snappy-java 1.1.10.10+
+        implementation('org.xerial.snappy:snappy-java:[1.1.10.10,)')
+        // remove this when kafka-schema-registry-client pulls guava 33.7.2-jre+
+        implementation('com.google.guava:guava:33.7.2-jre')
     }
 
     implementation("io.confluent:kafka-avro-serializer:${confluentKafkaVersion}") {

@@ -1,5 +1,26 @@
-## 12.2.0
-  - Add share group consumer support to Kafka input via `consumer_mode => "share_group"` (Kafka 4.0+ KIP-932) [#252](https://github.com/logstash-plugins/logstash-integration-kafka/pull/252)
+## 12.1.11
+  - Update jackson dependency to 2.21.7, and require `snappy-java` 1.1.10.10 or later and `guava` 33.7.2-jre or later [#289](https://github.com/logstash-plugins/logstash-integration-kafka/pull/289)
+
+## 12.1.10
+  - Upgrades lz4-java dependency to 1.11.4 version [#287](https://github.com/logstash-plugins/logstash-integration-kafka/pull/287)
+
+## 12.1.9
+  - Upgrade zstd-jni dependency [#279](https://github.com/logstash-plugins/logstash-integration-kafka/pull/279)
+
+## 12.1.8
+  - Require httpclient5 version 5.6.4 or later  [#277](https://github.com/logstash-plugins/logstash-integration-kafka/pull/277)
+
+## 12.1.7
+  - Upgrades `kafka-avro-serializer` dependency to v8.3.1, and constrains transitive dependency on apache `httpclient5` to be at least `v5.6.3` [#273](https://github.com/logstash-plugins/logstash-integration-kafka/pull/273)
+
+## 12.1.6
+  - Update jackson dependency to 2.21.6 [#274](https://github.com/logstash-plugins/logstash-integration-kafka/pull/274)
+
+## 12.1.5
+  - Upgrades `httpcore5` dependency to v5.4.2 [#270](https://github.com/logstash-plugins/logstash-integration-kafka/pull/270)
+
+## 12.1.4
+  - Update jackson dependency to 2.21.4 [#268](https://github.com/logstash-plugins/logstash-integration-kafka/pull/268)
 
 ## 12.1.3
   - Upgrades `httpcore5` dependency to v5.3.6 [#262](https://github.com/logstash-plugins/logstash-integration-kafka/pull/262)
