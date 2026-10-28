@@ -1,3 +1,6 @@
+## 11.8.15
+  - Update jackson dependency to 2.21.8 [#293](https://github.com/logstash-plugins/logstash-integration-kafka/pull/293)
+
 ## 11.8.14
   - Update jackson dependency to 2.21.7, and require `snappy-java` 1.1.10.10 or later and `guava` 33.7.2-jre or later [#290](https://github.com/logstash-plugins/logstash-integration-kafka/pull/290)
 
