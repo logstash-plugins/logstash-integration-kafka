@@ -1,3 +1,6 @@
+## 12.2.1
+  - Update jackson dependency to 2.21.8 [#292](https://github.com/logstash-plugins/logstash-integration-kafka/pull/292)
+
 ## 12.2.0
   - Add share group consumer support to Kafka input plugin via `consumer_mode => "share_group"` (Kafka 4.0+ KIP-932) [#252](https://github.com/logstash-plugins/logstash-integration-kafka/pull/252) [#252](https://github.com/logstash-plugins/logstash-integration-kafka/pull/252)
 
