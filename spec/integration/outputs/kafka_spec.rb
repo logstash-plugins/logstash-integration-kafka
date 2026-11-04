@@ -160,11 +160,22 @@ describe "outputs/kafka", :integration => true do
   end
 
   context 'when using multi partition topic' do
-    let(:num_events) { 100 } # ~ more than (batch.size) 16,384 bytes
+    # In Kafka the RoundRobinPartitioner works per ProducerBatch and not per record.
+    # So if the default batch size (16KB) is not reached or the linger_ms has not elapsed
+    # then a new partition is not selected, and the list of messages fills into just the first
+    # selected partition. To avoid such behavior the batch_size has to be surpassed.
+    let(:num_events) { 100 }
+    let(:kafka_batch_size) { 16_384.0 }
     let(:test_topic) { 'logstash_integration_topic3' }
+    # Each event is padded so that num_events events span more than 2 full producer batches,
+    # guaranteeing RoundRobinPartitioner advances past all 3 partitions.
+    let(:message_content) do
+      padding_size = (kafka_batch_size / num_events).ceil
+      super() + ' ' + 'x' * padding_size
+    end
 
     before :each do
-      config = base_config.merge("topic_id" => test_topic, "partitioner" => 'org.apache.kafka.clients.producer.UniformStickyPartitioner')
+      config = base_config.merge("topic_id" => test_topic, "partitioner" => 'org.apache.kafka.clients.producer.RoundRobinPartitioner')
       load_kafka_data(config) do # let's have a bit more (diverse) dataset
         num_events.times.collect do
           LogStash::Event.new.tap do |e|
