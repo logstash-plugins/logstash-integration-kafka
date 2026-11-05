@@ -1,3 +1,6 @@
+## 12.2.2
+  - Upgrades kafka-clients dependency to 4.2.2 [#294](https://github.com/logstash-plugins/logstash-integration-kafka/pull/294)
+
 ## 12.2.1
   - Update jackson dependency to 2.21.8 [#292](https://github.com/logstash-plugins/logstash-integration-kafka/pull/292)
 
