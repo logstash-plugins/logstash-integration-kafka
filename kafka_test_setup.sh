@@ -2,6 +2,25 @@
 # Setup Kafka and create test topics
 
 set -ex
+
+# download DEST URL
+# Downloads URL to DEST, retrying transient failures
+# (e.g. archive.apache.org timing out or failing the TLS handshake).
+download() {
+  local dest="$1" url="$2"
+  local attempt
+  for attempt in 1 2 3 4 5; do
+    if curl -fsSL --connect-timeout 60 --max-time 900 -o "$dest" "$url"; then
+      return 0
+    fi
+    echo "Downloading $url failed (attempt $attempt/5)"
+    if [ "$attempt" -lt 5 ]; then sleep 20; fi
+  done
+  rm -f "$dest"
+  echo "Could not download $dest"
+  return 1
+}
+
 # check if KAFKA_VERSION env var is set
 if [ -n "${KAFKA_VERSION+1}" ]; then
   echo "KAFKA_VERSION is $KAFKA_VERSION"
@@ -19,7 +38,7 @@ mkdir build
 echo "Setup Kafka version $KAFKA_VERSION"
 if [ ! -e "kafka_2.13-$KAFKA_VERSION.tgz" ]; then
   echo "Kafka not present locally, downloading"
-  curl -s -o "kafka_2.13-$KAFKA_VERSION.tgz" "https://archive.apache.org/dist/kafka/$KAFKA_VERSION/kafka_2.13-$KAFKA_VERSION.tgz"
+  download "kafka_2.13-$KAFKA_VERSION.tgz" "https://archive.apache.org/dist/kafka/$KAFKA_VERSION/kafka_2.13-$KAFKA_VERSION.tgz"
 fi
 cp "kafka_2.13-$KAFKA_VERSION.tgz" "build/kafka.tgz"
 mkdir "build/kafka" && tar xzf "build/kafka.tgz" -C "build/kafka" --strip-components 1
@@ -70,7 +89,7 @@ if [ ! -e "confluent-community-$CONFLUENT_VERSION.tar.gz" ]; then
   echo "Confluent Platform not present locally, downloading"
   CONFLUENT_MINOR=$(echo "$CONFLUENT_VERSION" | sed -n 's/^\([[:digit:]]*\.[[:digit:]]*\)\.[[:digit:]]*$/\1/p')
   echo "CONFLUENT_MINOR is $CONFLUENT_MINOR"
-  curl -s -o "confluent-community-$CONFLUENT_VERSION.tar.gz" "http://packages.confluent.io/archive/$CONFLUENT_MINOR/confluent-community-$CONFLUENT_VERSION.tar.gz"
+  download "confluent-community-$CONFLUENT_VERSION.tar.gz" "http://packages.confluent.io/archive/$CONFLUENT_MINOR/confluent-community-$CONFLUENT_VERSION.tar.gz"
 fi
 cp "confluent-community-$CONFLUENT_VERSION.tar.gz" "build/confluent_platform.tar.gz"
 mkdir "build/confluent_platform" && tar xzf "build/confluent_platform.tar.gz" -C "build/confluent_platform" --strip-components 1
@@ -114,7 +133,7 @@ build/kafka/bin/kafka-topics.sh --create --partitions 3 --replication-factor 1 -
 build/kafka/bin/kafka-topics.sh --create --partitions 3 --replication-factor 1 --topic logstash_integration_static_membership_topic --bootstrap-server localhost:9092
 build/kafka/bin/kafka-topics.sh --create --partitions 3 --replication-factor 1 --topic logstash_integration_sasl_topic --bootstrap-server localhost:9092
 build/kafka/bin/kafka-topics.sh --create --partitions 3 --replication-factor 1 --topic logstash_integration_sasl_output_topic --bootstrap-server localhost:9092
-curl -s -o build/apache_logs.txt https://s3.amazonaws.com/data.elasticsearch.org/apache_logs/apache_logs.txt
+download build/apache_logs.txt https://s3.amazonaws.com/data.elasticsearch.org/apache_logs/apache_logs.txt
 cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_integration_topic_plain --bootstrap-server localhost:9092
 cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_integration_topic_snappy --bootstrap-server localhost:9092 --compression-codec snappy
 cat build/apache_logs.txt | build/kafka/bin/kafka-console-producer.sh --topic logstash_integration_topic_lz4 --bootstrap-server localhost:9092 --compression-codec lz4
