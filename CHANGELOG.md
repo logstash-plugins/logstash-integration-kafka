@@ -1,3 +1,18 @@
+## 12.2.2
+  - Upgrades kafka-clients dependency to 4.2.2 [#294](https://github.com/logstash-plugins/logstash-integration-kafka/pull/294)
+
+## 12.2.1
+  - Update jackson dependency to 2.21.8 [#292](https://github.com/logstash-plugins/logstash-integration-kafka/pull/292)
+
+## 12.2.0
+  - Add share group consumer support to Kafka input plugin via `consumer_mode => "share_group"` (Kafka 4.0+ KIP-932) [#252](https://github.com/logstash-plugins/logstash-integration-kafka/pull/252) [#252](https://github.com/logstash-plugins/logstash-integration-kafka/pull/252)
+
+## 12.1.11
+  - Update jackson dependency to 2.21.7, and require `snappy-java` 1.1.10.10 or later and `guava` 33.7.2-jre or later [#289](https://github.com/logstash-plugins/logstash-integration-kafka/pull/289)
+
+## 12.1.10
+  - Upgrades lz4-java dependency to 1.11.4 version [#287](https://github.com/logstash-plugins/logstash-integration-kafka/pull/287)
+
 ## 12.1.9
   - Upgrade zstd-jni dependency [#279](https://github.com/logstash-plugins/logstash-integration-kafka/pull/279)
 

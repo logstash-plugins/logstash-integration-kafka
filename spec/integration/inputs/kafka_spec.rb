@@ -130,6 +130,97 @@ describe "inputs/kafka", :integration => true do
     end
   end
 
+  context "#share-group" do
+    # Self-contained: the topic and the group's share.auto.offset.reset are set up here rather
+    # than in kafka_test_setup.sh, so these specs run against any broker with share groups
+    # available. Both names are unique per example, which keeps share-group state (which is
+    # persistent per group/topic) from leaking between examples or between runs.
+    let(:run_id) { rand(36**8).to_s(36) }
+    let(:share_group_topic) { "logstash_integration_share_group_topic_#{run_id}" }
+    let(:share_group_id) { "logstash_integration_share_group_#{run_id}" }
+    let(:share_group_partitions) { 3 }
+    let(:share_group_msg_count) { 30 }
+    let(:share_group_config) do
+      { 'topics' => [share_group_topic], 'group_id' => share_group_id,
+        'consumer_mode' => 'share_group', 'consumer_threads' => 3,
+        'codec' => 'plain', 'bootstrap_servers' => 'localhost:9092' }
+    end
+    let(:produced_messages) { share_group_msg_count.times.map { |i| "share-msg-#{run_id}-#{i}" } }
+
+    def with_admin_client
+      props = java.util.Properties.new
+      props.put(org.apache.kafka.clients.admin.AdminClientConfig::BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+      admin = org.apache.kafka.clients.admin.AdminClient.create(props)
+      begin
+        yield admin
+      ensure
+        admin.close
+      end
+    end
+
+    # Share groups default to share.auto.offset.reset=latest. Pinning it to earliest lets the
+    # specs produce up front instead of racing the group to a stable epoch before producing.
+    def set_share_group_offset_reset(admin, group_id, value)
+      resource = org.apache.kafka.common.config.ConfigResource.new(
+        org.apache.kafka.common.config.ConfigResource::Type::GROUP, group_id)
+      ops = java.util.ArrayList.new
+      ops.add(org.apache.kafka.clients.admin.AlterConfigOp.new(
+        org.apache.kafka.clients.admin.ConfigEntry.new('share.auto.offset.reset', value),
+        org.apache.kafka.clients.admin.AlterConfigOp::OpType::SET))
+      changes = java.util.HashMap.new
+      changes.put(resource, ops)
+      admin.incrementalAlterConfigs(changes).all.get
+    end
+
+    before do
+      with_admin_client do |admin|
+        admin.createTopics([org.apache.kafka.clients.admin.NewTopic.new(
+          share_group_topic, share_group_partitions, 1.to_java(:short))]).all.get
+        set_share_group_offset_reset(admin, share_group_id, 'earliest')
+      end
+
+      # One producer for the whole batch; send_message opens and closes one per record.
+      props = java.util.Properties.new
+      kafka = org.apache.kafka.clients.producer.ProducerConfig
+      props.put(kafka::BOOTSTRAP_SERVERS_CONFIG, "localhost:9092")
+      props.put(kafka::KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+      props.put(kafka::VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer")
+      producer = org.apache.kafka.clients.producer.KafkaProducer.new(props)
+      begin
+        produced_messages.each do |payload|
+          producer.send(org.apache.kafka.clients.producer.ProducerRecord.new(share_group_topic, payload))
+        end
+        producer.flush
+      ensure
+        producer.close
+      end
+    end
+
+    after do
+      with_admin_client { |admin| admin.deleteTopics([share_group_topic]).all.get } rescue nil
+    end
+
+    def collect_share_group_messages(config)
+      consume_messages(config, timeout: false, event_count: share_group_msg_count) do |queue, _input|
+        # Not `eq`: share groups are at-least-once, so assert on the distinct payloads
+        # rather than failing the wait outright if a record gets redelivered.
+        wait(timeout_seconds).for { queue.length }.to be >= share_group_msg_count
+        queue.length.times.map { queue.pop.get("message") }
+      end
+    end
+
+    it "delivers every produced record across the consumer threads" do
+      expect(collect_share_group_messages(share_group_config).uniq).to match_array(produced_messages)
+    end
+
+    it "is not bounded by the partition count" do
+      # More threads than partitions. In consumer_group mode the surplus threads would
+      # necessarily sit idle; a share group has no exclusive partition assignment.
+      config = share_group_config.merge('consumer_threads' => share_group_partitions + 2)
+      expect(collect_share_group_messages(config).uniq).to match_array(produced_messages)
+    end
+  end
+
   context "#kafka-decorate" do
     it "should show the right topic and group name in decorated kafka section" do
       start = LogStash::Timestamp.now.time.to_i
