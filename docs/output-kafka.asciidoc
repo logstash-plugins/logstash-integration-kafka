@@ -127,6 +127,7 @@ See the https://kafka.apache.org/{kafka_client_doc}/documentation for more detai
 | <<plugins-{type}s-{plugin}-linger_ms>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-max_request_size>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-message_headers>> |<<hash,hash>>|No
+| <<plugins-{type}s-{plugin}-message_headers_field>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-message_key>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-metadata_fetch_timeout_ms>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-metadata_max_age_ms>> |<<number,number>>|No
@@ -336,6 +337,27 @@ Example:
 ----------------------------------
     message_headers => { "event_timestamp" => "%{@timestamp}" }
 ----------------------------------
+
+[id="plugins-{type}s-{plugin}-message_headers_field"]
+===== `message_headers_field`
+
+  * Value type is <<string,string>>
+  * There is no default value for this setting.
+
+A {logstash-ref}/field-references-deepdive.html[field reference] to a hash whose entries are added to
+the message as Kafka headers, the values being used verbatim (no `%{}` interpolation). This allows
+forwarding headers that are not known in advance, such as the headers of a consumed record captured
+by the Kafka input's
+{logstash-ref}/plugins-inputs-kafka.html#plugins-inputs-kafka-decorate_events[`decorate_events => extended`] mode:
+[source,ruby]
+----------------------------------
+    message_headers_field => "[@metadata][kafka][headers]"
+----------------------------------
+
+These headers are appended after the ones from `message_headers` (Kafka allows duplicate names).
+If the referenced field is absent, the event is sent without additional headers. Entries with an
+empty key or `nil` value are skipped; non-scalar values, or a field that does not contain a hash,
+are skipped with a warning.
 
 [id="plugins-{type}s-{plugin}-message_key"]
 ===== `message_key` 
