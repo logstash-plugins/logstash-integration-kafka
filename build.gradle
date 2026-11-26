@@ -66,8 +66,8 @@ dependencies {
         implementation('at.yawk.lz4:lz4-java:[1.11.4,)')
         // remove this when kafka-clients pulls snappy-java 1.1.10.10+
         implementation('org.xerial.snappy:snappy-java:[1.1.10.10,)')
-        // remove this when kafka-schema-registry-client pulls guava 33.7.2-jre+
-        implementation('com.google.guava:guava:33.7.2-jre')
+        // remove this when kafka-schema-registry-client pulls guava 33.8.0-jre+
+        implementation('com.google.guava:guava:33.8.0-jre')
     }
 
     implementation("io.confluent:kafka-avro-serializer:${confluentKafkaVersion}") {
