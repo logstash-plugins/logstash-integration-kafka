@@ -79,7 +79,7 @@ module LogStash module PluginMixins module Kafka
       props.put("sasl.client.callback.handler.class", sasl_client_callback_handler_class) unless sasl_client_callback_handler_class.nil?
       props.put("sasl.oauthbearer.token.endpoint.url", sasl_oauthbearer_token_endpoint_url) unless sasl_oauthbearer_token_endpoint_url.nil?
       props.put("sasl.oauthbearer.scope.claim.name", sasl_oauthbearer_scope_claim_name) unless sasl_oauthbearer_scope_claim_name.nil?
-      set_sasl_oauthbearer_config(props)
+      set_sasl_oauthbearer_config(props) if sasl_mechanism == "OAUTHBEARER"
       props.put("sasl.login.callback.handler.class", sasl_login_callback_handler_class) unless sasl_login_callback_handler_class.nil?
       props.put("sasl.login.connect.timeout.ms", sasl_login_connect_timeout_ms.to_s) unless sasl_login_connect_timeout_ms.nil?
       props.put("sasl.login.read.timeout.ms", sasl_login_read_timeout_ms.to_s) unless sasl_login_read_timeout_ms.nil?
@@ -89,6 +89,9 @@ module LogStash module PluginMixins module Kafka
     end
 
     def set_sasl_oauthbearer_config(props)
+      # Kafka's default validator class, DefaultJwtValidator, links to jose4j. kafka-clients does not ship that library,
+      # so the login fails with a NoClassDefFoundError. ClientJwtValidator is the client-side validator and does not need it.
+      props.put("sasl.oauthbearer.jwt.validator.class", "org.apache.kafka.common.security.oauthbearer.ClientJwtValidator")
       props.put("sasl.oauthbearer.jwt.retriever.class", sasl_oauthbearer_jwt_retriever_class) unless sasl_oauthbearer_jwt_retriever_class.nil?
       props.put("sasl.oauthbearer.scope", sasl_oauthbearer_scope) unless sasl_oauthbearer_scope.nil?
       props.put("sasl.oauthbearer.client.credentials.client.id", sasl_oauthbearer_client_credentials_client_id) unless sasl_oauthbearer_client_credentials_client_id.nil?
