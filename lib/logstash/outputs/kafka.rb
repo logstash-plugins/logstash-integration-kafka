@@ -215,6 +215,7 @@ class LogStash::Outputs::Kafka < LogStash::Outputs::Base
     end
 
     reassign_dns_lookup
+    validate_sasl_oauthbearer_config!
 
     if value_serializer == 'org.apache.kafka.common.serialization.StringSerializer'
       @codec.on_event do |event, data|

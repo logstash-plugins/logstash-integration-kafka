@@ -2,8 +2,8 @@
 :plugin: kafka
 :type: input
 :default_codec: plain
-:kafka_client: 4.2.2
-:kafka_client_doc: 42
+:kafka_client: 4.3.2
+:kafka_client_doc: 43
 
 ///////////////////////////////////////////
 START - GENERATED VARIABLES, DO NOT EDIT!
@@ -117,6 +117,44 @@ sasl_client_callback_handler_class => "software.amazon.msk.auth.iam.IAMClientCal
 ```
 For more IAM authentication configurations, see the https://github.com/aws/aws-msk-iam-auth[AWS MSK IAM authentication library documentation].
 
+[id="plugins-{type}s-{plugin}-oauth_client_assertion"]
+==== OAuth client assertion authentication
+With `sasl_mechanism => "OAUTHBEARER"`, the Kafka client gets its access token from an OAuth identity provider with the `client_credentials` grant.
+Instead of a client secret, the client can authenticate with a signed JWT (a client assertion).
+The client uses the first of these that you configure:
+
+1. a pre-generated assertion in a file, set with <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_file>>, for example a Kubernetes projected service account token. The client reads the file again when it changes.
+2. an assertion that the client signs with a private key, set with <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_claim_iss>>, <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_private_key_file>> and the other `sasl_oauthbearer_assertion_*` settings.
+3. a client secret, set with <<plugins-{type}s-{plugin}-sasl_oauthbearer_client_credentials_client_id>> and <<plugins-{type}s-{plugin}-sasl_oauthbearer_client_credentials_client_secret>>.
+
+The `sasl_oauthbearer_assertion_*` and `sasl_oauthbearer_client_credentials_*` settings, <<plugins-{type}s-{plugin}-sasl_oauthbearer_scope>> and <<plugins-{type}s-{plugin}-sasl_oauthbearer_jwt_retriever_class>> require `sasl_mechanism => "OAUTHBEARER"`.
+If you set one of them with another mechanism, the plugin reports a configuration error when it starts.
+
+The Kafka client connects only to token endpoint URLs and reads only files that are listed in JVM system properties.
+Add them to the Logstash `jvm.options` file or to `LS_JAVA_OPTS`, for example:
+```
+-Dorg.apache.kafka.sasl.oauthbearer.allowed.urls=https://login.microsoftonline.com/<tenant-id>/oauth2/v2.0/token
+-Dorg.apache.kafka.sasl.oauthbearer.allowed.files=/var/run/secrets/azure/tokens/azure-identity-token
+```
+
+Example for Azure Event Hubs with Microsoft Entra Workload ID, where the assertion file is the federated token file that Kubernetes rotates:
+```
+input {
+  kafka {
+    bootstrap_servers => "<namespace>.servicebus.windows.net:9093"
+    topics => ["<event-hub>"]
+    security_protocol => "SASL_SSL"
+    sasl_mechanism => "OAUTHBEARER"
+    sasl_jaas_config => "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required;"
+    sasl_login_callback_handler_class => "org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginCallbackHandler"
+    sasl_oauthbearer_token_endpoint_url => "https://login.microsoftonline.com/<tenant-id>/oauth2/v2.0/token"
+    sasl_oauthbearer_client_credentials_client_id => "<client-id>"
+    sasl_oauthbearer_scope => "https://<namespace>.servicebus.windows.net/.default"
+    sasl_oauthbearer_assertion_file => "/var/run/secrets/azure/tokens/azure-identity-token"
+  }
+}
+```
+
 ==== Metadata fields
 
 The following metadata from Kafka broker are added under the `[@metadata]` field:
@@ -188,6 +226,21 @@ See the https://kafka.apache.org/{kafka_client_doc}/documentation for more detai
 | <<plugins-{type}s-{plugin}-sasl_client_callback_handler_class>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-sasl_oauthbearer_token_endpoint_url>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-sasl_oauthbearer_scope_claim_name>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_algorithm>> |<<string,string>>, one of `["RS256", "ES256"]`|No
+| <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_claim_aud>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_claim_exp_seconds>> |<<number,number>>|No
+| <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_claim_iss>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_claim_jti_include>> |<<boolean,boolean>>|No
+| <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_claim_nbf_seconds>> |<<number,number>>|No
+| <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_claim_sub>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_file>> |a valid filesystem path|No
+| <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_private_key_file>> |a valid filesystem path|No
+| <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_private_key_passphrase>> |<<password,password>>|No
+| <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_template_file>> |a valid filesystem path|No
+| <<plugins-{type}s-{plugin}-sasl_oauthbearer_client_credentials_client_id>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-sasl_oauthbearer_client_credentials_client_secret>> |<<password,password>>|No
+| <<plugins-{type}s-{plugin}-sasl_oauthbearer_jwt_retriever_class>> |<<string,string>>|No
+| <<plugins-{type}s-{plugin}-sasl_oauthbearer_scope>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-sasl_iam_jar_paths>> |<<array,array>>|No
 | <<plugins-{type}s-{plugin}-sasl_login_callback_handler_class>> |<<string,string>>|No
 | <<plugins-{type}s-{plugin}-sasl_login_connect_timeout_ms>> |<<number,number>>|No
@@ -753,6 +806,135 @@ The URL for the OAuth 2.0 issuer token endpoint.
   * Default value is `"scope"`
 
 (optional) The override name of the scope claim.
+
+[id="plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_algorithm"]
+===== `sasl_oauthbearer_assertion_algorithm`
+  * Value can be any of: `RS256`, `ES256`
+  * Default value is `"RS256"`
+
+The algorithm used to sign a locally-generated JWT assertion.
+Ignored when <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_file>> is set.
+
+[id="plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_claim_aud"]
+===== `sasl_oauthbearer_assertion_claim_aud`
+  * Value type is <<string,string>>
+  * There is no default value for this setting.
+
+(optional) The `aud` (audience) claim of a locally-generated JWT assertion.
+Ignored when <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_file>> is set.
+
+[id="plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_claim_exp_seconds"]
+===== `sasl_oauthbearer_assertion_claim_exp_seconds`
+  * Value type is <<number,number>>
+  * Default value is `300` seconds.
+
+The number of seconds in the future for which a locally-generated JWT assertion is valid.
+The Kafka client adds this value to the current time to set the `exp` (expiration) claim.
+Ignored when <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_file>> is set.
+
+[id="plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_claim_iss"]
+===== `sasl_oauthbearer_assertion_claim_iss`
+  * Value type is <<string,string>>
+  * There is no default value for this setting.
+
+The `iss` (issuer) claim of a locally-generated JWT assertion.
+When you set it, and <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_file>> is not set, the Kafka client signs a JWT assertion with <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_private_key_file>> and does not use the client secret.
+
+[id="plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_claim_jti_include"]
+===== `sasl_oauthbearer_assertion_claim_jti_include`
+  * Value type is <<boolean,boolean>>
+  * Default value is `false`
+
+Whether a locally-generated JWT assertion includes a unique `jti` (JWT ID) claim.
+Ignored when <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_file>> is set.
+
+[id="plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_claim_nbf_seconds"]
+===== `sasl_oauthbearer_assertion_claim_nbf_seconds`
+  * Value type is <<number,number>>
+  * Default value is `60` seconds.
+
+The number of seconds in the past from which a locally-generated JWT assertion is valid.
+The Kafka client subtracts this value from the current time to set the `nbf` (not before) claim.
+Ignored when <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_file>> is set.
+
+[id="plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_claim_sub"]
+===== `sasl_oauthbearer_assertion_claim_sub`
+  * Value type is <<string,string>>
+  * There is no default value for this setting.
+
+(optional) The `sub` (subject) claim of a locally-generated JWT assertion.
+Ignored when <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_file>> is set.
+
+[id="plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_file"]
+===== `sasl_oauthbearer_assertion_file`
+  * Value type is <<path,path>>
+  * There is no default value for this setting.
+
+Path to a file that contains a pre-generated JWT assertion, for example a Kubernetes projected service account token.
+The Kafka client sends this assertion instead of a client secret, and reads the file again when it changes, so a rotated assertion is used without a restart.
+When this setting is set, all other `sasl_oauthbearer_assertion_*` settings are ignored.
+The absolute path of the file must be in the `org.apache.kafka.sasl.oauthbearer.allowed.files` JVM system property (see <<plugins-{type}s-{plugin}-oauth_client_assertion>>).
+
+[id="plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_private_key_file"]
+===== `sasl_oauthbearer_assertion_private_key_file`
+  * Value type is <<path,path>>
+  * There is no default value for this setting.
+
+Path to a file that contains a private key in PEM format, used to sign a locally-generated JWT assertion.
+The Kafka client reads the file again when it changes.
+The absolute path of the file must be in the `org.apache.kafka.sasl.oauthbearer.allowed.files` JVM system property.
+Ignored when <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_file>> is set.
+
+[id="plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_private_key_passphrase"]
+===== `sasl_oauthbearer_assertion_private_key_passphrase`
+  * Value type is <<password,password>>
+  * There is no default value for this setting.
+
+(optional) The passphrase to decrypt the private key in <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_private_key_file>>.
+Ignored when <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_file>> is set.
+
+[id="plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_template_file"]
+===== `sasl_oauthbearer_assertion_template_file`
+  * Value type is <<path,path>>
+  * There is no default value for this setting.
+
+(optional) Path to a JSON file with static JWT headers and claims to include in a locally-generated JWT assertion.
+The absolute path of the file must be in the `org.apache.kafka.sasl.oauthbearer.allowed.files` JVM system property.
+Ignored when <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_file>> is set.
+
+[id="plugins-{type}s-{plugin}-sasl_oauthbearer_client_credentials_client_id"]
+===== `sasl_oauthbearer_client_credentials_client_id`
+  * Value type is <<string,string>>
+  * There is no default value for this setting.
+
+The client ID that identifies the client to the OAuth identity provider.
+It replaces the deprecated `clientId` option of the `OAuthBearerLoginModule` JAAS configuration.
+
+[id="plugins-{type}s-{plugin}-sasl_oauthbearer_client_credentials_client_secret"]
+===== `sasl_oauthbearer_client_credentials_client_secret`
+  * Value type is <<password,password>>
+  * There is no default value for this setting.
+
+The client secret for the OAuth `client_credentials` grant.
+It replaces the deprecated `clientSecret` option of the `OAuthBearerLoginModule` JAAS configuration.
+The Kafka client uses it only when no client assertion is configured.
+
+[id="plugins-{type}s-{plugin}-sasl_oauthbearer_jwt_retriever_class"]
+===== `sasl_oauthbearer_jwt_retriever_class`
+  * Value type is <<string,string>>
+  * There is no default value for this setting.
+
+(optional) The fully-qualified class name of the `JwtRetriever` implementation that requests tokens from the identity provider.
+The Kafka client default selects the implementation from the other settings.
+For example, set `org.apache.kafka.common.security.oauthbearer.JwtBearerJwtRetriever` to use the JWT bearer grant (RFC 7523) instead of the `client_credentials` grant.
+
+[id="plugins-{type}s-{plugin}-sasl_oauthbearer_scope"]
+===== `sasl_oauthbearer_scope`
+  * Value type is <<string,string>>
+  * There is no default value for this setting.
+
+(optional) The scope to request from the OAuth identity provider.
+It replaces the deprecated `scope` option of the `OAuthBearerLoginModule` JAAS configuration.
 
 [id="plugins-{type}s-{plugin}-sasl_iam_jar_paths"]
 ===== `sasl_iam_jar_paths`
