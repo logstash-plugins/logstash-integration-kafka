@@ -120,12 +120,15 @@ For more IAM authentication configurations, see the https://github.com/aws/aws-m
 [id="plugins-{type}s-{plugin}-oauth_client_assertion"]
 ==== OAuth client assertion authentication
 With `sasl_mechanism => "OAUTHBEARER"`, the Kafka client gets its access token from an OAuth identity provider with the `client_credentials` grant.
-Instead of a client secret, the client can authenticate with a signed JWT (a client assertion):
+Instead of a client secret, the client can authenticate with a signed JWT (a client assertion).
+The client uses the first of these that you configure:
 
-* a pre-generated assertion in a file, set with <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_file>>, for example a Kubernetes projected service account token. The client reads the file again when it changes.
-* an assertion that the client signs with a private key, set with <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_claim_iss>>, <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_private_key_file>> and the other `sasl_oauthbearer_assertion_*` settings.
+1. a pre-generated assertion in a file, set with <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_file>>, for example a Kubernetes projected service account token. The client reads the file again when it changes.
+2. an assertion that the client signs with a private key, set with <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_claim_iss>>, <<plugins-{type}s-{plugin}-sasl_oauthbearer_assertion_private_key_file>> and the other `sasl_oauthbearer_assertion_*` settings.
+3. a client secret, set with <<plugins-{type}s-{plugin}-sasl_oauthbearer_client_credentials_client_id>> and <<plugins-{type}s-{plugin}-sasl_oauthbearer_client_credentials_client_secret>>.
 
-The client uses the assertion file first, then a locally-generated assertion, and then <<plugins-{type}s-{plugin}-sasl_oauthbearer_client_credentials_client_secret>>.
+The `sasl_oauthbearer_assertion_*` and `sasl_oauthbearer_client_credentials_*` settings, <<plugins-{type}s-{plugin}-sasl_oauthbearer_scope>> and <<plugins-{type}s-{plugin}-sasl_oauthbearer_jwt_retriever_class>> require `sasl_mechanism => "OAUTHBEARER"`.
+If you set one of them with another mechanism, the plugin reports a configuration error when it starts.
 
 The Kafka client connects only to token endpoint URLs and reads only files that are listed in JVM system properties.
 Add them to the Logstash `jvm.options` file or to `LS_JAVA_OPTS`, for example:

@@ -126,5 +126,44 @@ describe "SASL/OAUTHBEARER login" do
 
       expect(props.stringPropertyNames.to_a.grep(/\Asasl\.oauthbearer\.(jwt|client|assertion)\./)).to be_empty
     end
+
+    it "rejects the OAuth login settings in the output" do
+      output = LogStash::Outputs::Kafka.new(
+        'topic_id' => 'test',
+        'sasl_oauthbearer_scope' => 'kafka.read',
+        'sasl_oauthbearer_assertion_algorithm' => 'RS256'
+      )
+
+      expect { output.register }.to raise_error(LogStash::ConfigurationError) do |error|
+        expect(error.message).to include("sasl_mechanism => 'OAUTHBEARER'", 'sasl_oauthbearer_scope', 'sasl_oauthbearer_assertion_algorithm')
+      end
+    end
+
+    it "rejects the OAuth login settings in the input" do
+      input = LogStash::Inputs::Kafka.new(
+        'topics' => ['logstash'],
+        'sasl_mechanism' => 'PLAIN',
+        'sasl_oauthbearer_assertion_file' => assertion_file.path
+      )
+
+      expect { input.register }.to raise_error(LogStash::ConfigurationError) do |error|
+        expect(error.message).to include("sasl_mechanism => 'OAUTHBEARER'", 'sasl_oauthbearer_assertion_file')
+      end
+    end
+
+    it "accepts the older OAuth settings" do
+      expect(org.apache.kafka.clients.producer.KafkaProducer).to receive(:new).with(hash_including(
+        'sasl.oauthbearer.token.endpoint.url' => 'https://auth.example.com/token',
+        'sasl.oauthbearer.scope.claim.name' => 'custom_scope'
+      ))
+      LogStash::Outputs::Kafka.new(
+        'topic_id' => 'test',
+        'security_protocol' => 'SASL_PLAINTEXT',
+        'sasl_mechanism' => 'PLAIN',
+        'sasl_jaas_config' => "org.apache.kafka.common.security.plain.PlainLoginModule required username='user' password='password';",
+        'sasl_oauthbearer_token_endpoint_url' => 'https://auth.example.com/token',
+        'sasl_oauthbearer_scope_claim_name' => 'custom_scope'
+      ).register
+    end
   end
 end

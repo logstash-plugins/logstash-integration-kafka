@@ -52,6 +52,37 @@ module LogStash module PluginMixins module Kafka
       base.config :sasl_oauthbearer_assertion_template_file, :validate => :path
     end
 
+    # The Kafka client uses these options only with the OAUTHBEARER mechanism.
+    # `sasl_oauthbearer_token_endpoint_url` and `sasl_oauthbearer_scope_claim_name` are older options.
+    # They are not in the list, because a check on them would break existing configurations.
+    OAUTHBEARER_ONLY_OPTIONS = %w[
+      sasl_oauthbearer_jwt_retriever_class
+      sasl_oauthbearer_scope
+      sasl_oauthbearer_client_credentials_client_id
+      sasl_oauthbearer_client_credentials_client_secret
+      sasl_oauthbearer_assertion_file
+      sasl_oauthbearer_assertion_algorithm
+      sasl_oauthbearer_assertion_claim_aud
+      sasl_oauthbearer_assertion_claim_exp_seconds
+      sasl_oauthbearer_assertion_claim_iss
+      sasl_oauthbearer_assertion_claim_jti_include
+      sasl_oauthbearer_assertion_claim_nbf_seconds
+      sasl_oauthbearer_assertion_claim_sub
+      sasl_oauthbearer_assertion_private_key_file
+      sasl_oauthbearer_assertion_private_key_passphrase
+      sasl_oauthbearer_assertion_template_file
+    ].freeze
+
+    def validate_sasl_oauthbearer_config!
+      return if sasl_mechanism == "OAUTHBEARER"
+
+      incompatible = original_params.keys & OAUTHBEARER_ONLY_OPTIONS
+      unless incompatible.empty?
+        raise LogStash::ConfigurationError,
+          "The following options require sasl_mechanism => 'OAUTHBEARER': #{incompatible.join(', ')}"
+      end
+    end
+
     def set_trustore_keystore_config(props)
       props.put("ssl.truststore.type", ssl_truststore_type) unless ssl_truststore_type.nil?
       props.put("ssl.truststore.location", ssl_truststore_location) unless ssl_truststore_location.nil?

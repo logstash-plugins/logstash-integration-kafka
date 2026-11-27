@@ -348,6 +348,7 @@ class LogStash::Inputs::Kafka < LogStash::Inputs::Base
     @runner_threads = []
     @metadata_mode = extract_metadata_level(@decorate_events)
     reassign_dns_lookup
+    validate_sasl_oauthbearer_config!
     @pattern ||= java.util.regex.Pattern.compile(@topics_pattern) unless @topics_pattern.nil?
 
     if @consumer_mode == "share_group"
