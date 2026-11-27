@@ -1,3 +1,6 @@
+## 11.8.16
+  - Upgrade guava dependency to 33.8.0-jre [#298](https://github.com/logstash-plugins/logstash-integration-kafka/pull/298)
+
 ## 11.8.15
   - Update jackson dependency to 2.21.8 [#293](https://github.com/logstash-plugins/logstash-integration-kafka/pull/293)
 
