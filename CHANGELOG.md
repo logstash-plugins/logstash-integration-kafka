@@ -1,3 +1,6 @@
+## 12.2.3
+  - Upgrade guava dependency to 33.8.0-jre [#297](https://github.com/logstash-plugins/logstash-integration-kafka/pull/297)
+
 ## 12.2.2
   - Upgrades kafka-clients dependency to 4.2.2 [#294](https://github.com/logstash-plugins/logstash-integration-kafka/pull/294)
 
