@@ -25,7 +25,7 @@ download() {
 if [ -n "${KAFKA_VERSION+1}" ]; then
   echo "KAFKA_VERSION is $KAFKA_VERSION"
 else
-   KAFKA_VERSION=4.3.1
+   KAFKA_VERSION=4.3.2
 fi
 
 KAFKA_MAJOR_VERSION="${KAFKA_VERSION%%.*}"

@@ -2,6 +2,7 @@
 require "logstash/devutils/rspec/spec_helper"
 require "logstash/inputs/kafka"
 require "concurrent"
+require "tempfile"
 
 
 describe LogStash::Inputs::Kafka do
@@ -241,6 +242,110 @@ describe LogStash::Inputs::Kafka do
         )).and_return(kafka_client = double('kafka-consumer'))
 
       expect(subject.send(:create_consumer, 'test-client-1', 'group_instance_id')).to be kafka_client
+    end
+  end
+
+  context 'when oauth client assertion is configured' do
+    let(:assertion_file) { Tempfile.new('assertion') }
+    let(:private_key_file) { Tempfile.new('private_key') }
+    let(:template_file) { Tempfile.new('template') }
+
+    after { [assertion_file, private_key_file, template_file].each(&:close!) }
+
+    let(:config) { super().merge(
+      'security_protocol' => 'SASL_PLAINTEXT',
+      'sasl_mechanism' => 'OAUTHBEARER',
+      'sasl_oauthbearer_token_endpoint_url' => 'https://auth.example.com/token',
+      'sasl_oauthbearer_client_credentials_client_id' => 'logstash-client',
+      'sasl_oauthbearer_scope' => 'kafka.read'
+    )}
+
+    def expect_consumer_with(props_matcher)
+      expect(org.apache.kafka.clients.consumer.KafkaConsumer).
+        to receive(:new).with(props_matcher).and_return(kafka_client = double('kafka-consumer'))
+      expect(subject.send(:create_consumer, 'test-client-3', 'group_instance_id')).to be kafka_client
+    end
+
+    let(:consumer_props) do
+      props = nil
+      expect(org.apache.kafka.clients.consumer.KafkaConsumer).to receive(:new) { |p| props = p; double('kafka-consumer') }
+      subject.send(:create_consumer, 'test-client-3', 'group_instance_id')
+      props
+    end
+
+    it "uses the Kafka defaults for the locally-generated assertion" do
+      expect_consumer_with(hash_including(
+        'sasl.oauthbearer.assertion.algorithm' => 'RS256',
+        'sasl.oauthbearer.assertion.claim.exp.seconds' => '300',
+        'sasl.oauthbearer.assertion.claim.nbf.seconds' => '60',
+        'sasl.oauthbearer.assertion.claim.jti.include' => 'false'
+      ))
+    end
+
+    context 'with a pre-generated assertion file' do
+      let(:config) { super().merge('sasl_oauthbearer_assertion_file' => assertion_file.path) }
+
+      it "sets the client id, scope and assertion file" do
+        expect_consumer_with(hash_including(
+          'sasl.oauthbearer.token.endpoint.url' => 'https://auth.example.com/token',
+          'sasl.oauthbearer.client.credentials.client.id' => 'logstash-client',
+          'sasl.oauthbearer.scope' => 'kafka.read',
+          'sasl.oauthbearer.assertion.file' => assertion_file.path
+        ))
+      end
+
+      it "does not set a client secret or an assertion issuer" do
+        expect(consumer_props.containsKey('sasl.oauthbearer.client.credentials.client.secret')).to be false
+        expect(consumer_props.containsKey('sasl.oauthbearer.assertion.claim.iss')).to be false
+      end
+    end
+
+    context 'with a locally-generated assertion' do
+      let(:config) { super().merge(
+        'sasl_oauthbearer_jwt_retriever_class' => 'org.apache.kafka.common.security.oauthbearer.JwtBearerJwtRetriever',
+        'sasl_oauthbearer_assertion_algorithm' => 'ES256',
+        'sasl_oauthbearer_assertion_claim_aud' => 'https://auth.example.com',
+        'sasl_oauthbearer_assertion_claim_exp_seconds' => 600,
+        'sasl_oauthbearer_assertion_claim_iss' => 'logstash',
+        'sasl_oauthbearer_assertion_claim_jti_include' => true,
+        'sasl_oauthbearer_assertion_claim_nbf_seconds' => 30,
+        'sasl_oauthbearer_assertion_claim_sub' => 'logstash-client',
+        'sasl_oauthbearer_assertion_private_key_file' => private_key_file.path,
+        'sasl_oauthbearer_assertion_private_key_passphrase' => 'key-secret',
+        'sasl_oauthbearer_assertion_template_file' => template_file.path
+      )}
+
+      it "sets the assertion properties" do
+        expect_consumer_with(hash_including(
+          'sasl.oauthbearer.jwt.retriever.class' => 'org.apache.kafka.common.security.oauthbearer.JwtBearerJwtRetriever',
+          'sasl.oauthbearer.assertion.algorithm' => 'ES256',
+          'sasl.oauthbearer.assertion.claim.aud' => 'https://auth.example.com',
+          'sasl.oauthbearer.assertion.claim.exp.seconds' => '600',
+          'sasl.oauthbearer.assertion.claim.iss' => 'logstash',
+          'sasl.oauthbearer.assertion.claim.jti.include' => 'true',
+          'sasl.oauthbearer.assertion.claim.nbf.seconds' => '30',
+          'sasl.oauthbearer.assertion.claim.sub' => 'logstash-client',
+          'sasl.oauthbearer.assertion.private.key.file' => private_key_file.path,
+          'sasl.oauthbearer.assertion.private.key.passphrase' => 'key-secret',
+          'sasl.oauthbearer.assertion.template.file' => template_file.path
+        ))
+      end
+
+      it "does not expose the private key passphrase" do
+        expect(subject.sasl_oauthbearer_assertion_private_key_passphrase.inspect).to eq('<password>')
+      end
+    end
+
+    context 'with a client secret' do
+      let(:config) { super().merge('sasl_oauthbearer_client_credentials_client_secret' => 'client-secret') }
+
+      it "sets the client secret" do
+        expect_consumer_with(hash_including('sasl.oauthbearer.client.credentials.client.secret' => 'client-secret'))
+      end
+
+      it "does not expose the client secret" do
+        expect(subject.sasl_oauthbearer_client_credentials_client_secret.inspect).to eq('<password>')
+      end
     end
   end
 
